@@ -5,6 +5,7 @@ import { PostOptionsSheet } from './PostOptionsSheet';
 import { CommentsSheet } from './CommentsSheet';
 import { FeedFilterMenu } from './FeedFilterMenu';
 import { RemixScreen } from './RemixScreen';
+import { UserProfile } from './UserProfile';
 import type { Screen } from '../App';
 
 interface Post {
@@ -18,6 +19,7 @@ interface Post {
   remixes: string;
   avatarUrl: string;
   liked: boolean;
+  following?: boolean;
   remixVariants?: string[];
   currentVariant: number;
 }
@@ -38,6 +40,7 @@ const MOCK_POSTS: Post[] = [
     remixes: '873',
     avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
     liked: false,
+    following: false,
     remixVariants: [
       'https://images.unsplash.com/photo-1655720035861-ba4fd21a598d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwYWklMjBnZW5lcmF0ZWQlMjBhcnR8ZW58MXx8fHwxNzYxOTAzMTIyfDA&ixlib=rb-4.1.0&q=80&w=1080',
       'https://images.unsplash.com/photo-1616394158624-a2ba9cfe2994?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBuZW9uJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc2MTgyNDM3OHww&ixlib=rb-4.1.0&q=80&w=1080',
@@ -56,6 +59,7 @@ const MOCK_POSTS: Post[] = [
     remixes: '542',
     avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
     liked: false,
+    following: true,
     currentVariant: 0,
   },
   {
@@ -69,6 +73,7 @@ const MOCK_POSTS: Post[] = [
     remixes: '1.2K',
     avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
     liked: true,
+    following: false,
     currentVariant: 0,
   },
 ];
@@ -80,6 +85,7 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
   const [showCommentsSheet, setShowCommentsSheet] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showRemixScreen, setShowRemixScreen] = useState(false);
+  const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'for-you' | 'following' | 'latest'>('for-you');
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -129,7 +135,22 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
       } else {
         handleVariantChange('left');
       }
+    } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 50) {
+      // Vertical swipe - change post
+      if (deltaY < 0) {
+        // Swipe up - next post
+        setCurrentPostIndex((prev) => (prev + 1) % posts.length);
+      } else {
+        // Swipe down - previous post
+        setCurrentPostIndex((prev) => (prev - 1 + posts.length) % posts.length);
+      }
     }
+  };
+
+  const handleFollow = () => {
+    setPosts(posts.map((post, idx) => 
+      idx === currentPostIndex ? { ...post, following: !post.following } : post
+    ));
   };
 
   const filterLabels = {
@@ -204,19 +225,32 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
                 alt={currentPost.username}
                 className="w-10 h-10 rounded-full object-cover border-2 border-white"
               />
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#6366f1] rounded-full flex items-center justify-center text-white">
-                <Plus size={14} strokeWidth={3} />
-              </div>
+              {!currentPost.following && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFollow();
+                  }}
+                  className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#6366f1] rounded-full flex items-center justify-center text-white"
+                >
+                  <Plus size={14} strokeWidth={3} />
+                </button>
+              )}
             </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#6366f1] font-semibold">@{currentPost.username}</span>
-            {currentPost.verified && (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 0L9.6 5.6L16 8L9.6 10.4L8 16L6.4 10.4L0 8L6.4 5.6L8 0Z" fill="#6366f1"/>
-              </svg>
-            )}
-          </div>
+          <button 
+            onClick={() => setShowUserProfile(true)}
+            className="text-left"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-[#6366f1] font-semibold">@{currentPost.username}</span>
+              {currentPost.verified && (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 0L9.6 5.6L16 8L9.6 10.4L8 16L6.4 10.4L0 8L6.4 5.6L8 0Z" fill="#6366f1"/>
+                </svg>
+              )}
+            </div>
+          </button>
           <p className="text-white mt-2" style={{ textShadow: '0px 1px 3px rgba(0, 0, 0, 0.5)' }}>
             {currentPost.caption}
           </p>
@@ -328,6 +362,14 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
             console.log('Generate remix with changes:', changes);
             setShowRemixScreen(false);
           }}
+        />
+      )}
+
+      {/* User Profile */}
+      {showUserProfile && (
+        <UserProfile
+          username={currentPost.username}
+          onClose={() => setShowUserProfile(false)}
         />
       )}
     </>
