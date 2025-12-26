@@ -1,0 +1,19 @@
+[project]
+name = "cortexia"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[edge_functions]
+enabled = true
+
+[functions.make-server-e55aa214]
+verify_jwt = false

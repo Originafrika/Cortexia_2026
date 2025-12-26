@@ -23,10 +23,10 @@ export function PostOptionsSheet({
 }: PostOptionsSheetProps) {
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-end"
+      className="fixed inset-0 z-[250] flex items-end"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       
       <div
         onClick={(e) => e.stopPropagation()}

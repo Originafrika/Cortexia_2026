@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
@@ -61,12 +62,22 @@ const MOCK_COMMENTS: Comment[] = [
 ];
 
 export function CommentsSheet({ totalComments, onClose }: CommentsSheetProps) {
+  const [comments, setComments] = useState(MOCK_COMMENTS);
+
+  const toggleLike = (commentId: string) => {
+    setComments(comments.map(comment => 
+      comment.id === commentId 
+        ? { ...comment, liked: !comment.liked }
+        : comment
+    ));
+  };
+
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-end"
+      className="fixed inset-0 z-[250] flex items-end"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       
       <div
         onClick={(e) => e.stopPropagation()}
@@ -91,7 +102,7 @@ export function CommentsSheet({ totalComments, onClose }: CommentsSheetProps) {
         {/* Comments List */}
         <div className="flex-1 overflow-y-auto px-4">
           <div className="space-y-4">
-            {MOCK_COMMENTS.map((comment) => (
+            {comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
                 <ImageWithFallback
                   src={comment.avatar}
@@ -105,19 +116,22 @@ export function CommentsSheet({ totalComments, onClose }: CommentsSheetProps) {
                   </div>
                   <p className="text-white mt-1">{comment.text}</p>
                   <div className="flex items-center gap-4 mt-2">
-                    <button className="text-gray-400 text-sm">Reply</button>
+                    <button className="text-gray-400 text-sm hover:text-white transition-colors">Reply</button>
                     {comment.replyCount && (
-                      <button className="text-gray-400 text-sm">
+                      <button className="text-gray-400 text-sm hover:text-white transition-colors">
                         {comment.replyCount} reply
                       </button>
                     )}
                   </div>
                 </div>
-                <button className="flex-shrink-0 mt-1">
+                <button 
+                  onClick={() => toggleLike(comment.id)}
+                  className="flex-shrink-0 mt-1 transition-transform hover:scale-110"
+                >
                   <Heart 
-                    className={comment.liked ? 'text-[#6366f1]' : 'text-gray-500'} 
+                    className={comment.liked ? 'text-red-500' : 'text-gray-500'} 
                     size={20}
-                    fill={comment.liked ? '#6366f1' : 'none'}
+                    fill={comment.liked ? 'currentColor' : 'none'}
                   />
                 </button>
               </div>
@@ -126,12 +140,17 @@ export function CommentsSheet({ totalComments, onClose }: CommentsSheetProps) {
         </div>
 
         {/* Reply Input */}
-        <div className="p-4 border-t border-gray-800">
-          <input
-            type="text"
-            placeholder="Add a reply..."
-            className="w-full bg-[#2A2A2A] text-white rounded-full px-6 py-3 outline-none"
-          />
+        <div className="p-4 border-t border-gray-800 pb-safe">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              placeholder="Add a reply..."
+              className="flex-1 bg-[#2A2A2A] text-white rounded-full px-6 py-3 outline-none focus:ring-2 focus:ring-[#6366f1] transition-all"
+            />
+            <button className="px-6 py-3 bg-[#6366f1] text-white rounded-full">
+              Send
+            </button>
+          </div>
         </div>
       </div>
     </div>

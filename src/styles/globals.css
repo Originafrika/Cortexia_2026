@@ -1,44 +1,227 @@
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================ */
+/* IMPORT DESIGN TOKENS */
+/* ============================================ */
+@import './tokens.css';
+
+/* Screen Reader Only - Visually hidden but accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible styles for keyboard navigation */
+.focus-visible:focus {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+/* BDS: Scrollbar hide - pour scroll horizontal templates */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 :root {
+  /* ========================================
+     🥥 COCONUT FROSTED GLASSMORPHISM THEME
+     Beauty Design System (BDS) - 7 Arts de Perfection Divine
+     Fix #43: Z-Index Scale System
+     Fix #36: Color tokens centralized
+     Fix #32: Constants for timing/spacing
+     ======================================== */
+  
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
-  --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+  
+  /* ========================================
+     Z-INDEX SCALE (Fix #43)
+     Consistent layering system
+     ======================================== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-notification: 10000;
+  
+  /* ========================================
+     🥥 COCONUT WARM THEME
+     Beauty Design System (BDS) Colors
+     ======================================== */
+  
+  /* Coconut Base Colors - Warm, Creamy, Natural */
+  --coconut-white: #FFFEF9;        /* Coconut flesh - warm white */
+  --coconut-cream: #FFF9F0;        /* Coconut cream - soft warm */
+  --coconut-milk: #F5F0E8;         /* Coconut milk - light beige */
+  --coconut-shell: #8B7355;        /* Coconut shell - warm brown */
+  --coconut-husk: #C4B5A0;         /* Coconut husk - sandy beige */
+  --coconut-water: #E8F4F8;        /* Coconut water - subtle blue-green */
+  --coconut-palm: #6B8E70;         /* Palm leaf - soft green */
+  --coconut-sunset: #FFD4B8;       /* Tropical sunset - peachy */
+  
+  /* Frosted Glass Effects - Ultra Intense Blur */
+  --glass-blur-intense: blur(80px); /* 3xl+ blur for maximum frost */
+  --glass-blur-heavy: blur(60px);
+  --glass-blur-medium: blur(40px);
+  --glass-blur-light: blur(20px);
+  --glass-opacity: 0.75;
+  --glass-opacity-light: 0.5;
+  --glass-opacity-heavy: 0.9;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(139, 115, 85, 0.15);
+  --glass-shadow-lg: 0 16px 64px 0 rgba(139, 115, 85, 0.25);
+  
+  /* ========================================
+     BDS SPACING TOKENS (XS, S, M, L, XL, XXL)
+     ======================================== */
+  --bds-space-xs: 4px;
+  --bds-space-s: 8px;
+  --bds-space-m: 16px;
+  --bds-space-l: 24px;
+  --bds-space-xl: 32px;
+  --bds-space-xxl: 48px;
+
+  /* ========================================
+     BDS SHADOW & DEPTH TOKENS (D1-D5)
+     ======================================== */
+  --bds-shadow-d1: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Soft Glow */
+  --bds-shadow-d2: 0 4px 16px rgba(0, 0, 0, 0.2); /* Sharp Drop */
+  --bds-shadow-d3: 0 8px 24px rgba(0, 0, 0, 0.15); /* Ambient Fog */
+  --bds-shadow-d4: 0 0 32px rgba(99, 102, 241, 0.4); /* Spotlight Halo (Indigo) */
+  --bds-shadow-d5: 0 12px 48px rgba(0, 0, 0, 0.3); /* Parallax Depth */
+
+  /* ========================================
+     BDS TIMING TOKENS (T1-T5)
+     ======================================== */
+  --bds-time-t1: 80ms;   /* Snappy */
+  --bds-time-t2: 120ms;  /* Standard */
+  --bds-time-t3: 240ms;  /* Smooth */
+  --bds-time-t4: 420ms;  /* Cinematic */
+  --bds-time-t5: 1200ms; /* Dramatic */
+
+  /* ========================================
+     BDS EASING TOKENS (M1-M5)
+     ======================================== */
+  --bds-ease-m1: cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Ease-Out Cubic (impact) */
+  --bds-ease-m2: cubic-bezier(0.83, 0, 0.17, 1);       /* Ease-In-Out Quint (luxury smooth) */
+  --bds-ease-m3: cubic-bezier(0.34, 1.56, 0.64, 1);    /* Overshoot 1.2 (playfulness) */
+  --bds-ease-m4: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Elastic Soft (organic) */
+  --bds-ease-m5: cubic-bezier(0.0, 0.0, 0.2, 1);       /* Decelerate Fade (calm serenity) */
+  
+  /* BDS Semantic Colors */
+  --background: var(--coconut-white);
+  --foreground: #3A2F23;           /* Warm dark brown for text */
+  --card: rgba(255, 249, 240, 0.85); /* Translucent cream glass */
+  --card-foreground: #3A2F23;
+  --popover: rgba(255, 254, 249, 0.95);
+  --popover-foreground: #3A2F23;
+  --primary: #8B7355;              /* Coconut shell */
+  --primary-foreground: #FFFEF9;
+  --secondary: rgba(245, 240, 232, 0.9);
+  --secondary-foreground: #3A2F23;
+  --muted: #F5F0E8;
+  --muted-foreground: #8B7355;
+  --accent: rgba(255, 212, 184, 0.5); /* Sunset glow */
+  --accent-foreground: #3A2F23;
+  --destructive: #D4737A;          /* Soft coral red */
+  --destructive-foreground: #FFFEF9;
+  --border: rgba(139, 115, 85, 0.15);
   --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --input-background: rgba(255, 249, 240, 0.6);
+  --switch-background: rgba(196, 181, 160, 0.5);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --ring: rgba(139, 115, 85, 0.3);
+  
+  /* Chart Colors - Tropical Palette */
+  --chart-1: #FFD4B8;  /* Sunset peach */
+  --chart-2: #6B8E70;  /* Palm green */
+  --chart-3: #E8F4F8;  /* Water blue */
+  --chart-4: #C4B5A0;  /* Sandy beige */
+  --chart-5: #8B7355;  /* Shell brown */
+  
+  /* Radius - Soft & Organic */
+  --radius: 1.25rem;   /* 20px - larger for gel morphism */
+  
+  /* Sidebar - Frosted Glass */
+  --sidebar: rgba(255, 254, 249, 0.7);
+  --sidebar-foreground: #3A2F23;
+  --sidebar-primary: #8B7355;
+  --sidebar-primary-foreground: #FFFEF9;
+  --sidebar-accent: rgba(255, 249, 240, 0.5);
+  --sidebar-accent-foreground: #3A2F23;
+  --sidebar-border: rgba(139, 115, 85, 0.1);
+  --sidebar-ring: rgba(139, 115, 85, 0.3);
 }
 
 .dark {
@@ -76,6 +259,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* BDS Depth Tokens (D1-D5) */
+  --shadow-d1: 0 2px 8px rgba(0, 0, 0, 0.15); /* Soft Glow */
+  --shadow-d2: 0 4px 16px rgba(0, 0, 0, 0.25); /* Sharp Drop */
+  --shadow-d3: 0 8px 32px rgba(0, 0, 0, 0.3); /* Ambient Fog */
+  --shadow-d4: 0 0 48px rgba(139, 92, 246, 0.4); /* Spotlight Halo */
+  --shadow-d5: 0 12px 48px rgba(0, 0, 0, 0.4); /* Parallax Depth */
 }
 
 @theme inline {
@@ -126,6 +316,135 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Mobile safe area support for notched devices */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+  
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+  
+  .safe-left {
+    padding-left: max(env(safe-area-inset-left), 1rem);
+  }
+  
+  .safe-right {
+    padding-right: max(env(safe-area-inset-right), 1rem);
+  }
+}
+
+/* Z-index layers for proper stacking */
+@layer utilities {
+  .z-modal-backdrop {
+    z-index: 9998;
+  }
+  
+  .z-modal {
+    z-index: 9999;
+  }
+
+  /* Neuomorphism Shadows */
+  .shadow-neu-inset {
+    box-shadow: inset 6px 6px 12px rgba(0, 0, 0, 0.6), inset -6px -6px 12px rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* BDS Motion Tokens - Beauty Design System */
+  /* Based on Guidelines.md Section 3: Motion System */
+  
+  /* Easing Functions */
+  .ease-m1 {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* Ease-Out Cubic - impact */
+  }
+  
+  .ease-m2 {
+    transition-timing-function: cubic-bezier(0.83, 0, 0.17, 1); /* Ease-In-Out Quint - luxury smooth */
+  }
+  
+  .ease-m3 {
+    transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Overshoot 1.2 - playfulness */
+  }
+  
+  .ease-m4 {
+    transition-timing-function: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* Elastic Soft - organic */
+  }
+  
+  .ease-m5 {
+    transition-timing-function: cubic-bezier(0, 0, 0.2, 1); /* Decelerate Fade - calm */
+  }
+  
+  /* Timing Tokens */
+  .duration-t1 {
+    transition-duration: 80ms; /* snappy */
+  }
+  
+  .duration-t2 {
+    transition-duration: 120ms; /* standard */
+  }
+  
+  .duration-t3 {
+    transition-duration: 240ms; /* smooth */
+  }
+  
+  .duration-t4 {
+    transition-duration: 420ms; /* cinematic */
+  }
+  
+  .duration-t5 {
+    transition-duration: 1200ms; /* dramatic */
+  }
+  
+  /* Combined Motion Utilities */
+  .transition-m1 {
+    transition-duration: 240ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .transition-m2 {
+    transition-duration: 420ms;
+    transition-timing-function: cubic-bezier(0.83, 0, 0.17, 1);
+  }
+  
+  .transition-m3 {
+    transition-duration: 240ms;
+    transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+  
+  .transition-m4 {
+    transition-duration: 420ms;
+    transition-timing-function: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  }
+  
+  .transition-m5 {
+    transition-duration: 1200ms;
+    transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+  
+  /* BDS Depth Tokens - Shadow System */
+  .shadow-d1 {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Cards */
+  }
+  
+  .shadow-d2 {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Modals */
+  }
+  
+  .shadow-d3 {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); /* Floating */
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); /* Active Glow */
+  }
+  
+  .shadow-glow-blue {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  }
+  
+  .shadow-glow-green {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   }
 }
 
@@ -186,4 +505,188 @@
 
 html {
   font-size: var(--font-size);
+}
+
+/* Subtle feed animations (no flicker) */
+@keyframes feed-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes feed-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes feed-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes feed-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Subtle feed animations */
+.animate-feed-slide-up {
+  animation: feed-slide-up 0.25s ease-out;
+}
+
+.animate-feed-slide-down {
+  animation: feed-slide-down 0.25s ease-out;
+}
+
+.animate-feed-slide-left {
+  animation: feed-slide-left 0.25s ease-out;
+}
+
+.animate-feed-slide-right {
+  animation: feed-slide-right 0.25s ease-out;
+}
+
+/* ========================================
+   COCONUT DESIGN SYSTEM TOKENS
+   ======================================== */
+
+:root {
+  /* Colors - Background */
+  --coconut-bg-primary: #0A0A0C;
+  --coconut-bg-secondary: #1A1A1C;
+  --coconut-bg-tertiary: #2A2A2C;
+  --coconut-bg-elevated: #323234;
+  --coconut-bg-overlay: rgba(10, 10, 12, 0.8);
+
+  /* Colors - Text */
+  --coconut-text-primary: #FFFFFF;
+  --coconut-text-secondary: #A1A1AA;
+  --coconut-text-tertiary: #71717A;
+  --coconut-text-muted: #52525B;
+
+  /* Colors - Border */
+  --coconut-border-primary: rgba(255, 255, 255, 0.1);
+  --coconut-border-secondary: rgba(255, 255, 255, 0.05);
+  --coconut-border-focus: rgba(99, 102, 241, 0.5);
+
+  /* Colors - Accent */
+  --coconut-accent-primary: #6366F1;
+  --coconut-accent-primary-hover: #5558E3;
+  --coconut-accent-primary-light: rgba(99, 102, 241, 0.1);
+  --coconut-accent-secondary: #8B5CF6;
+  --coconut-accent-success: #10B981;
+  --coconut-accent-warning: #F59E0B;
+  --coconut-accent-error: #EF4444;
+  --coconut-accent-info: #3B82F6;
+
+  /* Colors - Status */
+  --coconut-status-placeholder: #6B7280;
+  --coconut-status-ready: #F59E0B;
+  --coconut-status-generating: #6366F1;
+  --coconut-status-generated: #10B981;
+  --coconut-status-validated: #8B5CF6;
+  --coconut-status-error: #EF4444;
+
+  /* Colors - Node Types */
+  --coconut-type-campaign: #8B5CF6;
+  --coconut-type-folder: #F59E0B;
+  --coconut-type-image: #10B981;
+  --coconut-type-video: #3B82F6;
+  --coconut-type-text: #EC4899;
+  --coconut-type-audio: #14B8A6;
+
+  /* Legacy Spacing (keep for compatibility) */
+  --coconut-space-1: 4px;
+  --coconut-space-2: 8px;
+  --coconut-space-3: 12px;
+  --coconut-space-4: 16px;
+  --coconut-space-5: 20px;
+  --coconut-space-6: 24px;
+  --coconut-space-8: 32px;
+  --coconut-space-10: 40px;
+  --coconut-space-12: 48px;
+  --coconut-space-16: 64px;
+
+  /* Radius */
+  --coconut-radius-sm: 4px;
+  --coconut-radius-md: 8px;
+  --coconut-radius-lg: 12px;
+  --coconut-radius-xl: 16px;
+  --coconut-radius-2xl: 20px;
+  --coconut-radius-full: 9999px;
+
+  /* Shadows (Legacy - use BDS tokens above) */
+  --coconut-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --coconut-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --coconut-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --coconut-shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
+  --coconut-shadow-glow: 0 0 24px rgba(99, 102, 241, 0.3);
+  --coconut-shadow-glow-success: 0 0 24px rgba(16, 185, 129, 0.3);
+  --coconut-shadow-glow-error: 0 0 24px rgba(239, 68, 68, 0.3);
+
+  /* Glassmorphism */
+  --coconut-glass-bg: rgba(26, 26, 28, 0.7);
+  --coconut-glass-border: rgba(255, 255, 255, 0.1);
+  --coconut-glass-blur: 12px;
+
+  /* Transitions (Legacy - use BDS tokens above) */
+  --coconut-transition-fast: 150ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  --coconut-transition-normal: 300ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  --coconut-transition-slow: 500ms cubic-bezier(0.25, 0.8, 0.25, 1);
+  --coconut-transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Z-index */
+  --coconut-z-base: 1;
+  --coconut-z-dropdown: 20;
+  --coconut-z-sticky: 30;
+  --coconut-z-sidebar: 40;
+  --coconut-z-modal-backdrop: 50;
+  --coconut-z-modal: 60;
+  --coconut-z-toast: 70;
+}
+
+/* ========================================
+   COCONUT UTILITY CLASSES
+   ======================================== */
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--coconut-accent-primary) 0%, var(--coconut-accent-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
