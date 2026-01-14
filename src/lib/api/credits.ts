@@ -15,13 +15,27 @@ export async function getUserCredits(
   userId: string
 ): Promise<{ success: boolean; credits?: UserCredits; daysUntilReset?: number; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE}/credits/${userId}`, {
+    // ✅ Encode userId to handle special characters like | in google-oauth2|123456
+    const encodedUserId = encodeURIComponent(userId);
+    const url = `${API_BASE}/credits/${encodedUserId}`;
+    console.log('📞 Fetching credits from:', url);
+    
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${publicAnonKey}`,
       },
     });
 
+    console.log('📥 Credits response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Credits response error:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
     const data = await response.json();
+    console.log('✅ Credits data:', data);
     return data;
   } catch (error) {
     console.error('Get user credits error:', error);

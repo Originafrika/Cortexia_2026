@@ -22,6 +22,34 @@ export type {
   CreditPackage
 } from '../api/client';
 
+// ✅ Re-export from Gemini types
+export type {
+  GeminiAnalysisRequest,
+  GeminiAnalysisResponse,
+  FileUpload,
+  ReferenceImage,
+  ReferenceVideo,
+  FluxPromptJSON,
+  CreativeConcept,
+  ColorPalette,
+  CompositionPlan,
+  CompositionZone,
+  MissingAsset,
+  AssetRequirements,
+  TechnicalSpecs,
+  EstimatedCost,
+  Recommendations,
+  ReplicateGeminiRequest,
+  ReplicateGeminiResponse,
+  GeminiAnalysisError,
+} from './gemini';
+
+// Re-export Gemini constraints
+export { GEMINI_CONSTRAINTS } from './gemini';
+
+// ✅ Re-export from Coconut V14 components
+export type { IntentData } from '../components/coconut-v14';
+
 // ============================================
 // COCONUT V14 APP TYPES
 // ============================================

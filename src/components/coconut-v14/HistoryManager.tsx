@@ -8,6 +8,9 @@
  * - Advanced filters avec blur
  * - Masonry grid layout
  * - BDS 7 Arts compliance
+ * 
+ * ✨ PHASE 4 - SESSION 15: SOUND INTEGRATION
+ * - Pattern: playClick (actions), playWhoosh (filters), playSuccess (download), playPop (stats toggle)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -32,16 +35,21 @@ import {
   BarChart3,
   Heart
 } from 'lucide-react';
-import { api } from '../../lib/api/client';
 import type { Generation } from '../../lib/types/coconut';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
+import { useSoundContext } from './SoundProvider';
+import { useNotify } from './NotificationProvider';
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 interface HistoryManagerProps {
   userId: string;
   projectId?: string;
 }
 
-export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
+export function HistoryManager({ userId, projectId: filterProjectId }: HistoryManagerProps) {
+  const { playClick, playSuccess, playWhoosh, playPop } = useSoundContext();
+  const notify = useNotify();
+  
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [filteredGenerations, setFilteredGenerations] = useState<Generation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +63,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
   // Load generations
   useEffect(() => {
     loadGenerations();
-  }, [userId, projectId]);
+  }, [userId, filterProjectId]);
 
   // Filter and sort
   useEffect(() => {
@@ -70,26 +78,24 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
     const now = Date.now();
     if (dateRange === 'today') {
       const todayStart = new Date().setHours(0, 0, 0, 0);
-      filtered = filtered.filter(g => g.createdAt >= todayStart);
+      filtered = filtered.filter(g => new Date(g.createdAt).getTime() >= todayStart);
     } else if (dateRange === 'week') {
-      filtered = filtered.filter(g => g.createdAt >= now - 7 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(g => new Date(g.createdAt).getTime() >= now - 7 * 24 * 60 * 60 * 1000);
     } else if (dateRange === 'month') {
-      filtered = filtered.filter(g => g.createdAt >= now - 30 * 24 * 60 * 60 * 1000);
+      filtered = filtered.filter(g => new Date(g.createdAt).getTime() >= now - 30 * 24 * 60 * 60 * 1000);
     }
 
     if (searchQuery) {
       filtered = filtered.filter(g => 
-        JSON.stringify(g.prompt).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (typeof g.prompt === 'string' ? g.prompt.toLowerCase() : JSON.stringify(g.prompt).toLowerCase()).includes(searchQuery.toLowerCase()) ||
         g.id.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     if (sortBy === 'date') {
-      filtered.sort((a, b) => b.createdAt - a.createdAt);
+      filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (sortBy === 'cost') {
-      filtered.sort((a, b) => b.cost - a.cost);
-    } else if (sortBy === 'duration') {
-      filtered.sort((a, b) => b.duration - a.duration);
+      filtered.sort((a, b) => (b.credits || 0) - (a.credits || 0));
     }
 
     setFilteredGenerations(filtered);
@@ -98,56 +104,95 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
   const loadGenerations = async () => {
     setIsLoading(true);
     try {
-      // Mock data for demo
-      const mockData: Generation[] = Array.from({ length: 12 }, (_, i) => ({
-        id: `gen-${i}`,
-        userId,
-        projectId: projectId || 'default',
-        prompt: { scene: `Creative scene ${i}`, style: 'premium', mood: 'vibrant' },
-        imageUrl: `https://images.unsplash.com/photo-${1500000000000 + i * 10000000}`,
-        status: i % 10 === 0 ? 'processing' : 'complete' as any,
-        cost: Math.floor(Math.random() * 100) + 50,
-        duration: Math.floor(Math.random() * 5000) + 1000,
-        createdAt: Date.now() - i * 60 * 60 * 1000,
-        updatedAt: Date.now() - i * 60 * 60 * 1000,
-        isFavorite: i % 3 === 0,
-      }));
+      console.log('📥 [History] Fetching generations for user:', userId);
       
-      setGenerations(mockData);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/coconut/history/list?userId=${encodeURIComponent(userId)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+      console.log('📦 [History] Response:', result);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to load history');
+      }
+
+      setGenerations(result.data.generations);
+      console.log('✅ [History] Loaded generations:', result.data.generations.length);
+      
     } catch (err) {
-      console.error('Error loading history:', err);
+      console.error('❌ [History] Error loading history:', err);
+      notify?.error('Erreur lors du chargement de l\'historique');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleFavorite = async (id: string) => {
+    playClick();
     setGenerations(prev => prev.map(g => 
       g.id === id ? { ...g, isFavorite: !g.isFavorite } : g
     ));
   };
 
   const handleDelete = async (id: string) => {
+    playClick();
     setGenerations(prev => prev.filter(g => g.id !== id));
   };
 
   const handleDownload = (gen: Generation) => {
+    playSuccess();
     const link = document.createElement('a');
     link.href = gen.imageUrl;
     link.download = `generation-${gen.id}.png`;
     link.click();
   };
+  
+  const handleToggleStats = () => {
+    playPop();
+    setShowStats(!showStats);
+  };
+  
+  const handleFilterStatus = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    playWhoosh();
+    setFilterStatus(e.target.value as any);
+  };
+  
+  const handleDateRange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    playWhoosh();
+    setDateRange(e.target.value as any);
+  };
+  
+  const handleSortBy = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    playWhoosh();
+    setSortBy(e.target.value as any);
+  };
+  
+  const handleViewDetails = (gen: Generation) => {
+    playClick();
+    setSelectedGeneration(gen);
+  };
+  
+  const handleCloseDetails = () => {
+    playClick();
+    setSelectedGeneration(null);
+  };
 
   const stats = {
     total: generations.length,
-    complete: generations.filter(g => g.status === 'complete').length,
+    complete: generations.filter(g => g.status === 'completed').length,
     favorites: generations.filter(g => g.isFavorite).length,
-    totalCost: generations.reduce((sum, g) => sum + g.cost, 0),
-    avgDuration: generations.length > 0 
-      ? generations.reduce((sum, g) => sum + g.duration, 0) / generations.length / 1000
-      : 0,
-    thisWeek: generations.filter(g => g.createdAt >= Date.now() - 7 * 24 * 60 * 60 * 1000).length,
-    thisMonth: generations.filter(g => g.createdAt >= Date.now() - 30 * 24 * 60 * 60 * 1000).length,
+    totalCost: generations.reduce((sum, g) => sum + (g.credits || 0), 0),
+    avgDuration: 0, // Duration not tracked in current Generation type
+    thisWeek: generations.filter(g => new Date(g.createdAt).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000).length,
+    thisMonth: generations.filter(g => new Date(g.createdAt).getTime() >= Date.now() - 30 * 24 * 60 * 60 * 1000).length,
   };
 
   return (
@@ -168,8 +213,8 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
         >
           <div>
             <h1 className="flex items-center gap-3 text-[var(--coconut-shell)]">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl flex items-center justify-center backdrop-blur-xl border border-white/40">
-                <ImageIcon className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-xl flex items-center justify-center backdrop-blur-xl border border-white/40">
+                <ImageIcon className="w-6 h-6 text-[var(--coconut-shell)]" />
               </div>
               Generation History
             </h1>
@@ -181,7 +226,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowStats(!showStats)}
+            onClick={handleToggleStats}
             className="px-4 py-2 bg-white/50 backdrop-blur-xl hover:bg-white/70 rounded-xl flex items-center gap-2 border border-white/40 shadow-lg transition-all duration-300"
           >
             <BarChart3 className="w-5 h-5 text-[var(--coconut-shell)]" />
@@ -201,12 +246,12 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
             >
               {[ 
                 { label: 'Total', value: stats.total, color: 'from-slate-500 to-slate-600', icon: ImageIcon },
-                { label: 'Complete', value: stats.complete, color: 'from-green-500 to-green-600', icon: CheckCircle },
-                { label: 'Favorites', value: stats.favorites, color: 'from-amber-500 to-amber-600', icon: Star },
-                { label: 'Credits Used', value: stats.totalCost, color: 'from-blue-500 to-blue-600', icon: Zap },
-                { label: 'Avg Duration', value: `${stats.avgDuration.toFixed(1)}s`, color: 'from-purple-500 to-purple-600', icon: Clock },
-                { label: 'This Week', value: stats.thisWeek, color: 'from-indigo-500 to-indigo-600', icon: TrendingUp },
-                { label: 'This Month', value: stats.thisMonth, color: 'from-pink-500 to-pink-600', icon: Calendar },
+                { label: 'Complete', value: stats.complete, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]', icon: CheckCircle },
+                { label: 'Favorites', value: stats.favorites, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]', icon: Star },
+                { label: 'Credits Used', value: stats.totalCost, color: 'from-[var(--coconut-cream)] to-[var(--coconut-milk)]', icon: Zap },
+                { label: 'Avg Duration', value: `${stats.avgDuration.toFixed(1)}s`, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]', icon: Clock },
+                { label: 'This Week', value: stats.thisWeek, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]', icon: TrendingUp },
+                { label: 'This Month', value: stats.thisMonth, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]', icon: Calendar },
               ].map((stat, index) => {
                 const Icon = stat.icon;
                 return (
@@ -219,7 +264,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
                     className="relative"
                   >
                     <div className={`absolute -inset-1 bg-gradient-to-br ${stat.color}/20 rounded-2xl blur-lg opacity-50`} />
-                    <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-4 border border-white/60 text-center">
+                    <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-4 border border-white/60 text-center">
                       <div className={`w-8 h-8 mx-auto mb-2 bg-gradient-to-br ${stat.color}/10 rounded-lg flex items-center justify-center`}>
                         <Icon className="w-4 h-4 text-[var(--coconut-shell)]" />
                       </div>
@@ -240,8 +285,8 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="relative"
         >
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-50" />
-          <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-4 border border-white/60">
+          <div className="absolute -inset-1 bg-gradient-to-r from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/20 rounded-2xl blur-lg opacity-50" />
+          <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-4 border border-white/60">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Search */}
               <div className="relative">
@@ -258,7 +303,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
               {/* Status Filter */}
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
+                onChange={handleFilterStatus}
                 className="px-4 py-2 bg-white/50 border border-white/40 rounded-lg text-[var(--coconut-shell)] focus:outline-none focus:border-[var(--coconut-palm)] transition-colors cursor-pointer backdrop-blur-xl"
               >
                 <option value="all">All Status</option>
@@ -271,7 +316,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
               {/* Date Range */}
               <select
                 value={dateRange}
-                onChange={(e) => setDateRange(e.target.value as any)}
+                onChange={handleDateRange}
                 className="px-4 py-2 bg-white/50 border border-white/40 rounded-lg text-[var(--coconut-shell)] focus:outline-none focus:border-[var(--coconut-palm)] transition-colors cursor-pointer backdrop-blur-xl"
               >
                 <option value="all">All Time</option>
@@ -283,7 +328,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
               {/* Sort */}
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={handleSortBy}
                 className="px-4 py-2 bg-white/50 border border-white/40 rounded-lg text-[var(--coconut-shell)] focus:outline-none focus:border-[var(--coconut-palm)] transition-colors cursor-pointer backdrop-blur-xl"
               >
                 <option value="date">Sort by Date</option>
@@ -308,8 +353,8 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
             animate={{ opacity: 1, scale: 1 }}
             className="relative"
           >
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-3xl blur-xl opacity-50" />
-            <div className="relative bg-white/70 backdrop-blur-[60px] rounded-2xl shadow-xl p-12 border border-white/60 text-center">
+            <div className="absolute -inset-1 bg-gradient-to-r from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-3xl blur-xl opacity-50" />
+            <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl p-12 border border-white/60 text-center">
               <ImageIcon className="w-16 h-16 text-[var(--coconut-husk)] mx-auto mb-4" />
               <h3 className="text-xl text-[var(--coconut-shell)] mb-2">No Generations Yet</h3>
               <p className="text-[var(--coconut-husk)]">Your generation history will appear here</p>
@@ -332,21 +377,59 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
                 className="relative group"
               >
                 {/* Glow */}
-                <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
                 {/* Card */}
-                <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl overflow-hidden border border-white/60">
+                <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden border border-white/60">
                   {/* Image */}
                   <div className="aspect-square relative overflow-hidden bg-[var(--coconut-milk)]">
-                    <ImageWithFallback
-                      src={gen.imageUrl}
-                      alt={`Generation ${gen.id}`}
-                      className="w-full h-full object-cover"
-                    />
+                    {gen.type === 'video' ? (
+                      // Video preview
+                      gen.resultUrl ? (
+                        <div className="relative w-full h-full group/video">
+                          <video
+                            src={gen.resultUrl}
+                            className="w-full h-full object-cover"
+                            muted
+                            loop
+                            playsInline
+                            onMouseEnter={(e) => e.currentTarget.play()}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.pause();
+                              e.currentTarget.currentTime = 0;
+                            }}
+                          />
+                          {/* Video icon overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/video:bg-black/10 transition-colors">
+                            <div className="w-16 h-16 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-xl">
+                              <Video className="w-8 h-8 text-[var(--coconut-shell)]" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center">
+                          <Video className="w-12 h-12 text-[var(--coconut-shell)] mb-2" />
+                          <Loader2 className="w-6 h-6 text-[var(--coconut-shell)] animate-spin" />
+                        </div>
+                      )
+                    ) : (
+                      // Image preview
+                      gen.resultUrl || gen.thumbnail ? (
+                        <ImageWithFallback
+                          src={gen.resultUrl || gen.thumbnail || ''}
+                          alt={`Generation ${gen.id}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 text-[var(--coconut-shell)] animate-spin" />
+                        </div>
+                      )
+                    )}
                     
                     {/* Status Badge */}
                     {gen.status === 'processing' && (
-                      <div className="absolute top-2 left-2 px-2 py-1 bg-blue-500/90 backdrop-blur-xl rounded-lg text-white text-xs flex items-center gap-1">
+                      <div className="absolute top-2 left-2 px-2 py-1 bg-[var(--coconut-husk)]/90 backdrop-blur-xl rounded-lg text-white text-xs flex items-center gap-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
                         Processing
                       </div>
@@ -368,7 +451,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => setSelectedGeneration(gen)}
+                          onClick={() => handleViewDetails(gen)}
                           className="w-8 h-8 bg-white/90 backdrop-blur-xl rounded-full flex items-center justify-center shadow-lg"
                         >
                           <Eye className="w-4 h-4 text-[var(--coconut-shell)]" />
@@ -389,7 +472,7 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
                           onClick={() => handleDelete(gen.id)}
                           className="w-8 h-8 bg-white/90 backdrop-blur-xl rounded-full flex items-center justify-center shadow-lg"
                         >
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                          <Trash2 className="w-4 h-4 text-[var(--coconut-shell)]" />
                         </motion.button>
                       </div>
                     </div>
@@ -426,13 +509,13 @@ export function HistoryManager({ userId, projectId }: HistoryManagerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setSelectedGeneration(null)}
+            onClick={handleCloseDetails}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-4xl w-full bg-white/90 backdrop-blur-[60px] rounded-3xl shadow-2xl border border-white/60 overflow-hidden"
+              className="relative max-w-4xl w-full bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/60 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">

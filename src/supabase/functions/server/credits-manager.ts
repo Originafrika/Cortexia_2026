@@ -27,8 +27,35 @@ export interface UserCredits {
  * Get user credits
  */
 export async function getUserCredits(userId: string): Promise<UserCredits> {
-  const key = `credits:${userId}`;
-  const stored = await kv.get(key);
+  // ✅ PRIORITY: Check new credits system FIRST
+  const creditsKey = `user:credits:${userId}`;
+  const storedCredits = await kv.get(creditsKey);
+  
+  if (storedCredits && (storedCredits as any).free !== undefined) {
+    return {
+      userId,
+      free: (storedCredits as any).free || 0,
+      paid: (storedCredits as any).paid || 0,
+      lastUpdated: Date.now()
+    };
+  }
+  
+  // ✅ FALLBACK: Check profile (legacy system)
+  const userProfile = await kv.get(`user:profile:${userId}`);
+  
+  if (userProfile && (userProfile as any).freeCredits !== undefined) {
+    // Return profile credits in new format
+    return {
+      userId,
+      free: (userProfile as any).freeCredits || 0,
+      paid: (userProfile as any).paidCredits || 0,
+      lastUpdated: Date.now()
+    };
+  }
+  
+  // ✅ LAST RESORT: Check old key format
+  const oldKey = `user:${userId}:credits`;
+  const stored = await kv.get(oldKey);
   
   if (!stored) {
     // Initialize new user with 25 free credits
@@ -38,7 +65,7 @@ export async function getUserCredits(userId: string): Promise<UserCredits> {
       paid: 0,
       lastUpdated: Date.now()
     };
-    await kv.set(key, initial);
+    await kv.set(creditsKey, initial);
     return initial;
   }
   
@@ -92,8 +119,17 @@ export async function deductCredits(
   
   credits.lastUpdated = Date.now();
   
-  // Save updated credits
-  await kv.set(`credits:${userId}`, credits);
+  // ✅ Save to NEW system
+  await kv.set(`user:credits:${userId}`, credits);
+  
+  // ✅ Also update PROFILE if it exists (legacy compatibility)
+  const userProfile = await kv.get(`user:profile:${userId}`);
+  if (userProfile && (userProfile as any).freeCredits !== undefined) {
+    (userProfile as any).freeCredits = credits.free;
+    (userProfile as any).paidCredits = credits.paid;
+    await kv.set(`user:profile:${userId}`, userProfile);
+    console.log(`✅ Updated profile credits: free=${credits.free}, paid=${credits.paid}`);
+  }
   
   // Log transaction for paid credits
   if (paidDeducted > 0) {
@@ -154,8 +190,17 @@ export async function refundCredits(
   
   credits.lastUpdated = Date.now();
   
-  // Save updated credits
-  await kv.set(`credits:${userId}`, credits);
+  // ✅ Save to NEW system
+  await kv.set(`user:credits:${userId}`, credits);
+  
+  // ✅ Also update PROFILE if it exists (legacy compatibility)
+  const userProfile = await kv.get(`user:profile:${userId}`);
+  if (userProfile && (userProfile as any).freeCredits !== undefined) {
+    (userProfile as any).freeCredits = credits.free;
+    (userProfile as any).paidCredits = credits.paid;
+    await kv.set(`user:profile:${userId}`, userProfile);
+    console.log(`✅ Updated profile credits: free=${credits.free}, paid=${credits.paid}`);
+  }
   
   // Log refund transaction
   const transaction: CreditTransaction = {
@@ -262,7 +307,17 @@ export async function addPaidCredits(
   credits.paid += amount;
   credits.lastUpdated = Date.now();
   
-  await kv.set(`credits:${userId}`, credits);
+  // ✅ Save to NEW system
+  await kv.set(`user:credits:${userId}`, credits);
+  
+  // ✅ Also update PROFILE if it exists (legacy compatibility)
+  const userProfile = await kv.get(`user:profile:${userId}`);
+  if (userProfile && (userProfile as any).freeCredits !== undefined) {
+    (userProfile as any).freeCredits = credits.free;
+    (userProfile as any).paidCredits = credits.paid;
+    await kv.set(`user:profile:${userId}`, userProfile);
+    console.log(`✅ Updated profile credits: free=${credits.free}, paid=${credits.paid}`);
+  }
   
   // Log transaction
   const transaction: CreditTransaction = {
@@ -278,4 +333,122 @@ export async function addPaidCredits(
   console.log(`✅ Paid credits added. New balance: ${credits.paid} paid + ${credits.free} free`);
   
   return credits;
+}
+
+/**
+ * Deduct ONLY free credits (for FREE models like Pollinations)
+ */
+export async function deductFreeCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  metadata?: any
+): Promise<{ success: boolean; remaining: UserCredits; error?: string }> {
+  console.log(`🆓 Deducting ${amount} FREE credits from user ${userId}: ${reason}`);
+  
+  const credits = await getUserCredits(userId);
+  
+  // Check if user has enough FREE credits
+  if (credits.free < amount) {
+    console.error(`❌ Insufficient FREE credits: need ${amount}, have ${credits.free}`);
+    return {
+      success: false,
+      remaining: credits,
+      error: `Insufficient free credits. Need ${amount}, have ${credits.free}.`
+    };
+  }
+  
+  // Deduct from free credits only
+  credits.free -= amount;
+  credits.lastUpdated = Date.now();
+  
+  // ✅ Save to NEW system
+  await kv.set(`user:credits:${userId}`, credits);
+  
+  // ✅ Also update PROFILE if it exists (legacy compatibility)
+  const userProfile = await kv.get(`user:profile:${userId}`);
+  if (userProfile && (userProfile as any).freeCredits !== undefined) {
+    (userProfile as any).freeCredits = credits.free;
+    (userProfile as any).paidCredits = credits.paid;
+    await kv.set(`user:profile:${userId}`, userProfile);
+    console.log(`✅ Updated profile credits: free=${credits.free}, paid=${credits.paid}`);
+  }
+  
+  // Log transaction
+  const transaction: CreditTransaction = {
+    userId,
+    amount,
+    type: 'free',
+    operation: 'deduct',
+    reason,
+    metadata,
+    timestamp: Date.now()
+  };
+  await logTransaction(transaction);
+  
+  console.log(`✅ FREE credits deducted. Remaining: ${credits.paid} paid + ${credits.free} free`);
+  
+  return {
+    success: true,
+    remaining: credits
+  };
+}
+
+/**
+ * Deduct ONLY paid credits (for PAID models like Kie AI)
+ */
+export async function deductPaidCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  metadata?: any
+): Promise<{ success: boolean; remaining: UserCredits; error?: string }> {
+  console.log(`💎 Deducting ${amount} PAID credits from user ${userId}: ${reason}`);
+  
+  const credits = await getUserCredits(userId);
+  
+  // Check if user has enough PAID credits
+  if (credits.paid < amount) {
+    console.error(`❌ Insufficient PAID credits: need ${amount}, have ${credits.paid}`);
+    return {
+      success: false,
+      remaining: credits,
+      error: `Insufficient paid credits. Need ${amount}, have ${credits.paid}.`
+    };
+  }
+  
+  // Deduct from paid credits only
+  credits.paid -= amount;
+  credits.lastUpdated = Date.now();
+  
+  // ✅ Save to NEW system
+  await kv.set(`user:credits:${userId}`, credits);
+  
+  // ✅ Also update PROFILE if it exists (legacy compatibility)
+  const userProfile = await kv.get(`user:profile:${userId}`);
+  if (userProfile && (userProfile as any).freeCredits !== undefined) {
+    (userProfile as any).freeCredits = credits.free;
+    (userProfile as any).paidCredits = credits.paid;
+    await kv.set(`user:profile:${userId}`, userProfile);
+    console.log(`✅ Updated profile credits: free=${credits.free}, paid=${credits.paid}`);
+  }
+  
+  // Log transaction
+  const transaction: CreditTransaction = {
+    userId,
+    amount,
+    type: 'paid',
+    operation: 'deduct',
+    reason,
+    metadata,
+    timestamp: Date.now()
+  };
+  await logTransaction(transaction);
+  
+  console.log(`✅ PAID credits deducted. Remaining: ${credits.paid} paid + ${credits.free} free`);
+  
+  return {
+    success: true,
+    remaining: credits
+  };
 }

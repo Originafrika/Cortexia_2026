@@ -1,6 +1,7 @@
 /**
  * CATEGORY FILTER V2
  * Enhanced filter with badges
+ * ✅ OPTIMIZED: BDS colors applied
  */
 
 interface CategoryFilterV2Props {
@@ -25,7 +26,7 @@ export function CategoryFilterV2({ categories, selected, onSelect }: CategoryFil
           px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-300
           ${selected === 'all'
             ? 'bg-white text-black'
-            : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+            : 'bg-white/5 text-[var(--coconut-husk)] hover:bg-white/10 border border-white/10'
           }
         `}
       >
@@ -40,8 +41,8 @@ export function CategoryFilterV2({ categories, selected, onSelect }: CategoryFil
           className={`
             px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-300 relative
             ${selected === category.id
-              ? 'bg-purple-600 text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+              ? 'bg-[var(--coconut-palm)] text-white'
+              : 'bg-white/5 text-[var(--coconut-husk)] hover:bg-white/10 border border-white/10'
             }
           `}
         >
@@ -53,8 +54,8 @@ export function CategoryFilterV2({ categories, selected, onSelect }: CategoryFil
               ${selected === category.id 
                 ? 'bg-white/20 text-white' 
                 : category.badge === 'FREE'
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-yellow-500/20 text-yellow-400'
+                  ? 'bg-[var(--coconut-palm)]/20 text-[var(--coconut-palm)]'
+                  : 'bg-[var(--coconut-husk)]/20 text-[var(--coconut-husk)]'
               }
             `}>
               {category.badge}

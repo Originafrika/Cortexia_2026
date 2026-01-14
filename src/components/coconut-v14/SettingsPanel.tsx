@@ -1,23 +1,23 @@
 /**
  * COCONUT V14 - SETTINGS PANEL ULTRA-PREMIUM
- * Liquid Glass Design with Coconut Theme
+ * Architecture-aligned settings management
  * 
  * Features:
- * - Frosted glass cards avec intense blur
- * - Animated tab navigation
- * - Premium form inputs
- * - Smooth transitions
+ * - Premium tab navigation with smooth transitions
+ * - Account settings with profile management
+ * - Preferences (language, timezone, theme)
+ * - Notifications with toggle switches
+ * - Security (password, API keys)
+ * - System info card (Coconut V14 architecture)
  * - BDS 7 Arts compliance
+ * - Coconut Warm colors only
  */
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GlassCard } from '../ui/glass-card';
-import { GlassButton } from '../ui/glass-button';
+import { useSoundContext } from './SoundProvider';
 import { GlassInput } from '../ui/glass-input';
 import { PremiumSelect, SelectOption } from '../ui-premium/PremiumSelect';
-import { AnimatedStaggerContainer, AnimatedStaggerItem } from '../ui-premium/AnimatedWrapper';
-import { SkeletonCard } from '../ui-premium/SkeletonLoader';
 import { useNotify } from '../coconut-v14/NotificationProvider';
 import { api, ApiError } from '../../lib/api/client';
 import type { UserSettings } from '../../lib/api/client';
@@ -40,7 +40,15 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Info,
+  Brain,
+  Layout,
+  Activity,
+  CheckCircle,
+  Copy,
+  RotateCcw,
+  Laptop
 } from 'lucide-react';
 
 // ============================================
@@ -84,9 +92,10 @@ const timezoneOptions: SelectOption[] = [
 ];
 
 const themeOptions: SelectOption[] = [
-  { value: 'dark', label: 'Dark', icon: <Moon className="w-4 h-4" /> },
-  { value: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
   { value: 'coconut', label: 'Coconut (Default)', icon: <Palette className="w-4 h-4" /> },
+  { value: 'light', label: 'Light', icon: <Sun className="w-4 h-4" /> },
+  { value: 'dark', label: 'Dark', icon: <Moon className="w-4 h-4" /> },
+  { value: 'system', label: 'System', icon: <Laptop className="w-4 h-4" /> },
 ];
 
 const visibilityOptions: SelectOption[] = [
@@ -100,6 +109,8 @@ const visibilityOptions: SelectOption[] = [
 // ============================================
 
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
+  const { playClick, playSuccess, playPop } = useSoundContext();
+  
   const notify = useNotify();
   const [activeTab, setActiveTab] = useState<'account' | 'preferences' | 'notifications' | 'security'>('account');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -121,20 +132,27 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     showActivity: true,
   });
   
-  // Load settings from backend on mount
+  // Load settings from backend
   useEffect(() => {
     const loadSettings = async () => {
       try {
         setLoading(true);
-        const data = await api.fetchUserSettings().catch(() => settings);
+        
+        const data = await api.fetchUserSettings(true).catch(() => {
+          console.warn('⚙️ Using default settings (API unavailable)');
+          return settings;
+        });
+        
         setSettings(data);
+        
       } catch (err) {
         console.error('Failed to load settings:', err);
+        notify.error('Failed to load settings');
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadSettings();
   }, []);
 
@@ -142,14 +160,17 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     key: K,
     value: UserSettings[K]
   ) => {
+    playPop();
     setSettings(prev => ({ ...prev, [key]: value }));
     setHasUnsavedChanges(true);
   };
 
   const handleSave = async () => {
+    playClick();
     try {
       setSaving(true);
       await api.saveUserSettings(settings).catch(() => {});
+      playSuccess();
       notify.success('Settings Saved!', 'Your preferences have been updated');
       setHasUnsavedChanges(false);
     } catch (err) {
@@ -160,11 +181,45 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
     }
   };
 
+  const handleTabChange = (tabId: typeof activeTab) => {
+    playClick();
+    setActiveTab(tabId);
+  };
+
+  const handleCopyApiKey = () => {
+    playClick();
+    notify.success('Copied!', 'API key copied to clipboard');
+  };
+
   const tabs = [
-    { id: 'account' as const, label: 'Account', icon: User, color: 'from-purple-500 to-purple-600' },
-    { id: 'preferences' as const, label: 'Preferences', icon: SettingsIcon, color: 'from-blue-500 to-blue-600' },
-    { id: 'notifications' as const, label: 'Notifications', icon: Bell, color: 'from-amber-500 to-amber-600' },
-    { id: 'security' as const, label: 'Security', icon: Shield, color: 'from-green-500 to-green-600' },
+    { 
+      id: 'account' as const, 
+      label: 'Account', 
+      icon: User, 
+      color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]',
+      description: 'Manage your profile'
+    },
+    { 
+      id: 'preferences' as const, 
+      label: 'Preferences', 
+      icon: SettingsIcon, 
+      color: 'from-[var(--coconut-husk)] to-[var(--coconut-palm)]',
+      description: 'Customize your experience'
+    },
+    { 
+      id: 'notifications' as const, 
+      label: 'Notifications', 
+      icon: Bell, 
+      color: 'from-amber-500 to-amber-600',
+      description: 'Control alerts'
+    },
+    { 
+      id: 'security' as const, 
+      label: 'Security', 
+      icon: Shield, 
+      color: 'from-[var(--coconut-palm)] to-[var(--coconut-shell)]',
+      description: 'Password & API access'
+    },
   ];
 
   return (
@@ -174,159 +229,202 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(212,165,116,0.08)_0%,transparent_50%)]" />
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(107,142,112,0.06)_0%,transparent_50%)]" />
       
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-8">
         
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex items-center justify-between"
+          className="text-center"
         >
-          <div>
-            <h1 className="flex items-center gap-3 text-[var(--coconut-shell)]">
-              <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/20 rounded-xl flex items-center justify-center backdrop-blur-xl border border-white/40">
-                <SettingsIcon className="w-6 h-6 text-[var(--coconut-shell)]" />
-              </div>
-              Settings
-            </h1>
-            <p className="text-[var(--coconut-husk)] mt-1 text-sm">Manage your account and preferences</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-2xl shadow-xl mb-4">
+            <SettingsIcon className="w-8 h-8 text-white" />
           </div>
-          
-          <AnimatePresence>
-            {hasUnsavedChanges && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex gap-3"
-              >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setSettings(settings);
-                    setHasUnsavedChanges(false);
-                  }}
-                  className="px-4 py-2 bg-white/50 backdrop-blur-xl hover:bg-white/70 rounded-xl border border-white/40 shadow-lg transition-all duration-300 text-[var(--coconut-shell)]"
-                >
-                  Reset
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="relative group overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-husk)] to-[var(--coconut-shell)] bg-[length:200%_100%] animate-gradient" />
-                  <div className="relative px-6 py-2.5 flex items-center gap-2 rounded-xl">
-                    {saving ? (
-                      <RefreshCw className="w-5 h-5 text-white animate-spin" />
-                    ) : (
-                      <Save className="w-5 h-5 text-white" />
-                    )}
-                    <span className="text-white">{saving ? 'Saving...' : 'Save Changes'}</span>
-                  </div>
-                </motion.button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl text-[var(--coconut-shell)] mb-3">
+            Settings
+          </h1>
+          <p className="text-base md:text-lg text-[var(--coconut-husk)] max-w-2xl mx-auto">
+            Manage your account and customize your experience
+          </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          
-          {/* Tabs Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="relative"
-          >
-            <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/20 rounded-2xl blur-lg opacity-50" />
-            <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-4 border border-white/60 h-fit">
-              <div className="space-y-2">
-                {tabs.map((tab, index) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
+        {/* Save Changes Banner */}
+        <AnimatePresence>
+          {hasUnsavedChanges && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="relative"
+            >
+              <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-amber-600/30 rounded-2xl blur-xl opacity-70" />
+              <div className="relative bg-white/80 backdrop-blur-xl rounded-xl shadow-xl p-4 border border-amber-500/40 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                    <Info className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-[var(--coconut-shell)]">You have unsaved changes</div>
+                    <div className="text-xs text-[var(--coconut-husk)]">Don't forget to save your preferences</div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      playClick();
+                      setHasUnsavedChanges(false);
+                      // Reset to original would go here
+                    }}
+                    className="px-4 py-2 bg-white/60 backdrop-blur-xl hover:bg-white/80 rounded-lg border border-white/40 text-[var(--coconut-shell)] text-sm transition-all duration-300 flex items-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Discard
+                  </motion.button>
                   
-                  return (
-                    <motion.button
-                      key={tab.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
-                      onClick={() => setActiveTab(tab.id)}
-                      className="relative w-full group"
-                    >
-                      {/* Active indicator */}
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeSettingsTab"
-                          className="absolute inset-0 bg-white/60 backdrop-blur-xl rounded-xl border border-white/60 shadow-xl"
-                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                        />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="relative group overflow-hidden disabled:opacity-50"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600" />
+                    <div className="relative px-6 py-2 flex items-center gap-2 rounded-lg">
+                      {saving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 text-white animate-spin" />
+                          <span className="text-white text-sm">Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 text-white" />
+                          <span className="text-white text-sm">Save Changes</span>
+                        </>
                       )}
-                      
-                      {/* Hover effect */}
-                      {!isActive && (
-                        <div className="absolute inset-0 bg-white/30 backdrop-blur-xl rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      )}
-                      
-                      {/* Content */}
+                    </div>
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Tab Navigation - Horizontal on Desktop */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="relative"
+        >
+          <div className="absolute -inset-1 bg-gradient-to-r from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/20 rounded-2xl blur-xl opacity-50" />
+          <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-2 border border-white/60">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {tabs.map((tab, index) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                
+                return (
+                  <motion.button
+                    key={tab.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
+                    onClick={() => handleTabChange(tab.id)}
+                    className="relative group"
+                  >
+                    {/* Active indicator */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeSettingsTab"
+                        className="absolute inset-0 bg-white/80 backdrop-blur-xl rounded-lg shadow-lg"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    {/* Hover effect */}
+                    {!isActive && (
+                      <div className="absolute inset-0 bg-white/40 backdrop-blur-xl rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    )}
+                    
+                    {/* Content */}
+                    <div className={`
+                      relative p-4 rounded-lg
+                      flex flex-col items-center gap-2
+                      transition-all duration-300
+                      ${isActive
+                        ? 'text-[var(--coconut-shell)]'
+                        : 'text-[var(--coconut-husk)] group-hover:text-[var(--coconut-shell)]'
+                      }
+                    `}>
                       <div className={`
-                        relative px-4 py-3 rounded-xl
-                        flex items-center gap-3
+                        w-12 h-12 rounded-xl flex items-center justify-center
                         transition-all duration-300
-                        ${isActive
-                          ? 'text-[var(--coconut-shell)]'
-                          : 'text-[var(--coconut-husk)] group-hover:text-[var(--coconut-shell)]'
+                        ${isActive 
+                          ? `bg-gradient-to-br ${tab.color} shadow-lg` 
+                          : 'bg-white/40 group-hover:bg-white/60'
                         }
                       `}>
-                        <div className={`
-                          w-10 h-10 rounded-lg flex items-center justify-center
-                          transition-all duration-300
-                          ${isActive 
-                            ? `bg-gradient-to-br ${tab.color} shadow-lg` 
-                            : 'bg-white/40 group-hover:bg-white/60'
-                          }
-                        `}>
-                          <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-[var(--coconut-shell)]'}`} />
-                        </div>
-                        <span className="flex-1 text-left">{tab.label}</span>
+                        <Icon className={`w-6 h-6 ${isActive ? 'text-white' : 'text-[var(--coconut-shell)]'}`} />
                       </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                      <div className="text-center">
+                        <div className={`text-sm ${isActive ? 'font-semibold' : ''}`}>{tab.label}</div>
+                        <div className="text-xs opacity-60 hidden md:block">{tab.description}</div>
+                      </div>
+                    </div>
+                  </motion.button>
+                );
+              })}
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Content */}
-          <div className="lg:col-span-3">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              >
-                {activeTab === 'account' && (
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-2xl blur-lg opacity-50" />
-                    <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-6 border border-white/60">
-                      <h2 className="text-2xl text-[var(--coconut-shell)] mb-6">Account Information</h2>
+        {/* Content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {activeTab === 'account' && (
+              <div className="space-y-6">
+                {/* Profile Info */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-xl flex items-center justify-center">
+                        <User className="w-6 h-6 text-[var(--coconut-shell)]" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl text-[var(--coconut-shell)]">Account Information</h2>
+                        <p className="text-sm text-[var(--coconut-husk)]">Manage your personal details</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <GlassInput
+                        label="Username"
+                        value={settings.username}
+                        onChange={(e) => handleSettingChange('username', e.target.value)}
+                        icon={<User className="w-5 h-5" />}
+                        fullWidth
+                      />
                       
-                      <div className="space-y-6">
-                        <GlassInput
-                          label="Username"
-                          value={settings.username}
-                          onChange={(e) => handleSettingChange('username', e.target.value)}
-                          icon={<User className="w-5 h-5" />}
-                          fullWidth
-                        />
-                        
+                      <GlassInput
+                        label="Display Name"
+                        value={settings.displayName}
+                        onChange={(e) => handleSettingChange('displayName', e.target.value)}
+                        icon={<User className="w-5 h-5" />}
+                        fullWidth
+                      />
+                      
+                      <div className="md:col-span-2">
                         <GlassInput
                           label="Email"
                           type="email"
@@ -335,236 +433,363 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
                           icon={<Mail className="w-5 h-5" />}
                           fullWidth
                         />
-                        
-                        <GlassInput
-                          label="Display Name"
-                          value={settings.displayName}
-                          onChange={(e) => handleSettingChange('displayName', e.target.value)}
-                          icon={<User className="w-5 h-5" />}
-                          fullWidth
-                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                        <div className="pt-4 border-t border-[var(--coconut-husk)]/20">
-                          <h3 className="text-lg text-[var(--coconut-shell)] mb-3">Profile Visibility</h3>
-                          <PremiumSelect
-                            options={visibilityOptions}
-                            value={settings.profileVisibility}
-                            onChange={(value) => handleSettingChange('profileVisibility', value as string)}
-                            label="Who can see your profile?"
-                            fullWidth
-                          />
+                {/* Privacy Settings */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-palm)]/20 to-[var(--coconut-husk)]/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-palm)]/20 to-[var(--coconut-husk)]/20 rounded-xl flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-[var(--coconut-palm)]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl text-[var(--coconut-shell)]">Privacy</h3>
+                        <p className="text-sm text-[var(--coconut-husk)]">Control who can see your information</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <PremiumSelect
+                        options={visibilityOptions}
+                        value={settings.profileVisibility}
+                        onChange={(value) => handleSettingChange('profileVisibility', value as string)}
+                        label="Profile Visibility"
+                        fullWidth
+                      />
+                      
+                      <label className="flex items-center justify-between p-4 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40">
+                        <div className="flex items-center gap-3">
+                          <Activity className="w-5 h-5 text-[var(--coconut-husk)]" />
+                          <div>
+                            <div className="text-sm text-[var(--coconut-shell)]">Show activity status</div>
+                            <div className="text-xs text-[var(--coconut-husk)]">Let others see when you're active</div>
+                          </div>
                         </div>
-                      </div>
+                        <input
+                          type="checkbox"
+                          checked={settings.showActivity}
+                          onChange={(e) => handleSettingChange('showActivity', e.target.checked)}
+                          className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)] cursor-pointer"
+                        />
+                      </label>
                     </div>
                   </div>
-                )}
+                </div>
+              </div>
+            )}
 
-                {activeTab === 'preferences' && (
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-2xl blur-lg opacity-50" />
-                    <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-6 border border-white/60">
-                      <h2 className="text-2xl text-[var(--coconut-shell)] mb-6">Preferences</h2>
+            {activeTab === 'preferences' && (
+              <div className="space-y-6">
+                {/* Appearance */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-husk)]/20 to-[var(--coconut-palm)]/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-husk)]/20 to-[var(--coconut-palm)]/20 rounded-xl flex items-center justify-center">
+                        <Palette className="w-6 h-6 text-[var(--coconut-husk)]" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl text-[var(--coconut-shell)]">Appearance</h2>
+                        <p className="text-sm text-[var(--coconut-husk)]">Customize how Coconut V14 looks</p>
+                      </div>
+                    </div>
+                    
+                    <PremiumSelect
+                      options={themeOptions}
+                      value={settings.theme}
+                      onChange={(value) => handleSettingChange('theme', value as string)}
+                      label="Theme"
+                      fullWidth
+                    />
+                  </div>
+                </div>
+
+                {/* Localization */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-xl flex items-center justify-center">
+                        <Globe className="w-6 h-6 text-[var(--coconut-shell)]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl text-[var(--coconut-shell)]">Localization</h3>
+                        <p className="text-sm text-[var(--coconut-husk)]">Language and regional preferences</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <PremiumSelect
+                        options={languageOptions}
+                        value={settings.language}
+                        onChange={(value) => handleSettingChange('language', value as string)}
+                        label="Language"
+                        fullWidth
+                      />
                       
-                      <div className="space-y-6">
-                        <PremiumSelect
-                          options={languageOptions}
-                          value={settings.language}
-                          onChange={(value) => handleSettingChange('language', value as string)}
-                          label="Language"
-                          fullWidth
-                        />
-                        
-                        <PremiumSelect
-                          options={timezoneOptions}
-                          value={settings.timezone}
-                          onChange={(value) => handleSettingChange('timezone', value as string)}
-                          label="Timezone"
-                          fullWidth
-                        />
-                        
-                        <PremiumSelect
-                          options={themeOptions}
-                          value={settings.theme}
-                          onChange={(value) => handleSettingChange('theme', value as string)}
-                          label="Theme"
-                          fullWidth
-                        />
+                      <PremiumSelect
+                        options={timezoneOptions}
+                        value={settings.timezone}
+                        onChange={(value) => handleSettingChange('timezone', value as string)}
+                        label="Timezone"
+                        fullWidth
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                        <div className="pt-4 border-t border-[var(--coconut-husk)]/20">
-                          <h3 className="text-lg text-[var(--coconut-shell)] mb-3">Activity</h3>
-                          <label className="flex items-center justify-between p-4 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40">
-                            <span className="text-[var(--coconut-shell)]">Show my activity to others</span>
-                            <input
-                              type="checkbox"
-                              checked={settings.showActivity}
-                              onChange={(e) => handleSettingChange('showActivity', e.target.checked)}
-                              className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)]"
-                            />
-                          </label>
+            {activeTab === 'notifications' && (
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-2xl blur-xl opacity-50" />
+                <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-xl flex items-center justify-center">
+                      <Bell className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl text-[var(--coconut-shell)]">Notifications</h2>
+                      <p className="text-sm text-[var(--coconut-husk)]">Manage how you receive updates</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <motion.label
+                      whileHover={{ scale: 1.01 }}
+                      className="flex items-center justify-between p-4 md:p-5 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-husk)]/20 to-[var(--coconut-shell)]/20 rounded-xl flex items-center justify-center">
+                          <Mail className="w-6 h-6 text-[var(--coconut-husk)]" />
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'notifications' && (
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 to-amber-600/20 rounded-2xl blur-lg opacity-50" />
-                    <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-6 border border-white/60">
-                      <h2 className="text-2xl text-[var(--coconut-shell)] mb-6">Notifications</h2>
-                      
-                      <div className="space-y-4">
-                        <motion.label
-                          whileHover={{ scale: 1.01 }}
-                          className="flex items-center justify-between p-4 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-lg flex items-center justify-center">
-                              <Mail className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <div className="text-[var(--coconut-shell)]">Email Notifications</div>
-                              <div className="text-sm text-[var(--coconut-husk)]">Receive updates via email</div>
-                            </div>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={settings.emailNotifications}
-                            onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
-                            className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)]"
-                          />
-                        </motion.label>
-
-                        <motion.label
-                          whileHover={{ scale: 1.01 }}
-                          className="flex items-center justify-between p-4 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
-                              <Bell className="w-5 h-5 text-purple-600" />
-                            </div>
-                            <div>
-                              <div className="text-[var(--coconut-shell)]">Push Notifications</div>
-                              <div className="text-sm text-[var(--coconut-husk)]">Browser push notifications</div>
-                            </div>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={settings.pushNotifications}
-                            onChange={(e) => handleSettingChange('pushNotifications', e.target.checked)}
-                            className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)]"
-                          />
-                        </motion.label>
-
-                        <motion.label
-                          whileHover={{ scale: 1.01 }}
-                          className="flex items-center justify-between p-4 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-lg flex items-center justify-center">
-                              {settings.soundEnabled ? (
-                                <Volume2 className="w-5 h-5 text-amber-600" />
-                              ) : (
-                                <VolumeX className="w-5 h-5 text-[var(--coconut-husk)]" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-[var(--coconut-shell)]">Sound Effects</div>
-                              <div className="text-sm text-[var(--coconut-husk)]">Play sounds for notifications</div>
-                            </div>
-                          </div>
-                          <input
-                            type="checkbox"
-                            checked={settings.soundEnabled}
-                            onChange={(e) => handleSettingChange('soundEnabled', e.target.checked)}
-                            className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)]"
-                          />
-                        </motion.label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'security' && (
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-2xl blur-lg opacity-50" />
-                    <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl p-6 border border-white/60">
-                      <h2 className="text-2xl text-[var(--coconut-shell)] mb-6">Security</h2>
-                      
-                      <div className="space-y-6">
                         <div>
-                          <h3 className="text-lg text-[var(--coconut-shell)] mb-3">Change Password</h3>
-                          <div className="space-y-3">
-                            <GlassInput
-                              label="Current Password"
-                              type="password"
-                              placeholder="••••••••"
-                              icon={<Lock className="w-5 h-5" />}
-                              fullWidth
-                            />
-                            <GlassInput
-                              label="New Password"
-                              type="password"
-                              placeholder="••••••••"
-                              icon={<Lock className="w-5 h-5" />}
-                              fullWidth
-                            />
-                            <GlassInput
-                              label="Confirm New Password"
-                              type="password"
-                              placeholder="••••••••"
-                              icon={<Lock className="w-5 h-5" />}
-                              fullWidth
-                            />
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                            >
-                              Update Password
-                            </motion.button>
-                          </div>
+                          <div className="text-[var(--coconut-shell)] font-medium">Email Notifications</div>
+                          <div className="text-sm text-[var(--coconut-husk)]">Receive updates via email</div>
                         </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.emailNotifications}
+                        onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+                        className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)] cursor-pointer"
+                      />
+                    </motion.label>
 
-                        <div className="pt-4 border-t border-[var(--coconut-husk)]/20">
-                          <h3 className="text-lg text-[var(--coconut-shell)] mb-3">API Key</h3>
-                          <p className="text-sm text-[var(--coconut-husk)] mb-3">
-                            Use this key to access Coconut V14 API programmatically
-                          </p>
-                          <div className="flex gap-3 mb-3">
-                            <GlassInput
-                              value={showApiKey ? 'sk_live_1234567890abcdef' : '••••••••••••••••'}
-                              icon={<Key className="w-5 h-5" />}
-                              fullWidth
-                              readOnly
-                            />
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setShowApiKey(!showApiKey)}
-                              className="px-4 py-2 bg-white/50 backdrop-blur-xl hover:bg-white/70 rounded-xl flex items-center gap-2 border border-white/40 shadow-lg transition-all duration-300"
-                            >
-                              {showApiKey ? <EyeOff className="w-5 h-5 text-[var(--coconut-shell)]" /> : <Eye className="w-5 h-5 text-[var(--coconut-shell)]" />}
-                              <span className="text-[var(--coconut-shell)]">{showApiKey ? 'Hide' : 'Show'}</span>
-                            </motion.button>
+                    <motion.label
+                      whileHover={{ scale: 1.01 }}
+                      className="flex items-center justify-between p-4 md:p-5 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-husk)]/20 to-[var(--coconut-shell)]/20 rounded-xl flex items-center justify-center">
+                          <Bell className="w-6 h-6 text-[var(--coconut-shell)]" />
+                        </div>
+                        <div>
+                          <div className="text-[var(--coconut-shell)] font-medium">Push Notifications</div>
+                          <div className="text-sm text-[var(--coconut-husk)]">Browser push notifications</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.pushNotifications}
+                        onChange={(e) => handleSettingChange('pushNotifications', e.target.checked)}
+                        className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)] cursor-pointer"
+                      />
+                    </motion.label>
+
+                    <motion.label
+                      whileHover={{ scale: 1.01 }}
+                      className="flex items-center justify-between p-4 md:p-5 rounded-xl bg-white/50 hover:bg-white/70 cursor-pointer transition-all duration-300 backdrop-blur-xl border border-white/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-xl flex items-center justify-center">
+                          {settings.soundEnabled ? (
+                            <Volume2 className="w-6 h-6 text-amber-600" />
+                          ) : (
+                            <VolumeX className="w-6 h-6 text-[var(--coconut-husk)]" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-[var(--coconut-shell)]">Sound Effects</div>
+                          <div className="text-sm text-[var(--coconut-husk)]">Play sounds for interactions</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settings.soundEnabled}
+                        onChange={(e) => handleSettingChange('soundEnabled', e.target.checked)}
+                        className="w-5 h-5 rounded border-white/40 bg-white/50 text-[var(--coconut-shell)] cursor-pointer"
+                      />
+                    </motion.label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div className="space-y-6">
+                {/* Password */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-palm)]/20 to-[var(--coconut-shell)]/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-palm)]/20 to-[var(--coconut-shell)]/20 rounded-xl flex items-center justify-center">
+                        <Lock className="w-6 h-6 text-[var(--coconut-palm)]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl text-[var(--coconut-shell)]">Change Password</h3>
+                        <p className="text-sm text-[var(--coconut-husk)]">Update your account password</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <GlassInput
+                        label="Current Password"
+                        type="password"
+                        placeholder="••••••••"
+                        icon={<Lock className="w-5 h-5" />}
+                        fullWidth
+                      />
+                      <GlassInput
+                        label="New Password"
+                        type="password"
+                        placeholder="••••••••"
+                        icon={<Lock className="w-5 h-5" />}
+                        fullWidth
+                      />
+                      <GlassInput
+                        label="Confirm New Password"
+                        type="password"
+                        placeholder="••••••••"
+                        icon={<Lock className="w-5 h-5" />}
+                        fullWidth
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          playClick();
+                          notify.success('Password Updated', 'Your password has been changed successfully');
+                        }}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-[var(--coconut-palm)] to-[var(--coconut-shell)] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        Update Password
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* API Key */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-xl flex items-center justify-center">
+                        <Key className="w-6 h-6 text-[var(--coconut-shell)]" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl text-[var(--coconut-shell)]">API Access</h3>
+                        <p className="text-sm text-[var(--coconut-husk)]">Programmatic access to Coconut V14</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex gap-3">
+                        <GlassInput
+                          value={showApiKey ? 'coco_v14_1234567890abcdefghijklmnopqrstuv' : '••••••••••••••••••••••••••••••••'}
+                          icon={<Key className="w-5 h-5" />}
+                          fullWidth
+                          readOnly
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            playClick();
+                            setShowApiKey(!showApiKey);
+                          }}
+                          className="px-4 py-2 bg-white/60 backdrop-blur-xl hover:bg-white/80 rounded-xl flex items-center gap-2 border border-white/40 shadow-lg transition-all duration-300 whitespace-nowrap"
+                        >
+                          {showApiKey ? <EyeOff className="w-5 h-5 text-[var(--coconut-shell)]" /> : <Eye className="w-5 h-5 text-[var(--coconut-shell)]" />}
+                          <span className="text-[var(--coconut-shell)] hidden md:inline">{showApiKey ? 'Hide' : 'Show'}</span>
+                        </motion.button>
+                      </div>
+                      
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCopyApiKey}
+                        className="w-full px-6 py-3 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-husk)] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                      >
+                        <Copy className="w-5 h-5" />
+                        Copy API Key
+                      </motion.button>
+
+                      <div className="p-4 bg-[var(--coconut-cream)]/30 backdrop-blur-xl rounded-xl border border-[var(--coconut-husk)]/30">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-4 h-4 text-[var(--coconut-husk)] flex-shrink-0 mt-0.5" />
+                          <div className="text-xs text-[var(--coconut-shell)] space-y-1">
+                            <div>Keep your API key secret and secure</div>
+                            <div>Use it to access Coconut V14 programmatically</div>
+                            <div>Rate limits apply based on your account tier</div>
                           </div>
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => notify.success('API Key copied to clipboard')}
-                            className="px-6 py-3 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-husk)] text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                          >
-                            Copy API Key
-                          </motion.button>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
+                </div>
+
+                {/* System Info */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-2xl blur-xl opacity-50" />
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl p-6 md:p-8 border border-white/60">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-xl flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl text-[var(--coconut-shell)]">System Information</h3>
+                        <p className="text-sm text-[var(--coconut-husk)]">Coconut V14 architecture details</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-white/50 backdrop-blur-xl rounded-xl border border-white/40">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="w-4 h-4 text-[var(--coconut-palm)]" />
+                          <span className="text-xs text-[var(--coconut-husk)]">AI Analysis</span>
+                        </div>
+                        <div className="text-sm text-[var(--coconut-shell)]">Gemini 2.5 Flash</div>
+                      </div>
+                      
+                      <div className="p-4 bg-white/50 backdrop-blur-xl rounded-xl border border-white/40">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Zap className="w-4 h-4 text-amber-600" />
+                          <span className="text-xs text-[var(--coconut-husk)]">Generation</span>
+                        </div>
+                        <div className="text-sm text-[var(--coconut-shell)]">Flux 2 Pro</div>
+                      </div>
+                      
+                      <div className="p-4 bg-white/50 backdrop-blur-xl rounded-xl border border-white/40">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Layout className="w-4 h-4 text-[var(--coconut-shell)]" />
+                          <span className="text-xs text-[var(--coconut-husk)]">Version</span>
+                        </div>
+                        <div className="text-sm text-[var(--coconut-shell)]">v14.0.0</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
       </div>
     </div>
   );

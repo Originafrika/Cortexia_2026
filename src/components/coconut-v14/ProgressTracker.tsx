@@ -1,10 +1,16 @@
 /**
  * COCONUT V14 - PROGRESS TRACKER
  * Phase 3 - Jour 6: Multi-step progress tracking
+ * 
+ * ✨ PHASE 4 - SESSION 15: SOUND INTEGRATION
+ * - Pattern: No direct user interactions (display-only component)
+ * - Sound context imported for future use if we add step clicking/expansion
  */
 
 import React from 'react';
 import { Check, Loader2, AlertCircle, Clock } from 'lucide-react';
+// Sound context imported for future use if we add step clicking
+import { useSoundContext } from './SoundProvider';
 
 export interface ProgressStep {
   id: string;
@@ -60,7 +66,7 @@ export function ProgressTracker({
           </div>
           <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-[var(--coconut-cream)] to-[var(--coconut-shell)] transition-all duration-500 ease-out"
               style={{ width: `${totalProgress}%` }}
             />
           </div>
@@ -70,7 +76,7 @@ export function ProgressTracker({
         {steps[currentStepIndex] && (
           <div className="flex items-center space-x-3 text-sm text-slate-600">
             {steps[currentStepIndex].status === 'running' && (
-              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <Loader2 className="w-4 h-4 animate-spin text-[var(--coconut-husk)]" />
             )}
             <span>{steps[currentStepIndex].description}</span>
           </div>
@@ -91,7 +97,7 @@ export function ProgressTracker({
         </div>
         <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-all duration-500 ease-out relative"
+            className="h-full bg-gradient-to-r from-[var(--coconut-cream)] via-[var(--coconut-shell)] to-[var(--coconut-husk)] transition-all duration-500 ease-out relative"
             style={{ width: `${totalProgress}%` }}
           >
             <div className="absolute inset-0 bg-white/20 animate-pulse" />
@@ -112,34 +118,16 @@ export function ProgressTracker({
               {/* Connector Line */}
               {index < steps.length - 1 && (
                 <div 
-                  className={`absolute left-5 top-12 w-0.5 h-8 ${
-                    isPast ? 'bg-green-500' : 'bg-slate-200'
-                  }`}
+                  className={`absolute left-5 top-12 w-0.5 h-8 ${\n                    isPast ? 'bg-[var(--coconut-palm)]' : 'bg-slate-200'\n                  }`}
                 />
               )}
 
               {/* Step Card */}
               <div 
-                className={`relative flex items-start space-x-4 p-4 rounded-xl border-2 transition-all ${
-                  isActive 
-                    ? 'border-blue-500 bg-blue-50 shadow-md' 
-                    : isPast 
-                      ? 'border-green-200 bg-green-50' 
-                      : hasError
-                        ? 'border-red-200 bg-red-50'
-                        : 'border-slate-200 bg-white'
-                }`}
+                className={`relative flex items-start space-x-4 p-4 rounded-xl border-2 transition-all ${\n                  isActive \n                    ? 'border-[var(--coconut-palm)] bg-[var(--coconut-cream)] shadow-md' \n                    : isPast \n                      ? 'border-[var(--coconut-palm)]/30 bg-[var(--coconut-palm)]/5' \n                      : hasError\n                        ? 'border-[var(--coconut-shell)]/30 bg-[var(--coconut-shell)]/5'\n                        : 'border-slate-200 bg-white'\n                }`}
               >
                 {/* Icon */}
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                  isPast 
-                    ? 'bg-green-500' 
-                    : isActive 
-                      ? 'bg-blue-500' 
-                      : hasError
-                        ? 'bg-red-500'
-                        : 'bg-slate-200'
-                }`}>
+                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${\n                  isPast \n                    ? 'bg-[var(--coconut-palm)]' \n                    : isActive \n                      ? 'bg-[var(--coconut-palm)]' \n                      : hasError\n                        ? 'bg-[var(--coconut-shell)]'\n                        : 'bg-slate-200'\n                }`}>
                   {isPast ? (
                     <Check className="w-5 h-5 text-white" />
                   ) : isActive ? (
@@ -167,9 +155,7 @@ export function ProgressTracker({
                     )}
                   </div>
 
-                  <p className={`text-xs mb-2 ${
-                    isActive ? 'text-blue-700' : isPast ? 'text-green-700' : hasError ? 'text-red-700' : 'text-slate-500'
-                  }`}>
+                  <p className={`text-xs mb-2 ${\n                    isActive ? 'text-[var(--coconut-husk)]' : isPast ? 'text-[var(--coconut-palm)]' : hasError ? 'text-[var(--coconut-shell)]' : 'text-slate-500'\n                  }`}>
                     {step.description}
                   </p>
 
@@ -180,9 +166,9 @@ export function ProgressTracker({
                         <span>Progress</span>
                         <span>{step.progress}%</span>
                       </div>
-                      <div className="w-full bg-blue-200 rounded-full h-1.5 overflow-hidden">
+                      <div className="w-full bg-[var(--coconut-husk)]/20 rounded-full h-1.5 overflow-hidden">
                         <div 
-                          className="h-full bg-blue-600 transition-all duration-300"
+                          className="h-full bg-[var(--coconut-husk)] transition-all duration-300"
                           style={{ width: `${step.progress}%` }}
                         />
                       </div>
@@ -191,22 +177,14 @@ export function ProgressTracker({
 
                   {/* Error Message */}
                   {hasError && step.error && (
-                    <div className="mt-2 text-xs text-red-700 bg-red-100 rounded-lg p-2">
+                    <div className="mt-2 text-xs text-[var(--coconut-shell)] bg-[var(--coconut-shell)]/10 rounded-lg p-2">
                       {step.error}
                     </div>
                   )}
 
                   {/* Status Badge */}
                   <div className="mt-2">
-                    <span className={`inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
-                      isPast 
-                        ? 'bg-green-200 text-green-800' 
-                        : isActive 
-                          ? 'bg-blue-200 text-blue-800' 
-                          : hasError
-                            ? 'bg-red-200 text-red-800'
-                            : 'bg-slate-200 text-slate-600'
-                    }`}>
+                    <span className={`inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${\n                      isPast \n                        ? 'bg-[var(--coconut-palm)]/20 text-[var(--coconut-palm)]' \n                        : isActive \n                          ? 'bg-[var(--coconut-husk)]/20 text-[var(--coconut-husk)]' \n                          : hasError\n                            ? 'bg-[var(--coconut-shell)]/20 text-[var(--coconut-shell)]'\n                            : 'bg-slate-200 text-slate-600'\n                    }`}>
                       {isPast && <Check className="w-3 h-3" />}
                       {isActive && <Loader2 className="w-3 h-3 animate-spin" />}
                       {hasError && <AlertCircle className="w-3 h-3" />}
@@ -224,13 +202,13 @@ export function ProgressTracker({
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
         <div className="grid grid-cols-3 gap-4 text-center text-sm">
           <div>
-            <div className="text-2xl text-green-600 mb-1">
+            <div className="text-2xl text-[var(--coconut-palm)] mb-1">
               {steps.filter(s => s.status === 'complete').length}
             </div>
             <div className="text-xs text-slate-600">Completed</div>
           </div>
           <div>
-            <div className="text-2xl text-blue-600 mb-1">
+            <div className="text-2xl text-[var(--coconut-husk)] mb-1">
               {steps.filter(s => s.status === 'running').length}
             </div>
             <div className="text-xs text-slate-600">Running</div>

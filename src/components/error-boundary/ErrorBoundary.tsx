@@ -10,7 +10,6 @@
  */
 
 import React, { Component, ReactNode, ErrorInfo } from 'react';
-import { Button } from '@/components/ui-premium';
 
 // ============================================
 // TYPES
@@ -207,23 +206,19 @@ function DefaultErrorFallback({
 
         {/* Actions */}
         <div className="flex gap-3">
-          <Button
-            variant="primary"
-            size="md"
+          <button
             onClick={onReset}
-            className="flex-1"
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             Try Again
-          </Button>
+          </button>
           {isGlobal && (
-            <Button
-              variant="outline"
-              size="md"
+            <button
               onClick={() => window.location.reload()}
-              className="flex-1"
+              className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
             >
               Refresh Page
-            </Button>
+            </button>
           )}
         </div>
 

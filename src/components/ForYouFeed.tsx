@@ -1,13 +1,22 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Bell, ChevronDown, Heart, MessageCircle, Share2, MoreVertical, Plus } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Sparkles, TrendingUp, Crown, Award, Zap, Share2, Plus, ChevronLeft, Filter, Clock, Flame, ChevronDown, Bell, MoreVertical } from 'lucide-react';
+import type { Screen } from '../App';
+import { PostCard } from './feed/PostCard';
+import { PostDetailModal } from './feed/PostDetailModal';
+import { CreatePromptModal } from './feed/CreatePromptModal';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { toast } from 'sonner@2.0.3';
 import { PostOptionsSheet } from './PostOptionsSheet';
 import { CommentsSheet } from './CommentsSheet';
 import { FeedFilterMenu } from './FeedFilterMenu';
 import { RemixScreen } from './RemixScreen';
+import { SignupPromptModal } from './SignupPromptModal';
 import { UserProfile } from './UserProfile';
-import type { Screen } from '../App';
+import { RemixChainViewer } from './feed/RemixChainViewer';
+import { RemixCarousel } from './feed/RemixCarousel'; // ✅ NEW
+import { useAuth } from '../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
 
 interface Post {
   id: string;
@@ -23,157 +32,54 @@ interface Post {
   following?: boolean;
   remixVariants?: string[];
   currentVariant: number;
+  metadata?: any;
+  parentCreationId?: string;
+  remixChain?: string[];
+  remixChainData?: Post[]; // ✅ NEW: Cached remix chain data for horizontal scroll
+  remixChainIndex?: number; // ✅ NEW: Current index in remix chain
 }
 
 interface ForYouFeedProps {
   onNavigate: (screen: Screen) => void;
+  isAuthenticated?: boolean;
+  onOpenRemix?: (imageUrl: string, prompt?: string, parentCreationId?: string) => void; // ✅ ADD: parentCreationId
 }
 
-const BASE_POSTS: Post[] = [
-  {
-    id: '1',
-    username: 'ai_artist_pro',
-    verified: true,
-    caption: 'Futuristic cityscape generated with AI - Portrait mode, high detail',
-    mediaUrl: 'https://images.unsplash.com/photo-1655720035861-ba4fd21a598d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwYWklMjBnZW5lcmF0ZWQlMjBhcnR8ZW58MXx8fHwxNzYxOTAzMTIyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-    likes: '11.2K',
-    comments: '2.1K',
-    remixes: '873',
-    avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    liked: false,
-    following: false,
-    remixVariants: [
-      'https://images.unsplash.com/photo-1655720035861-ba4fd21a598d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwYWklMjBnZW5lcmF0ZWQlMjBhcnR8ZW58MXx8fHwxNzYxOTAzMTIyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-      'https://images.unsplash.com/photo-1616394158624-a2ba9cfe2994?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBuZW9uJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc2MTgyNDM3OHww&ixlib=rb-4.1.0&q=80&w=1080',
-      'https://images.unsplash.com/photo-1633743252577-ccb68cbdb6ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGRpZ2l0YWwlMjBhcnR8ZW58MXx8fHwxNzYxODExMTk4fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    ],
-    currentVariant: 0,
-  },
-  {
-    id: '2',
-    username: 'creative_mind',
-    verified: true,
-    caption: 'Abstract digital dreamscape - experimenting with color gradients',
-    mediaUrl: 'https://images.unsplash.com/photo-1633743252577-ccb68cbdb6ed?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGRpZ2l0YWwlMjBhcnR8ZW58MXx8fHwxNzYxODExMTk4fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    likes: '8.4K',
-    comments: '1.3K',
-    remixes: '542',
-    avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    liked: false,
-    following: true,
-    currentVariant: 0,
-  },
-  {
-    id: '3',
-    username: 'visual_explorer',
-    verified: false,
-    caption: 'Surreal landscape that doesn\'t exist - AI imagination at its finest',
-    mediaUrl: 'https://images.unsplash.com/photo-1514449372970-c013485804bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdXJyZWFsJTIwbGFuZHNjYXBlfGVufDF8fHx8MTc2MTg5NjE2Nnww&ixlib=rb-4.1.0&q=80&w=1080',
-    likes: '15.7K',
-    comments: '3.2K',
-    remixes: '1.2K',
-    avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    liked: true,
-    following: false,
-    currentVariant: 0,
-  },
-  {
-    id: '4',
-    username: 'neon_dreams',
-    verified: true,
-    caption: 'Cyberpunk aesthetic meets natural beauty - AI fusion art',
-    mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBuZW9uJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc2MTgyNDM3OHww&ixlib=rb-4.1.0&q=80&w=1080',
-    likes: '23.5K',
-    comments: '4.8K',
-    remixes: '2.1K',
-    avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    liked: false,
-    following: false,
-    remixVariants: [
-      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjeWJlcnB1bmslMjBuZW9uJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc2MTgyNDM3OHww&ixlib=rb-4.1.0&q=80&w=1080',
-      'https://images.unsplash.com/photo-1655720035861-ba4fd21a598d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmdXR1cmlzdGljJTIwYWklMjBnZW5lcmF0ZWQlMjBhcnR8ZW58MXx8fHwxNzYxOTAzMTIyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-    ],
-    currentVariant: 0,
-  },
-  {
-    id: '5',
-    username: 'pixel_wizard',
-    verified: false,
-    caption: 'Ethereal portrait with glowing elements - prompt: mystical fantasy character',
-    mediaUrl: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYW50YXN5JTIwcG9ydHJhaXR8ZW58MXx8fHwxNzYxODk2MTY2fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    likes: '19.3K',
-    comments: '2.7K',
-    remixes: '1.5K',
-    avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    liked: false,
-    following: true,
-    currentVariant: 0,
-  },
-  {
-    id: '6',
-    username: 'synthwave_art',
-    verified: true,
-    caption: 'Retro futuristic vibes - 80s meets AI generation',
-    mediaUrl: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzeW50aHdhdmUlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzYxODk2MTY2fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    likes: '31.8K',
-    comments: '5.2K',
-    remixes: '3.4K',
-    avatarUrl: 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwxfHx8fDE3NjE4ODU2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    liked: true,
-    following: false,
-    currentVariant: 0,
-  },
-];
-
-// Generate infinite scroll by duplicating posts with unique IDs
-const generatePosts = (count: number): Post[] => {
-  const posts: Post[] = [];
-  for (let i = 0; i < count; i++) {
-    const basePost = BASE_POSTS[i % BASE_POSTS.length];
-    posts.push({
-      ...basePost,
-      id: `${basePost.id}-${Math.floor(i / BASE_POSTS.length)}`,
-    });
-  }
-  return posts;
-};
-
-const INITIAL_POST_COUNT = 20;
-const MOCK_POSTS = generatePosts(INITIAL_POST_COUNT);
-
-export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
+export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: ForYouFeedProps) {
+  const { user } = useAuth(); // ✅ NEW: Get user from AuthContext
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
-  const [posts, setPosts] = useState(MOCK_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [showOptionsSheet, setShowOptionsSheet] = useState(false);
   const [showCommentsSheet, setShowCommentsSheet] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showRemixScreen, setShowRemixScreen] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showRemixChainViewer, setShowRemixChainViewer] = useState(false); // ✅ NEW: Remix chain viewer
   const [selectedFilter, setSelectedFilter] = useState<'for-you' | 'following' | 'latest'>('for-you');
   const [expandedCaption, setExpandedCaption] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [imageObjectFit, setImageObjectFit] = useState<'cover' | 'contain'>('cover'); // ✅ NEW: Image fit mode
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const isSwiping = useRef(false);
   const swipeDirection = useRef<'horizontal' | 'vertical' | null>(null);
   const lastWheelTime = useRef(0);
   const [slideDirection, setSlideDirection] = useState<'up' | 'down' | 'left' | 'right' | null>(null);
-
-  // Initial loading simulation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Filter posts based on selected filter
+  
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [signupPromptAction, setSignupPromptAction] = useState<'like' | 'comment' | 'share' | 'remix' | 'follow' | 'download'>('like');
+  
+  // ✅ NEW: Loading state for remix chains
+  const [loadingRemixChains, setLoadingRemixChains] = useState<Set<string>>(new Set());
+  
+  // ✅ Filter posts based on selected filter (MOVED UP before using currentPost)
   const filteredPosts = useMemo(() => {
     switch (selectedFilter) {
       case 'following':
         return posts.filter(post => post.following);
       case 'latest':
-        // Reverse the order to show latest first
         return [...posts].reverse();
       case 'for-you':
       default:
@@ -181,33 +87,198 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     }
   }, [posts, selectedFilter]);
 
+  // ✅ Current post (MOVED UP before using in callbacks)
   const currentPost = filteredPosts[currentPostIndex];
+  
+  // ✅ NEW: Fetch remix chain for a post
+  const fetchRemixChain = useCallback(async (postId: string) => {
+    if (loadingRemixChains.has(postId)) return; // Already loading
+    
+    setLoadingRemixChains(prev => new Set(prev).add(postId));
+    
+    try {
+      console.log(`🔗 Fetching remix chain for: ${postId}`);
+      
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${postId}/remix-chain`,
+        {
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`
+          }
+        }
+      );
+      
+      const data = await response.json();
+      console.log(`🔗 Remix chain response:`, data);
+      
+      if (data.success && data.chain && data.chain.length > 0) {
+        const chainPosts: Post[] = data.chain.map((creation: any) => ({
+          id: creation.id,
+          username: creation.username,
+          verified: false,
+          caption: creation.caption || creation.prompt,
+          mediaUrl: creation.assetUrl,
+          likes: creation.likes.toString(),
+          comments: creation.comments.toString(),
+          remixes: creation.remixes.toString(),
+          avatarUrl: creation.userAvatar || 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?w=100',
+          liked: false,
+          following: false,
+          currentVariant: 0,
+          metadata: creation.metadata,
+          parentCreationId: creation.parentCreationId,
+          remixChain: creation.remixChain
+        }));
+        
+        // Update the post with remix chain data
+        setPosts(prev => prev.map(post => {
+          if (post.id === postId) {
+            // Find the current post index in the chain
+            const currentIndex = chainPosts.findIndex(p => p.id === postId);
+            return {
+              ...post,
+              remixChainData: chainPosts,
+              remixChainIndex: currentIndex !== -1 ? currentIndex : 0
+            };
+          }
+          return post;
+        }));
+        
+        console.log(`✅ Loaded remix chain: ${chainPosts.length} items`);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching remix chain:', error);
+    } finally {
+      setLoadingRemixChains(prev => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  }, []); // ✅ FIX: Remove loadingRemixChains from dependencies to avoid infinite loop
+  
+  // ✅ NEW: Auto-load remix chain when post with remixes is displayed
+  useEffect(() => {
+    if (currentPost && parseInt(currentPost.remixes) > 0 && !currentPost.remixChainData) {
+      console.log(`🔗 Auto-loading remix chain for post ${currentPost.id} (${currentPost.remixes} remixes)`);
+      fetchRemixChain(currentPost.id);
+    } else if (currentPost?.remixChainData) {
+      console.log(`✅ Remix chain already loaded: ${currentPost.remixChainData.length} items, current index: ${currentPost.remixChainIndex}`);
+    }
+  }, [currentPost?.id, currentPost?.remixes, currentPost?.remixChainData, fetchRemixChain]);
+  
+  // ✅ NEW: Handle remix chain navigation
+  const handleRemixChainIndexChange = useCallback((newIndex: number) => {
+    if (!currentPost?.remixChainData) return;
+    
+    setPosts(prev => prev.map(post => {
+      if (post.id === currentPost.id) {
+        return {
+          ...post,
+          remixChainIndex: newIndex
+        };
+      }
+      return post;
+    }));
+  }, [currentPost?.id, currentPost?.remixChainData]);
 
-  // Truncate caption to first 3 words
+  // ✅ Fetch real feed data from backend
+  const fetchFeedPosts = useCallback(async (offset = 0, limit = 20) => {
+    try {
+      console.log(`📥 Fetching feed posts: offset=${offset}, limit=${limit}`);
+      
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/community?offset=${offset}&limit=${limit}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`
+          }
+        }
+      );
+      
+      const data = await response.json();
+      console.log(`📥 Feed response:`, data);
+      
+      if (data.success && data.creations) {
+        const newPosts: Post[] = data.creations.map((creation: any) => ({
+          id: creation.id,
+          username: creation.username,
+          verified: false,
+          caption: creation.caption || creation.prompt,
+          mediaUrl: creation.assetUrl,
+          likes: creation.likes.toString(),
+          comments: creation.comments.toString(),
+          remixes: creation.remixes.toString(),
+          avatarUrl: creation.userAvatar || 'https://images.unsplash.com/photo-1592849902530-cbabb686381d?w=100',
+          liked: false,
+          following: false,
+          currentVariant: 0,
+          metadata: creation.metadata,
+          parentCreationId: creation.parentCreationId,
+          remixChain: creation.remixChain
+        }));
+        
+        setHasMore(data.pagination.hasMore);
+        return newPosts;
+      } else {
+        console.warn('⚠️ Backend feed returned no creations');
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ Fetch feed error:', error);
+      return [];
+    }
+  }, []);
+  
+  // ✅ Initial load
+  useEffect(() => {
+    const loadInitialFeed = async () => {
+      const initialPosts = await fetchFeedPosts(0, 20);
+      setPosts(initialPosts);
+      setInitialLoading(false);
+    };
+    
+    loadInitialFeed();
+  }, [fetchFeedPosts]);
+  
+  // ✅ Load more posts when near end
+  useEffect(() => {
+    if (currentPostIndex >= posts.length - 5 && !isLoadingMore && hasMore) {
+      const loadMore = async () => {
+        setIsLoadingMore(true);
+        const morePosts = await fetchFeedPosts(posts.length, 20);
+        setPosts(prev => [...prev, ...morePosts]);
+        setIsLoadingMore(false);
+      };
+      
+      loadMore();
+    }
+  }, [currentPostIndex, posts.length, fetchFeedPosts, isLoadingMore, hasMore]);
+  
+  const handleProtectedAction = useCallback((action: typeof signupPromptAction, callback: () => void) => {
+    if (!isAuthenticated) {
+      setSignupPromptAction(action);
+      setShowSignupPrompt(true);
+      return;
+    }
+    callback();
+  }, [isAuthenticated]);
+
   const truncateCaption = (text: string) => {
     const words = text.split(' ');
     if (words.length <= 3) return text;
     return words.slice(0, 3).join(' ') + '...';
   };
 
-  // Reset caption expansion when post changes
   useEffect(() => {
     setExpandedCaption(false);
   }, [currentPostIndex]);
 
-  // Reset index only when filter changes (not when posts are loaded)
   useEffect(() => {
     setCurrentPostIndex(0);
     setExpandedCaption(false);
   }, [selectedFilter]);
 
-  // Load more posts when reaching near the end (infinite scroll)
-  const loadMorePosts = useCallback(() => {
-    const newPosts = generatePosts(10);
-    setPosts(prev => [...prev, ...newPosts]);
-  }, []);
-
-  // Handle variant change for remix posts
   const handleVariantChange = useCallback((direction: 'left' | 'right') => {
     if (!currentPost.remixVariants) return;
     
@@ -226,7 +297,7 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     }));
   }, [currentPost]);
 
-  // Keyboard navigation (desktop)
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowUp') {
@@ -245,11 +316,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           setTimeout(() => setSlideDirection(null), 250);
           setCurrentPostIndex(nextIndex);
           setExpandedCaption(false);
-          
-          // Load more posts when near the end
-          if (nextIndex >= filteredPosts.length - 3) {
-            loadMorePosts();
-          }
         }
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -270,51 +336,37 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPostIndex, filteredPosts.length, currentPost, posts.length, loadMorePosts, handleVariantChange]);
+  }, [currentPostIndex, filteredPosts.length, currentPost, handleVariantChange]);
 
-  // Mouse wheel navigation (desktop)
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     
-    // Debounce wheel events
     const now = Date.now();
     if (now - lastWheelTime.current < 500) return;
     lastWheelTime.current = now;
 
-    // Horizontal scroll - change remix variant
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       if (currentPost.remixVariants && currentPost.remixVariants.length > 1) {
         if (e.deltaX > 0) {
-          // Scroll right - next variant
           setSlideDirection('left');
           setTimeout(() => setSlideDirection(null), 250);
           handleVariantChange('right');
         } else if (e.deltaX < 0) {
-          // Scroll left - previous variant
           setSlideDirection('right');
           setTimeout(() => setSlideDirection(null), 250);
           handleVariantChange('left');
         }
       }
-    }
-    // Vertical scroll - change post
-    else {
+    } else {
       if (e.deltaY > 0) {
-        // Scroll down - next post
         const nextIndex = currentPostIndex + 1;
         if (nextIndex < filteredPosts.length) {
           setSlideDirection('up');
           setTimeout(() => setSlideDirection(null), 250);
           setCurrentPostIndex(nextIndex);
           setExpandedCaption(false);
-          
-          // Load more posts when near the end
-          if (nextIndex >= filteredPosts.length - 3) {
-            loadMorePosts();
-          }
         }
       } else if (e.deltaY < 0) {
-        // Scroll up - previous post
         if (currentPostIndex > 0) {
           setSlideDirection('down');
           setTimeout(() => setSlideDirection(null), 250);
@@ -325,13 +377,92 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     }
   };
 
-  const handleLike = useCallback(() => {
+  const handleLike = useCallback(async () => {
+    if (!user?.id) {
+      toast.error('Please log in to like posts');
+      return;
+    }
+
     const isLiking = !currentPost.liked;
-    setPosts(prev => prev.map(post => 
-      post.id === currentPost.id ? { ...post, liked: isLiking } : post
-    ));
+    
+    // ✅ Optimistic UI update
+    setPosts(prev => prev.map(post => {
+      if (post.id === currentPost.id) {
+        return { 
+          ...post, 
+          liked: isLiking,
+          likes: isLiking 
+            ? (parseInt(post.likes) + 1).toString()
+            : (parseInt(post.likes) - 1).toString()
+        };
+      }
+      return post;
+    }));
+    
     toast.success(isLiking ? 'Added to liked posts' : 'Removed from liked posts');
-  }, [currentPost]);
+
+    // ✅ Call backend API
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${currentPost.id}/like`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            username: user.username || user.email?.split('@')[0] || 'user',
+            userAvatar: user.avatarUrl || ''
+          })
+        }
+      );
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        // Revert optimistic update if API failed
+        setPosts(prev => prev.map(post => {
+          if (post.id === currentPost.id) {
+            return { 
+              ...post, 
+              liked: !isLiking,
+              likes: !isLiking 
+                ? (parseInt(post.likes) + 1).toString()
+                : (parseInt(post.likes) - 1).toString()
+            };
+          }
+          return post;
+        }));
+        toast.error('Failed to update like');
+      } else {
+        // Update with real likes count from backend
+        setPosts(prev => prev.map(post => {
+          if (post.id === currentPost.id) {
+            return { ...post, likes: data.likes.toString() };
+          }
+          return post;
+        }));
+      }
+    } catch (error) {
+      console.error('❌ Like error:', error);
+      // Revert optimistic update
+      setPosts(prev => prev.map(post => {
+        if (post.id === currentPost.id) {
+          return { 
+            ...post, 
+            liked: !isLiking,
+            likes: !isLiking 
+              ? (parseInt(post.likes) + 1).toString()
+              : (parseInt(post.likes) - 1).toString()
+          };
+        }
+        return post;
+      }));
+      toast.error('Failed to update like');
+    }
+  }, [currentPost, user]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -339,7 +470,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     isSwiping.current = false;
     swipeDirection.current = null;
     
-    // Check if the touch started on an interactive element
     const target = e.target as HTMLElement;
     if (target.tagName === 'BUTTON' || target.closest('button')) {
       isSwiping.current = false;
@@ -352,7 +482,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
       const deltaX = e.touches[0].clientX - touchStartX.current;
       const deltaY = e.touches[0].clientY - touchStartY.current;
       
-      // Determine swipe direction once it exceeds threshold
       if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
         isSwiping.current = true;
         swipeDirection.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
@@ -370,7 +499,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     const deltaX = touchEndX - touchStartX.current;
     const deltaY = touchEndY - touchStartY.current;
 
-    // Horizontal swipe - change remix variant
     if (swipeDirection.current === 'horizontal' && Math.abs(deltaX) > 30) {
       if (currentPost.remixVariants && currentPost.remixVariants.length > 1) {
         if (deltaX < 0) {
@@ -383,25 +511,16 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           handleVariantChange('left');
         }
       }
-    } 
-    // Vertical swipe - change post
-    else if (swipeDirection.current === 'vertical' && Math.abs(deltaY) > 30) {
+    } else if (swipeDirection.current === 'vertical' && Math.abs(deltaY) > 30) {
       if (deltaY < 0) {
-        // Swipe up - next post
         const nextIndex = currentPostIndex + 1;
         if (nextIndex < filteredPosts.length) {
           setSlideDirection('up');
           setTimeout(() => setSlideDirection(null), 250);
           setCurrentPostIndex(nextIndex);
           setExpandedCaption(false);
-          
-          // Load more posts when near the end (infinite scroll)
-          if (nextIndex >= filteredPosts.length - 3) {
-            loadMorePosts();
-          }
         }
       } else {
-        // Swipe down - previous post (only if not at start)
         if (currentPostIndex > 0) {
           setSlideDirection('down');
           setTimeout(() => setSlideDirection(null), 250);
@@ -411,7 +530,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
       }
     }
 
-    // Reset
     isSwiping.current = false;
     swipeDirection.current = null;
   };
@@ -462,19 +580,17 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     'latest': 'Latest',
   };
 
-  // Handle empty filtered posts
   if (!currentPost || filteredPosts.length === 0) {
     return (
       <div className="relative w-full h-screen bg-black flex items-center justify-center">
         <div className="text-center px-4">
           <p className="text-white text-xl mb-2">No posts found</p>
-          <p className="text-white/60">Try a different filter</p>
+          <p className="text-white/60">Try a different filter or create something!</p>
         </div>
       </div>
     );
   }
 
-  // Initial loading state
   if (initialLoading) {
     return (
       <div className="relative w-full h-screen bg-black flex items-center justify-center">
@@ -486,18 +602,15 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
     );
   }
 
-  // Get display media URL (for variants)
   const displayMediaUrl = currentPost.remixVariants && currentPost.remixVariants.length > 0
     ? currentPost.remixVariants[currentPost.currentVariant]
     : currentPost.mediaUrl;
 
-  // Parse comments count
   const commentsCount = parseInt(currentPost.comments.replace('K', '')) * 1000;
 
   return (
     <>
       <div className="relative w-full h-screen bg-black">
-        {/* Status Bar Space */}
         <div className="absolute top-0 left-0 right-0 h-12 z-50 pt-safe">
           <div className="flex items-center justify-between px-4 h-full">
             <div className="w-16"></div>
@@ -524,7 +637,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           </div>
         </div>
 
-      {/* Main Content - Video/Image */}
       <div 
         className="relative w-full h-full"
         onTouchStart={handleTouchStart}
@@ -546,26 +658,44 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
             borderBottomRightRadius: '16px',
           }}
         >
-          <ImageWithFallback
-            src={displayMediaUrl}
-            alt={currentPost.caption}
-            className="w-full h-full object-cover"
-            style={{ 
-              borderBottomLeftRadius: '16px',
-              borderBottomRightRadius: '16px',
-            }}
-          />
-          {/* Gradient Overlay for readability */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" 
-            style={{ 
-              borderBottomLeftRadius: '16px',
-              borderBottomRightRadius: '16px',
-            }}
-          />
+          {/* ✅ NEW: Use RemixCarousel if remix chain is loaded, otherwise show regular image */}
+          {currentPost.remixChainData && currentPost.remixChainData.length > 1 ? (
+            <RemixCarousel
+              currentPost={currentPost}
+              remixChain={currentPost.remixChainData.map(p => ({
+                id: p.id,
+                imageUrl: p.mediaUrl,
+                username: p.username
+              }))}
+              currentIndex={currentPost.remixChainIndex || 0}
+              onIndexChange={handleRemixChainIndexChange}
+              onTouchStart={handleTouchStart}
+              imageObjectFit={imageObjectFit}
+            />
+          ) : (
+            <>
+              <ImageWithFallback
+                src={displayMediaUrl}
+                alt={currentPost.caption}
+                className={`w-full h-full ${imageObjectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
+                style={{ 
+                  borderBottomLeftRadius: '16px',
+                  borderBottomRightRadius: '16px',
+                  backgroundColor: imageObjectFit === 'contain' ? '#000' : 'transparent'
+                }}
+              />
+              <div 
+                className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" 
+                style={{ 
+                  borderBottomLeftRadius: '16px',
+                  borderBottomRightRadius: '16px',
+                  pointerEvents: 'none'
+                }}
+              />
+            </>
+          )}
         </div>
 
-        {/* Remix Pagination Dots */}
         {currentPost.remixVariants && currentPost.remixVariants.length > 1 && (
           <div className="absolute bottom-36 left-0 right-0 flex justify-center gap-2 z-30">
             {currentPost.remixVariants.map((_, idx) => (
@@ -584,7 +714,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           </div>
         )}
 
-        {/* Bottom Left - Creator Info */}
         <div className="absolute bottom-20 left-4 right-20 z-20">
           <div className="flex items-center gap-2 mb-2">
             <div className="relative">
@@ -619,7 +748,7 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
             aria-label={`View @${currentPost.username}'s profile`}
           >
             <div className="flex items-center gap-1.5">
-              <span className="text-[#6366f1]">@{currentPost.username}</span>
+              <span className="text-[#6366f1]">@{currentPost.username === '@cortexia_user' ? currentPost.userId?.split('|')[1]?.slice(0, 8) || 'creator' : currentPost.username?.startsWith('user_') || currentPost.username?.startsWith('auth0|') ? currentPost.username.split('|')[1]?.slice(0, 8) || currentPost.username.slice(0, 12) : currentPost.username}</span>
               {currentPost.verified && (
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 0L9.6 5.6L16 8L9.6 10.4L8 16L6.4 10.4L0 8L6.4 5.6L8 0Z" fill="#6366f1"/>
@@ -636,12 +765,33 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           >
             {expandedCaption ? currentPost.caption : truncateCaption(currentPost.caption)}
           </button>
+          
+          {/* ✅ NEW: Remix Chain Indicator */}
+          {parseInt(currentPost.remixes) > 0 && (
+            <button
+              onClick={() => {
+                console.log('🔗 Opening remix chain for post:', currentPost.id);
+                setShowRemixChainViewer(true);
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="mt-2 px-3 py-1.5 rounded-full bg-[#6366f1]/20 backdrop-blur-sm border border-[#6366f1]/40 flex items-center gap-2 hover:bg-[#6366f1]/30 transition-colors"
+              aria-label="View remix chain"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-[#6366f1]">
+                <path d="M7 7H17V10L21 6L17 2V5H5V11H7V7Z" fill="currentColor"/>
+                <path d="M17 17H7V14L3 18L7 22V19H19V13H17V17Z" fill="currentColor"/>
+              </svg>
+              <span className="text-[#6366f1] text-sm font-medium">{currentPost.remixes} remix{parseInt(currentPost.remixes) > 1 ? 'es' : ''}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-[#6366f1]">
+                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
         </div>
 
-        {/* Right Side - Actions */}
         <div className="absolute bottom-20 right-4 flex flex-col items-center gap-6 z-20">
           <button 
-            onClick={handleLike} 
+            onClick={() => handleProtectedAction('like', handleLike)} 
             onTouchStart={(e) => e.stopPropagation()}
             className="flex flex-col items-center gap-1"
             aria-label={currentPost.liked ? 'Unlike' : 'Like'}
@@ -658,7 +808,13 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           </button>
 
           <button 
-            onClick={() => setShowRemixScreen(true)}
+            onClick={() => {
+              if (onOpenRemix) {
+                onOpenRemix(displayMediaUrl, currentPost.caption, currentPost.id); // ✅ FIX: Pass post.id as parent
+              } else {
+                setShowRemixScreen(true);
+              }
+            }}
             onTouchStart={(e) => e.stopPropagation()}
             className="flex flex-col items-center gap-1"
             aria-label="Remix"
@@ -673,7 +829,7 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           </button>
 
           <button 
-            onClick={() => setShowCommentsSheet(true)}
+            onClick={() => handleProtectedAction('comment', () => setShowCommentsSheet(true))}
             onTouchStart={(e) => e.stopPropagation()}
             className="flex flex-col items-center gap-1"
             aria-label="Comments"
@@ -685,7 +841,7 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           </button>
 
           <button 
-            onClick={handleShare}
+            onClick={() => handleProtectedAction('share', handleShare)}
             onTouchStart={(e) => e.stopPropagation()}
             className="flex flex-col items-center gap-1"
             aria-label="Share"
@@ -694,17 +850,44 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           </button>
 
           <button 
-            onClick={() => setShowOptionsSheet(true)}
+            onClick={() => handleProtectedAction('follow', () => setShowOptionsSheet(true))}
             onTouchStart={(e) => e.stopPropagation()}
             className="flex flex-col items-center gap-1"
             aria-label="More options"
           >
             <MoreVertical className="text-white" size={28} strokeWidth={1.5} />
           </button>
+          
+          {/* ✅ NEW: Image Fit Toggle */}
+          <button 
+            onClick={() => {
+              const newFit = imageObjectFit === 'cover' ? 'contain' : 'cover';
+              setImageObjectFit(newFit);
+              toast.success(newFit === 'contain' ? 'Showing full image' : 'Filling screen');
+            }}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="flex flex-col items-center gap-1"
+            aria-label={imageObjectFit === 'cover' ? 'Show full image' : 'Fill screen'}
+          >
+            {imageObjectFit === 'cover' ? (
+              // Icon for "show full image"
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-white">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                <rect x="7" y="8" width="10" height="8" fill="currentColor" />
+              </svg>
+            ) : (
+              // Icon for "fill screen"
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-white">
+                <path d="M21 7V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7C3 5.89543 3.89543 5 5 5H19C20.1046 5 21 5.89543 21 7Z" stroke="currentColor" strokeWidth="1.5" fill="currentColor" />
+              </svg>
+            )}
+            <span className="text-white text-[10px]" style={{ textShadow: '0px 1px 3px rgba(0, 0, 0, 0.5)' }}>
+              {imageObjectFit === 'cover' ? 'Fit' : 'Fill'}
+            </span>
+          </button>
         </div>
       </div>
 
-        {/* Options Sheet - with all required props */}
         {showOptionsSheet && (
           <PostOptionsSheet
             username={currentPost.username}
@@ -734,7 +917,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           />
         )}
 
-        {/* Comments Sheet - with correct props */}
         {showCommentsSheet && (
           <CommentsSheet
             totalComments={commentsCount}
@@ -742,7 +924,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
           />
         )}
 
-        {/* Filter Menu */}
         {showFilterMenu && (
           <FeedFilterMenu
             selectedFilter={selectedFilter}
@@ -752,7 +933,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
         )}
       </div>
 
-      {/* Remix Screen */}
       {showRemixScreen && (
         <RemixScreen
           mediaUrl={displayMediaUrl}
@@ -764,7 +944,6 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
         />
       )}
 
-      {/* User Profile */}
       {showUserProfile && (
         <UserProfile
           username={currentPost.username}
@@ -776,6 +955,56 @@ export function ForYouFeed({ onNavigate }: ForYouFeedProps) {
               setCurrentPostIndex(postIndex);
               setShowUserProfile(false);
             }
+          }}
+          onOpenRemix={onOpenRemix}
+        />
+      )}
+      
+      {showRemixChainViewer && currentPost && (
+        <RemixChainViewer
+          rootPost={currentPost}
+          currentPostId={currentPost.id}
+          onClose={() => setShowRemixChainViewer(false)}
+          onPostChange={(post, index) => {
+            console.log(`📍 Viewing remix ${index + 1} in chain`);
+          }}
+          onLike={(postId) => {
+            setPosts(prev => prev.map(p => 
+              p.id === postId ? { ...p, liked: !p.liked } : p
+            ));
+          }}
+          onComment={(postId) => {
+            setShowRemixChainViewer(false);
+            setShowCommentsSheet(true);
+          }}
+          onShare={(postId) => {
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+              navigator.clipboard.writeText(`https://cortexia.app/p/${postId}`);
+              toast.success('Link copied to clipboard');
+            }
+          }}
+          onRemix={(imageUrl, prompt, parentId) => {
+            setShowRemixChainViewer(false);
+            if (onOpenRemix) {
+              onOpenRemix(imageUrl, prompt, parentId);
+            }
+          }}
+        />
+      )}
+      
+      {showSignupPrompt && (
+        <SignupPromptModal
+          isOpen={showSignupPrompt}
+          action={signupPromptAction}
+          onClose={() => setShowSignupPrompt(false)}
+          onSignup={() => {
+            setShowSignupPrompt(false);
+            onNavigate('signup');
+          }}
+          onLogin={() => {
+            setShowSignupPrompt(false);
+            onNavigate('login');
           }}
         />
       )}

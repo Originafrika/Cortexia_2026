@@ -167,14 +167,14 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
           transition={{ duration: 0.5, delay: 0.1 }}
           className="relative"
         >
-          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-xl opacity-50" />
-          <div className="relative bg-white/70 backdrop-blur-[60px] rounded-2xl shadow-xl p-8 border border-white/60">
+          <div className="absolute -inset-1 bg-gradient-to-r from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-3xl blur-xl opacity-50" />
+          <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/60">
             
             {/* Avatar & Info */}
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               {/* Avatar */}
               <div className="relative">
-                <div className="absolute -inset-2 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full blur-xl" />
+                <div className="absolute -inset-2 bg-gradient-to-br from-[var(--coconut-shell)]/30 to-[var(--coconut-husk)]/30 rounded-full blur-xl" />
                 <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white/60 shadow-xl">
                   <ImageWithFallback
                     src={userData.avatarUrl}
@@ -189,7 +189,7 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                   <h1 className="text-2xl text-[var(--coconut-shell)]">@{username}</h1>
                   {userData.verified && (
-                    <CheckCircle className="w-6 h-6 text-blue-600 fill-blue-600" />
+                    <CheckCircle className="w-6 h-6 text-[var(--coconut-husk)] fill-[var(--coconut-husk)]" />
                   )}
                 </div>
                 
@@ -220,7 +220,7 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
                     className={`flex-1 px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${
                       following
                         ? 'bg-white/50 backdrop-blur-xl border border-white/40 text-[var(--coconut-shell)]'
-                        : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
+                        : 'bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-husk)] text-white'
                     }`}
                   >
                     {following ? (
@@ -258,7 +258,7 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
           className="relative"
         >
           <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur-lg opacity-50" />
-          <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl border border-white/60 p-2">
+          <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl border border-white/60 p-2">
             <div className="flex items-center gap-2">
               {[
                 { id: 'posts' as const, label: 'Posts', icon: Grid3x3 },
@@ -310,7 +310,7 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
                   className="relative"
                 >
                   <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-3xl blur-xl opacity-50" />
-                  <div className="relative bg-white/70 backdrop-blur-[60px] rounded-2xl shadow-xl p-12 border border-white/60 text-center">
+                  <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl p-12 border border-white/60 text-center">
                     <ImageIcon className="w-16 h-16 text-[var(--coconut-husk)] mx-auto mb-4" />
                     <h3 className="text-xl text-[var(--coconut-shell)] mb-2">No Posts Yet</h3>
                     <p className="text-[var(--coconut-husk)]">@{username} hasn't posted anything yet</p>
@@ -334,8 +334,8 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
                       onClick={() => onOpenPost?.(post.id)}
                       className="relative group cursor-pointer"
                     >
-                      <div className="absolute -inset-1 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="relative bg-white/70 backdrop-blur-[60px] rounded-xl shadow-xl overflow-hidden border border-white/60">
+                      <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="relative bg-white/70 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden border border-white/60">
                         <div className="aspect-square relative">
                           <ImageWithFallback
                             src={post.mediaUrl}
@@ -377,7 +377,7 @@ export function UserProfileCoconut({ username, onClose, allPosts = [], onOpenPos
                 className="relative"
               >
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 to-amber-600/20 rounded-3xl blur-xl opacity-50" />
-                <div className="relative bg-white/70 backdrop-blur-[60px] rounded-2xl shadow-xl p-12 border border-white/60 text-center">
+                <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl p-12 border border-white/60 text-center">
                   <Bookmark className="w-16 h-16 text-[var(--coconut-husk)] mx-auto mb-4" />
                   <h3 className="text-xl text-[var(--coconut-shell)] mb-2">No Saved Posts</h3>
                   <p className="text-[var(--coconut-husk)]">Saved posts will appear here</p>

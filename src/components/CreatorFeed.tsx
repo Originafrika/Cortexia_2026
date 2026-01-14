@@ -27,9 +27,10 @@ interface CreatorFeedProps {
   creatorPosts: Post[];
   initialPostIndex: number;
   onClose: () => void;
+  onOpenRemix?: (imageUrl: string, prompt?: string) => void; // ✅ NEW: Remix handler
 }
 
-export function CreatorFeed({ creatorUsername, creatorPosts, initialPostIndex, onClose }: CreatorFeedProps) {
+export function CreatorFeed({ creatorUsername, creatorPosts, initialPostIndex, onClose, onOpenRemix }: CreatorFeedProps) {
   const [currentIndex, setCurrentIndex] = useState(initialPostIndex);
   const [posts, setPosts] = useState(creatorPosts);
   const [showOptionsSheet, setShowOptionsSheet] = useState(false);
@@ -425,7 +426,14 @@ export function CreatorFeed({ creatorUsername, creatorPosts, initialPostIndex, o
 
             {/* Remix */}
             <button 
-              onClick={() => setShowRemixScreen(true)}
+              onClick={() => {
+                if (onOpenRemix) {
+                  const displayMediaUrl = currentPost.remixVariants?.[currentPost.currentVariant] || currentPost.mediaUrl;
+                  onOpenRemix(displayMediaUrl, currentPost.caption);
+                } else {
+                  setShowRemixScreen(true);
+                }
+              }}
               onTouchStart={(e) => e.stopPropagation()}
               className="flex flex-col items-center gap-1"
               aria-label="Remix"

@@ -114,7 +114,8 @@ export async function deductCredits(
 export async function addCredits(
   userId: string,
   amount: number,
-  reason?: string
+  reason?: string,
+  purchaseAmount?: number // ✅ NEW: Amount paid for tracking commission
 ): Promise<void> {
   try {
     const key = `coconut-v14:credits:${userId}`;
@@ -138,9 +139,112 @@ export async function addCredits(
       timestamp: new Date()
     });
     
+    // ✅ NEW: Track referral commission if purchase amount provided
+    if (purchaseAmount && purchaseAmount > 0) {
+      try {
+        // Track purchase for referral commission (10%)
+        await trackReferralPurchase(userId, purchaseAmount, amount);
+      } catch (error) {
+        console.warn('⚠️ Failed to track referral commission:', error);
+        // Don't throw - commission tracking shouldn't block credit add
+      }
+    }
+    
     console.log(`✅ Added ${amount} credits to ${userId}. New balance: ${updated.balance}`);
   } catch (error) {
     console.error(`❌ Error adding credits for ${userId}:`, error);
+    throw error;
+  }
+}
+
+// ============================================
+// TRACK REFERRAL PURCHASE (10% Commission)
+// ============================================
+
+async function trackReferralPurchase(
+  userId: string,
+  purchaseAmount: number,
+  creditsAmount: number
+): Promise<void> {
+  try {
+    // Get user profile
+    const userProfile = await kv.get(`user:profile:${userId}`);
+    
+    if (!userProfile || !userProfile.referredBy) {
+      console.log('ℹ️ User not referred, no commission to track');
+      return;
+    }
+
+    console.log(`💰 Processing referral commission for ${userProfile.referredBy}`);
+
+    // ✅ NEW: Use Creator Compensation system with multipliers
+    const compensationResult = await fetch(`http://localhost:8000/make-server-e55aa214/compensation/process-commission`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creatorId: userProfile.referredBy,
+        referralId: userId,
+        purchaseAmount
+      })
+    }).then(r => r.json()).catch(() => null);
+
+    if (compensationResult?.success) {
+      console.log(`✅ Commission processed via Compensation System: ${compensationResult.commission} Origins (${compensationResult.multiplier}x)`);
+      
+      // Update user's total credits used
+      userProfile.totalCreditsUsed = (userProfile.totalCreditsUsed || 0) + creditsAmount;
+      userProfile.paidCredits = (userProfile.paidCredits || 0) + creditsAmount;
+      userProfile.updatedAt = new Date().toISOString();
+      await kv.set(`user:profile:${userId}`, userProfile);
+      
+      return;
+    }
+
+    // ❌ Fallback: Old commission system (if compensation fails)
+    console.warn('⚠️ Compensation system failed, using fallback commission tracking');
+    
+    const commission = purchaseAmount * 0.10;
+    const referrerProfile = await kv.get(`user:profile:${userProfile.referredBy}`);
+    
+    if (!referrerProfile) {
+      console.warn(`⚠️ Referrer profile not found: ${userProfile.referredBy}`);
+      return;
+    }
+
+    // Create transaction
+    const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const transaction = {
+      id: transactionId,
+      referrerId: userProfile.referredBy,
+      fromUserId: userId,
+      amount: commission,
+      purchaseAmount,
+      purchaseType: 'credits',
+      creditsAmount,
+      date: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Save transaction
+    const transactionsKey = `referral:transactions:${userProfile.referredBy}`;
+    const transactions = await kv.get(transactionsKey) || [];
+    transactions.push(transaction);
+    await kv.set(transactionsKey, transactions);
+
+    // Update referrer earnings
+    referrerProfile.referralEarnings = (referrerProfile.referralEarnings || 0) + commission;
+    referrerProfile.updatedAt = new Date().toISOString();
+    await kv.set(`user:profile:${userProfile.referredBy}`, referrerProfile);
+
+    // Update user's total credits used
+    userProfile.totalCreditsUsed = (userProfile.totalCreditsUsed || 0) + creditsAmount;
+    userProfile.paidCredits = (userProfile.paidCredits || 0) + creditsAmount;
+    userProfile.updatedAt = new Date().toISOString();
+    await kv.set(`user:profile:${userId}`, userProfile);
+
+    console.log(`✅ Fallback commission tracked: $${commission.toFixed(2)} for referrer ${userProfile.referredBy}`);
+  } catch (error) {
+    console.error('❌ Track referral purchase error:', error);
     throw error;
   }
 }

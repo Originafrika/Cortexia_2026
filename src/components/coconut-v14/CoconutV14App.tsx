@@ -10,36 +10,78 @@
  * - BDS 7 Arts compliance
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { NotificationProvider } from './NotificationProvider';
-import { Dashboard } from './Dashboard';
-import { SettingsPanel } from './SettingsPanel';
-import { CreditsManager } from './CreditsManager';
-import { CocoBoardDemo } from './CocoBoardDemo';
-import { CocoBoard } from './CocoBoard';
-import { HistoryManager } from './HistoryManager';
-import { UserProfileCoconut } from './UserProfileCoconut';
-import { GlassButton } from '../ui/glass-button';
-import { ErrorBoundary } from '../ui-premium/ErrorBoundary';
-import { useCredits } from '../../lib/contexts/CreditsContext';
-import {
-  LayoutDashboard,
-  Sparkles,
-  Settings,
-  Zap,
-  Menu,
-  X,
-  ChevronRight,
-  Clock,
-  User
+import { 
+  Menu, X, ChevronRight, 
+  LayoutDashboard, Sparkles, Zap, Settings, Clock, User, Grid, History
 } from 'lucide-react';
+import { useCredits } from '../../lib/contexts/CreditsContext';
+import { useCurrentUser } from '../../lib/hooks/useCurrentUser'; // ✅ NEW: Get real user
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { toast } from 'sonner@2.0.3';
+// ✅ FIX 1.2: Import CocoBoard store
+import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
+// ✅ NEW: Projects API
+import { getProject, createProject, type Project } from '../../lib/services/cortexia-projects-api';
+
+// Components
+import { IntentInputPremium } from './IntentInputPremium'; // 🆕 PREMIUM VERSION
+import { AnalyzingLoaderPremium } from './AnalyzingLoaderPremium'; // 🆕 PREMIUM VERSION
+import { CocoBoardPremium } from './CocoBoardPremium'; // 🆕 PREMIUM VERSION (upgraded!)
+import { AnalysisViewPremium } from './AnalysisViewPremium'; // 🆕 PREMIUM VERSION
+import { GenerationViewPremium } from './GenerationViewPremium'; // 🆕 PREMIUM VERSION (upgraded!)
+import { ProjectsList } from './ProjectsList';
+import { VideoFlowOrchestrator } from './VideoFlowOrchestrator'; // ✅ NEW: Video flow
+// ✅ FIX 3.3: Import advanced error boundary
+import { AdvancedErrorBoundary } from './AdvancedErrorBoundary';
+// ✅ FIX: Import NotificationProvider
+import { NotificationProvider, useNotify } from './NotificationProvider';
+// ✅ FIX: Import SoundProvider
+import { SoundProvider, useSoundContext } from './SoundProvider';
+// ✅ FIX: Import missing components
+import { DashboardPremium } from './DashboardPremium';
+import { CreditsManager } from './CreditsManager';
+import { SettingsPanel } from './SettingsPanel';
+import { HistoryManager } from './HistoryManager';
+import { CampaignHistoryManager } from './CampaignHistoryManager';
+import { UnifiedHistoryManager } from './UnifiedHistoryManager';
+import { UserProfileCoconut } from './UserProfileCoconut';
+import { AssetManager } from './AssetManager';
+import { DirectionSelectorPremium } from './DirectionSelectorPremium'; // 🆕 PREMIUM VERSION
+import { TypeSelectorPremium } from './TypeSelectorPremium'; // 🆕 PREMIUM VERSION
+import { NavigationPremium } from './NavigationPremium'; // 🆕 NEW: Premium Navigation Sidebar
+import { CampaignWorkflow } from './CampaignWorkflow'; // 🆕 NEW: Campaign mode workflow
+
+// ✅ FIX: Import missing types and functions from correct locations
+import type { IntentData } from './IntentInput';
+import type { GeminiAnalysisResponse } from '../../lib/types/gemini';
+import { generateCreativeDirections, applyDirectionToAnalysis } from '../../lib/utils/creative-directions-generator';
+
+// ✅ FIX: Import CreativeDirection type from DirectionSelector
+import type { CreativeDirection } from './DirectionSelector';
 
 // ============================================
 // TYPES
 // ============================================
 
-type Screen = 'dashboard' | 'cocoboard' | 'credits' | 'settings' | 'history' | 'profile';
+type CoconutV14Screen = 
+  | 'dashboard'        // ✅ Point d'entrée
+  | 'boards'           // ✅ Projects list
+  | 'type-select'      // 🆕 NOUVEAU: Choix image/video/campaign (PHASE 1)
+  | 'intent-input'     // 🆕 New generation flow
+  | 'analyzing'         // 🆕 Gemini analysis loading
+  | 'direction-select'  // 🆕 NEW: Creative direction selection
+  | 'analysis-view'     // 🆕 Display Gemini results
+  | 'asset-manager'     // 🆕 Manage missing assets
+  | 'cocoboard' 
+  | 'generation'        // 🆕 Final generation
+  | 'credits' 
+  | 'settings' 
+  | 'history' 
+  | 'profile'
+  | 'video-flow';       // ✅ NEW: Video flow screen
 
 // ============================================
 // PREMIUM SIDEBAR NAVIGATION
@@ -50,20 +92,20 @@ const Navigation = ({
   onNavigate,
   onToggleSidebar 
 }: { 
-  currentScreen: Screen; 
-  onNavigate: (screen: Screen) => void;
+  currentScreen: CoconutV14Screen; 
+  onNavigate: (screen: CoconutV14Screen) => void;
   onToggleSidebar: () => void;
 }) => {
-  const { credits } = useCredits();
-  const totalCredits = credits.free + credits.paid;
+  const { getCoconutCredits } = useCredits();
+  const totalCredits = getCoconutCredits(); // ✅ Coconut V14 uses ONLY paid credits
+  const { playClick, playWhoosh } = useSoundContext(); // 🔊 PHASE 2: Add sound
   
-  const navItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard, color: 'from-purple-500 to-purple-600' },
-    { id: 'cocoboard' as const, label: 'CocoBoard', icon: Sparkles, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
-    { id: 'credits' as const, label: 'Credits', icon: Zap, color: 'from-amber-500 to-amber-600' },
-    { id: 'settings' as const, label: 'Settings', icon: Settings, color: 'from-blue-500 to-blue-600' },
-    { id: 'history' as const, label: 'History', icon: Clock, color: 'from-gray-500 to-gray-600' },
-    { id: 'profile' as const, label: 'Profile', icon: User, color: 'from-green-500 to-green-600' },
+  const menuItems = [
+    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard, color: 'from-[var(--coconut-shell)] to-[var(--coconut-palm)]' },
+    { id: 'boards' as const, label: 'Boards', icon: Grid, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
+    { id: 'history' as const, label: 'History', icon: History, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
+    { id: 'credits' as const, label: 'Credits', icon: Zap, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]' },
+    { id: 'settings' as const, label: 'Settings', icon: Settings, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]' },
   ];
 
   return (
@@ -84,43 +126,112 @@ const Navigation = ({
       {/* Content */}
       <div className="relative h-full flex flex-col p-6">
         
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <motion.div 
-            className="flex items-center gap-3"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            {/* Logo */}
+        {/* Header Premium avec gradient backdrop - WARM EXCLUSIVE */}
+        <div className="relative mb-10">
+          {/* Ambient glow WARM */}
+          <div className="absolute -inset-6 bg-gradient-to-br from-[var(--coconut-shell)]/15 to-[var(--coconut-palm)]/10 rounded-3xl blur-3xl animate-pulse" style={{ animationDuration: '3s' }} />
+          
+          <div className="relative flex items-center justify-between">
+            <motion.div 
+              className="flex items-center gap-4"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* Logo avec triple glow effect WARM */}
+              <div className="relative group">
+                {/* Outer glow */}
+                <div className="absolute -inset-2 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-2xl blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500" />
+                {/* Middle glow */}
+                <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+                {/* Inner glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl blur-md opacity-50 group-hover:opacity-70 transition-opacity duration-500" />
+                {/* Logo card */}
+                <div className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] flex items-center justify-center shadow-2xl border border-white/30">
+                  <Sparkles className="w-7 h-7 text-white group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300" />
+                </div>
+              </div>
+              
+              <div>
+                <h2 className="text-lg font-bold bg-gradient-to-r from-[var(--coconut-dark)] to-[var(--coconut-shell)] bg-clip-text text-transparent">Coconut V14</h2>
+                <p className="text-xs text-[var(--coconut-husk)] font-medium">Creation Hub Pro</p>
+              </div>
+            </motion.div>
+            
+            {/* Close button premium (mobile) - WARM */}
+            <button
+              onClick={onToggleSidebar}
+              className="lg:hidden w-10 h-10 rounded-xl bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-xl flex items-center justify-center text-[var(--coconut-shell)] hover:from-white/90 hover:to-white/70 hover:scale-110 transition-all duration-300 shadow-xl border border-white/50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Credits Badge Ultra-Premium - WARM EXCLUSIVE */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mb-10 group"
+        >
+          {/* Ambient background glow WARM */}
+          <div className="absolute -inset-2 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/15 rounded-2xl blur-2xl opacity-60 group-hover:opacity-90 transition-opacity duration-500" />
+          
+          {/* Main card */}
+          <div className="relative p-6 rounded-2xl bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-2xl border border-white/70 shadow-2xl overflow-hidden">
+            {/* Shimmer effect WARM */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--coconut-cream)]/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1200" />
+            
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl blur-md opacity-50" />
-              <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] flex items-center justify-center shadow-lg">
-                <Sparkles className="w-6 h-6 text-white" />
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold text-[var(--coconut-husk)] uppercase tracking-wider">Total Credits</span>
+                <div className="relative">
+                  {/* Icon glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-lg blur-md opacity-50" />
+                  <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] flex items-center justify-center shadow-xl">
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-baseline gap-2 mb-4">
+                <div className="text-4xl font-black bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-husk)] to-[var(--coconut-palm)] bg-clip-text text-transparent">
+                  {totalCredits.toLocaleString()}
+                </div>
+                <span className="text-sm font-bold text-[var(--coconut-husk)]">cr</span>
+              </div>
+              
+              {/* Progress indicator WARM */}
+              <div className="relative">
+                <div className="h-2 bg-gradient-to-r from-[var(--coconut-cream)] to-[var(--coconut-milk)] rounded-full overflow-hidden shadow-inner">
+                  <motion.div 
+                    className="h-full bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-husk)] to-[var(--coconut-palm)] rounded-full shadow-lg"
+                    initial={{ width: 0 }}
+                    animate={{ width: '75%' }}
+                    transition={{ duration: 1.2, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+                {/* Progress glow */}
+                <motion.div
+                  className="absolute inset-0 h-2 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full"
+                  animate={{ x: ['-100%', '200%'] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'linear', delay: 1 }}
+                />
               </div>
             </div>
-            
-            <div>
-              <h2 className="text-[var(--coconut-shell)]">Coconut V14</h2>
-              <p className="text-xs text-[var(--coconut-husk)]">Creation Hub</p>
-            </div>
-          </motion.div>
-          
-          <motion.button
-            initial={{ opacity: 0, rotate: -90 }}
-            animate={{ opacity: 1, rotate: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            onClick={onToggleSidebar}
-            className="lg:hidden w-8 h-8 rounded-lg bg-white/50 backdrop-blur-xl hover:bg-white/70 flex items-center justify-center border border-white/40 shadow-lg transition-all duration-300"
-            aria-label="Close sidebar"
-          >
-            <X className="w-5 h-5 text-[var(--coconut-shell)]" />
-          </motion.button>
+          </div>
+        </motion.div>
+        
+        {/* Divider premium WARM */}
+        <div className="relative mb-8">
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--coconut-husk)]/30 to-transparent" />
+          <div className="absolute inset-0 h-px bg-gradient-to-r from-transparent via-[var(--coconut-cream)]/50 to-transparent blur-sm" />
         </div>
-
-        {/* Navigation Items */}
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item, index) => {
+        
+        {/* Navigation Items Premium - WARM EXCLUSIVE */}
+        <nav className="flex-1 space-y-4 pr-2">
+          {menuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = currentScreen === item.id;
             
@@ -129,116 +240,149 @@ const Navigation = ({
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
+                transition={{ duration: 0.5, delay: 0.15 + index * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ scale: 1.02, x: 6, y: -2 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => {
+                  playClick();
+                  playWhoosh();
                   onNavigate(item.id);
                   onToggleSidebar();
                 }}
-                className="relative w-full group"
-              >
-                {/* Active indicator */}
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-white/60 backdrop-blur-xl rounded-xl border border-white/60 shadow-xl"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                
-                {/* Hover effect */}
-                {!isActive && (
-                  <div className="absolute inset-0 bg-white/30 backdrop-blur-xl rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                )}
-                
-                {/* Content */}
-                <div className={`
-                  relative px-4 py-3 rounded-xl
-                  flex items-center gap-3
-                  transition-all duration-300
-                  ${isActive
-                    ? 'text-[var(--coconut-shell)]'
-                    : 'text-[var(--coconut-husk)] group-hover:text-[var(--coconut-shell)]'
+                className={`
+                  relative w-full px-5 py-4 rounded-2xl flex items-center gap-4 transition-all duration-300 group overflow-hidden
+                  ${isActive 
+                    ? 'text-white shadow-2xl' 
+                    : 'text-[var(--coconut-husk)] hover:text-[var(--coconut-shell)]'
                   }
-                `}>
-                  {/* Icon with gradient background */}
-                  <div className={`
-                    w-10 h-10 rounded-lg flex items-center justify-center
-                    transition-all duration-300
-                    ${isActive 
-                      ? `bg-gradient-to-br ${item.color} shadow-lg` 
-                      : 'bg-white/40 group-hover:bg-white/60'
-                    }
-                  `}>
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-[var(--coconut-shell)]'}`} />
-                  </div>
-                  
-                  <span className="flex-1 text-left">{item.label}</span>
-                  
-                  {/* Arrow indicator */}
+                `}
+              >
+                {/* Background for active state - WARM TRIPLE LAYER */}
+                {isActive && (
+                  <>
+                    {/* Outer glow */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[var(--coconut-shell)]/30 to-[var(--coconut-palm)]/30 rounded-2xl blur-lg -z-10" />
+                    {/* Middle glow */}
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[var(--coconut-shell)]/40 to-[var(--coconut-palm)]/40 rounded-2xl blur-md -z-10" />
+                    {/* Main background */}
+                    <motion.div 
+                      layoutId="activeBackground"
+                      className={`absolute inset-0 bg-gradient-to-r ${item.color} rounded-2xl shadow-2xl border border-white/20`}
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.7 }}
+                      animate={{ 
+                        boxShadow: [
+                          '0 20px 40px -12px rgba(107, 93, 79, 0.3)',
+                          '0 20px 40px -12px rgba(107, 93, 79, 0.5)',
+                          '0 20px 40px -12px rgba(107, 93, 79, 0.3)',
+                        ]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    {/* Active shimmer WARM */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                  </>
+                )}
+                
+                {/* Background for inactive hover state - WARM GLASS */}
+                {!isActive && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-white/40 backdrop-blur-sm rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 border border-white/0 group-hover:border-white/40" />
+                    {/* Hover glow */}
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[var(--coconut-shell)]/0 to-[var(--coconut-palm)]/0 group-hover:from-[var(--coconut-shell)]/20 group-hover:to-[var(--coconut-palm)]/20 rounded-2xl blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 -z-10" />
+                  </>
+                )}
+                
+                {/* Icon with glow for active - LARGER + PULSE */}
+                <div className={`relative flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 ${isActive ? 'drop-shadow-2xl' : ''}`}>
+                  <Icon className="w-6 h-6 flex-shrink-0 relative z-10" />
                   {isActive && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </motion.div>
+                    <>
+                      {/* Icon glow */}
+                      <div className="absolute inset-0 bg-white/60 rounded-full blur-lg" />
+                      {/* Pulse ring */}
+                      <motion.div
+                        className="absolute inset-0 bg-white/30 rounded-full"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      />
+                    </>
                   )}
                 </div>
+                
+                <span className="text-sm font-semibold relative z-10 transition-all duration-200 group-hover:tracking-wide">{item.label}</span>
+                
+                {/* Active indicator - ENHANCED */}
+                {isActive && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5, x: -10 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    transition={{ 
+                      type: "spring",
+                      bounce: 0.5,
+                      duration: 0.6,
+                      ease: [0.22, 1, 0.36, 1]
+                    }}
+                    className="ml-auto relative z-10"
+                  >
+                    <div className="relative">
+                      {/* Chevron glow */}
+                      <div className="absolute inset-0 bg-white/40 rounded-full blur-sm" />
+                      <ChevronRight className="relative w-5 h-5" />
+                    </div>
+                  </motion.div>
+                )}
+                
+                {/* Inactive hover indicator - NEW */}
+                {!isActive && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -5 }}
+                    whileHover={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="ml-auto relative z-10 opacity-0 group-hover:opacity-40"
+                  >
+                    <ChevronRight className="w-4 h-4 text-[var(--coconut-shell)]" />
+                  </motion.div>
+                )}
               </motion.button>
             );
           })}
         </nav>
-
-        {/* Credits Quick View */}
+        
+        {/* Divider premium WARM */}
+        <div className="relative my-8">
+          <div className="h-px bg-gradient-to-r from-transparent via-[var(--coconut-husk)]/30 to-transparent" />
+          <div className="absolute inset-0 h-px bg-gradient-to-r from-transparent via-[var(--coconut-cream)]/50 to-transparent blur-sm" />
+        </div>
+        
+        {/* Footer Premium - WARM EXCLUSIVE */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="relative mt-6"
+          transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative"
         >
-          {/* Glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-2xl blur-lg opacity-50" />
+          {/* Ambient glow WARM */}
+          <div className="absolute -inset-6 bg-gradient-to-t from-[var(--coconut-palm)]/10 via-[var(--coconut-shell)]/5 to-transparent rounded-3xl blur-2xl" />
           
-          {/* Card */}
-          <div className="relative bg-white/50 backdrop-blur-xl rounded-xl p-4 border border-white/40 shadow-xl">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-[var(--coconut-husk)]">Available Credits</span>
-              <div className="w-8 h-8 bg-gradient-to-br from-amber-500/20 to-amber-600/20 rounded-lg flex items-center justify-center">
-                <Zap className="w-4 h-4 text-amber-600" />
+          <div className="relative p-5 rounded-xl bg-gradient-to-br from-white/60 to-white/40 backdrop-blur-2xl border border-white/50 shadow-xl">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              {/* Glow dots WARM */}
+              <div className="relative">
+                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] animate-pulse shadow-lg" />
+                <div className="absolute inset-0 w-2 h-2 rounded-full bg-[var(--coconut-palm)] blur-sm animate-pulse" />
+              </div>
+              <p className="text-xs font-bold bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-husk)] bg-clip-text text-transparent">
+                Powered by Cortexia AI
+              </p>
+              <div className="relative">
+                <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[var(--coconut-palm)] to-[var(--coconut-shell)] animate-pulse shadow-lg" style={{ animationDelay: '0.5s' }} />
+                <div className="absolute inset-0 w-2 h-2 rounded-full bg-[var(--coconut-shell)] blur-sm animate-pulse" style={{ animationDelay: '0.5s' }} />
               </div>
             </div>
-            
-            <div className="flex items-baseline gap-2 mb-4">
-              <p className="text-3xl text-[var(--coconut-shell)]">{totalCredits}</p>
-              <span className="text-sm text-[var(--coconut-husk)]">credits</span>
-            </div>
-            
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                onNavigate('credits');
-                onToggleSidebar();
-              }}
-              className="w-full px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              <Zap className="w-4 h-4" />
-              <span className="text-sm">Buy More Credits</span>
-            </motion.button>
+            <p className="text-xs text-[var(--coconut-husk)] text-center font-medium">
+              Premium Creation Suite
+            </p>
           </div>
-        </motion.div>
-        
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-6 pt-6 border-t border-white/30"
-        >
-          <p className="text-xs text-[var(--coconut-husk)] text-center">
-            Coconut V14 · Premium Edition
-          </p>
         </motion.div>
       </div>
     </motion.div>
@@ -246,124 +390,597 @@ const Navigation = ({
 };
 
 // ============================================
-// MAIN APP
+// MAIN APP CONTENT (uses NotificationProvider)
 // ============================================
 
-export function CoconutV14App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
+function CoconutV14AppContent() {
+  // ✅ Get real authenticated user
+  const { userId, userName, displayName, isDemoUser } = useCurrentUser();
+  
+  // ✅ PHASE 1 FIX: Start on Dashboard instead of intent-input
+  const [currentScreen, setCurrentScreen] = useState<CoconutV14Screen>('dashboard');
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  
+  // 🆕 PHASE 1: Add state for selected type
+  const [selectedType, setSelectedType] = useState<'image' | 'video' | 'campaign' | null>(null);
+  
+  // ✅ FIX 1.2: Remove local state, use zustand store instead
+  // const [geminiAnalysis, setGeminiAnalysis] = useState<GeminiAnalysisResponse | null>(null);
+  // const [uploadedReferences, setUploadedReferences] = useState<...>(null);
+  
+  // ✅ FIX 1.2: Use zustand store for analysis data
+  const { 
+    geminiAnalysis, 
+    uploadedReferences,
+    setGeminiAnalysis,
+    setUploadedReferences,
+    reset: resetStore 
+  } = useCocoBoardStore();
+  
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // 🆕 NEW: Creative Direction states
+  const [originalUserInput, setOriginalUserInput] = useState<string>('');
+  const [availableDirections, setAvailableDirections] = useState<CreativeDirection[]>([]);
+  const [selectedDirection, setSelectedDirection] = useState<string | null>(null);
+  const [isSelectingDirection, setIsSelectingDirection] = useState(false);
+  
+  // ✅ FIX 1.1: Add currentGenerationId for generation screen
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
+  
+  // ✅ NEW: Prevent double submission
+  const isSubmittingRef = useRef(false);
+  
+  // ✅ NEW: Video-specific intent data
+  const [videoIntentData, setVideoIntentData] = useState<IntentData | null>(null);
+  const [videoProjectId, setVideoProjectId] = useState<string | null>(null);
+  
+  // ✅ NEW: Campaign editing
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
+  
+  const { getCoconutCredits } = useCredits();
+  const notify = useNotify();
+  const navigate = useNavigate(); // ✅ Keep for other routes if needed
+  
+  // ✅ NEW: Load project from URL params if projectId is provided
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const projectIdParam = params.get('projectId');
+    
+    if (projectIdParam) {
+      console.log('📂 Loading project from URL:', projectIdParam);
+      
+      // Load project from database
+      getProject(projectIdParam)
+        .then(project => {
+          console.log('✅ Project loaded:', project);
+          
+          // Check project type
+          if (project.type === 'video') {
+            // Load video flow with project data
+            setVideoIntentData({
+              description: project.intent,
+              references: {
+                images: project.assets?.filter(a => a.type.startsWith('image')).map(a => ({
+                  file: new File([], a.url.split('/').pop() || 'image'),
+                  preview: a.url,
+                  description: a.type
+                })) || [],
+                videos: project.assets?.filter(a => a.type.startsWith('video')).map(a => ({
+                  file: new File([], a.url.split('/').pop() || 'video'),
+                  preview: a.url,
+                  description: a.type
+                })) || []
+              },
+              format: '16:9', // Default, can be stored in project.metadata
+              resolution: '4K',
+              targetUsage: project.objective || 'general'
+            });
+            
+            setSelectedType('video');
+            setCurrentProjectId(project.id);
+            setCurrentScreen('video-flow');
+            
+            toast.success('Projet chargé ! Analyse en cours...');
+          } else {
+            // Image/campaign flow
+            setCurrentProjectId(project.id);
+            toast.info('Chargement du projet...');
+            // TODO: Load image project data
+          }
+        })
+        .catch(error => {
+          console.error('❌ Failed to load project:', error);
+          toast.error('Erreur lors du chargement du projet');
+          setCurrentScreen('dashboard');
+        });
+    }
+  }, []); // Run once on mount
+  
+  // ✅ Handler: Submit intent and analyze with Gemini
+  const handleIntentSubmit = async (intentData: IntentData) => {
+    // ✅ Prevent double submission
+    if (isSubmittingRef.current) {
+      console.warn('⚠️ Submit already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    isSubmittingRef.current = true;
+    console.log('🚀 handleIntentSubmit called', intentData);
+    
+    try {
+      setIsAnalyzing(true);
+      setCurrentScreen('analyzing');
+      
+      // Step 1: Create project first (for BOTH image and video)
+      console.log('📦 Creating project...');
+      
+      // ✅ PRODUCTION: Use unified /projects API
+      const project = await createProject({
+        userId: userId || 'demo-user',
+        type: selectedType === 'video' ? 'video' : 'image', // ✅ Set correct type
+        intent: intentData.description,
+        objective: intentData.targetUsage || (selectedType === 'video' ? intentData.callToAction : ''),
+        assets: [
+          ...intentData.references.images.map(img => ({
+            type: `image/${img.file.type.split('/')[1] || 'png'}`,
+            url: img.preview
+          })),
+          ...intentData.references.videos.map(vid => ({
+            type: `video/${vid.file.type.split('/')[1] || 'mp4'}`,
+            url: vid.preview || ''
+          }))
+        ],
+        metadata: {
+          format: intentData.format,
+          resolution: intentData.resolution,
+          videoType: selectedType === 'video' ? intentData.videoType : undefined,
+          targetDuration: selectedType === 'video' ? intentData.targetDuration : undefined,
+          source: 'coconut-v14-app'
+        }
+      });
+      
+      const newProjectId = project.id;
+      console.log('✅ Project created:', newProjectId);
+      setCurrentProjectId(newProjectId);
+      
+      // ✅ If video type, use VideoFlowOrchestrator
+      if (selectedType === 'video') {
+        setVideoIntentData(intentData);
+        setVideoProjectId(newProjectId); // ✅ Store video projectId
+        setCurrentScreen('video-flow');
+        isSubmittingRef.current = false; // ✅ Reset flag
+        return;
+      }
+      
+      // Step 2: Call backend analyze-intent route
+      console.log('🧠 Analyzing intent with Gemini...');
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/coconut-v14/analyze-intent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${publicAnonKey}`,
+          },
+          body: JSON.stringify({
+            userId, // ✅ Use real user ID
+            projectId: newProjectId, // ✅ Use real project ID
+            description: intentData.description,
+            references: {
+              images: intentData.references.images.map((upload, i) => ({
+                url: upload.preview, // ✅ Use signed URL from upload (not blob)
+                filename: upload.file.name,
+                description: upload.description || '',
+              })),
+              videos: intentData.references.videos.map((upload, i) => ({
+                url: upload.preview || '', // ✅ Use signed URL from upload (not blob)
+                filename: upload.file.name,
+                description: upload.description || '',
+              })),
+            },
+            format: intentData.format,
+            resolution: intentData.resolution,
+            targetUsage: intentData.targetUsage,
+          }),
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Analysis failed:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // ✅ DEBUG: Log raw response text BEFORE JSON parsing
+      const responseText = await response.text();
+      console.log('🔍 [DEBUG] Raw response (first 500 chars):', responseText.substring(0, 500));
+      
+      const result = JSON.parse(responseText);
+      
+      // ✅ DEBUG: Check finalPrompt type immediately after parsing
+      console.log('🔍 [DEBUG] finalPrompt type after JSON.parse:', typeof result.data?.finalPrompt);
+      console.log('🔍 [DEBUG] finalPrompt preview:', 
+        typeof result.data?.finalPrompt === 'string' 
+          ? result.data.finalPrompt.substring(0, 100) + '...'
+          : JSON.stringify(result.data?.finalPrompt).substring(0, 200) + '...'
+      );
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to analyze intent');
+      }
+      
+      console.log('✅ Analysis complete', result.data);
+      
+      // ✅ Store uploaded references with URLs for later use
+      setUploadedReferences({
+        images: intentData.references.images.map(upload => ({
+          url: upload.preview,
+          description: upload.description || '',
+          filename: upload.file.name
+        })),
+        videos: intentData.references.videos.map(upload => ({
+          url: upload.preview || '',
+          description: upload.description || '',
+          filename: upload.file.name
+        }))
+      });
+      
+      // 🆕 NEW: Store original user input for direction selection
+      setOriginalUserInput(intentData.description);
+      
+      // 🆕 NEW: Generate creative directions
+      console.log('🎨 Generating creative directions...');
+      const directions = await generateCreativeDirections(
+        intentData.description,
+        result.data.concept?.direction || '',  //  FIXED: result.data is the analysis, not result.data.analysis
+        { 
+          images: intentData.references.images,
+          videos: intentData.references.videos 
+        }
+      );
+      
+      setAvailableDirections(directions);
+      setGeminiAnalysis(result.data);  // ✅ FIXED: result.data is the analysis
+      setCurrentProjectId(result.data.projectId || newProjectId);
+      
+      // 🆕 NEW: Show direction selector instead of going directly to analysis-view
+      setCurrentScreen('direction-select');
+      
+      notify.success('Analyse terminée !', 'Choisissez une direction créative');
+      
+    } catch (error) {
+      console.error('❌ Error analyzing intent:', error);
+      notify.error('Erreur d\'analyse', error instanceof Error ? error.message : 'Une erreur est survenue');
+      setCurrentScreen('intent-input');
+    } finally {
+      setIsAnalyzing(false);
+      isSubmittingRef.current = false;
+    }
+  };
+  
+  // ✅ Handler: Proceed from analysis to CocoBoard or AssetManager
+  const handleProceedFromAnalysis = () => {
+    if (!geminiAnalysis) return;
+    
+    // Check if there are missing assets
+    const hasMissingAssets = geminiAnalysis.assetsRequired.missing.length > 0;
+    
+    if (hasMissingAssets) {
+      setCurrentScreen('asset-manager');
+    } else {
+      setCurrentScreen('cocoboard');
+    }
+  };
+  
+  // ✅ Handler: Edit intent (go back to IntentInput)
+  const handleEditIntent = () => {
+    setCurrentScreen('intent-input');
+  };
+  
+  // ✅ Handler: Reanalyze with same data
+  const handleReanalyze = async () => {
+    // This would need to store the original intent data
+    // For now, just go back to intent input
+    setCurrentScreen('intent-input');
+    notify.info('Modification nécessaire', 'Veuillez soumettre à nouveau votre projet');
+  };
+  
+  // ✅ Handler: Assets completed, proceed to CocoBoard
+  const handleAssetsCompleted = () => {
+    setCurrentScreen('cocoboard');
+  };
+  
+  // ✅ Handler: Navigate to create (new generation)
+  const handleNavigateToCreate = () => {
+    // ✅ PHASE 1: Navigate to type-select instead of intent-input
+    resetStore();
+    setCurrentProjectId(null);
+    setCurrentGenerationId(null);
+    setSelectedType(null); // Reset type selection
+    setCurrentScreen('type-select'); // ✅ NEW: Go to type selector first
+  };
+  
+  // 🆕 PHASE 1: Handler for type selection
+  const handleTypeSelect = (type: 'image' | 'video' | 'campaign') => {
+    console.log('📸 Type selected:', type);
+    setSelectedType(type);
+    
+    // ✅ NEW: If campaign type, use dedicated campaign workflow
+    if (type === 'campaign') {
+      setCurrentScreen('campaign');
+    } else {
+      setCurrentScreen('intent-input');
+    }
+  };
 
   return (
-    <NotificationProvider position="top-right">
-      <div className="h-screen flex overflow-hidden bg-[var(--coconut-white)] relative">
-        
-        {/* Premium animated background */}
-        <div className="fixed inset-0 bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] opacity-60" />
-        <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(212,165,116,0.08)_0%,transparent_50%)]" />
-        <div className="fixed inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(107,142,112,0.06)_0%,transparent_50%)]" />
-        
-        {/* Mobile Menu Button */}
-        <motion.button
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
-          onClick={() => setSidebarOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-40 w-12 h-12 rounded-xl bg-white/60 backdrop-blur-xl border border-white/40 text-[var(--coconut-shell)] shadow-xl flex items-center justify-center"
-          aria-label="Open menu"
-        >
-          <Menu className="w-6 h-6" />
-        </motion.button>
+    <div className="h-screen flex overflow-hidden bg-[var(--coconut-white)] relative">
+      
+      {/* Premium animated background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] opacity-60" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(212,165,116,0.08)_0%,transparent_50%)]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(107,142,112,0.06)_0%,transparent_50%)]" />
+      
+      {/* Mobile Menu Button */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        onClick={() => setSidebarOpen(true)}
+        className="lg:hidden fixed top-4 left-4 z-40 w-12 h-12 rounded-xl bg-white/60 backdrop-blur-xl border border-white/40 text-[var(--coconut-shell)] shadow-xl flex items-center justify-center"
+        aria-label="Open menu"
+      >
+        <Menu className="w-6 h-6" />
+      </motion.button>
 
-        {/* Sidebar - Desktop */}
-        <div className="hidden lg:block w-72 flex-shrink-0 relative z-10">
-          <Navigation
-            currentScreen={currentScreen}
-            onNavigate={setCurrentScreen}
-            onToggleSidebar={() => {}}
-          />
-        </div>
-
-        {/* Sidebar - Mobile */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <>
-              {/* Overlay */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-              />
-              
-              {/* Sidebar */}
-              <div className="lg:hidden fixed left-0 top-0 bottom-0 w-72 z-50">
-                <Navigation
-                  currentScreen={currentScreen}
-                  onNavigate={setCurrentScreen}
-                  onToggleSidebar={() => setSidebarOpen(false)}
-                />
-              </div>
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto relative z-0">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentScreen}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ 
-                duration: 0.4,
-                ease: [0.22, 1, 0.36, 1] // BDS M2 easing
-              }}
-              className="h-full"
-            >
-              {currentScreen === 'dashboard' && (
-                <Dashboard
-                  onNavigateToCreate={() => setCurrentScreen('cocoboard')}
-                  onNavigateToCredits={() => setCurrentScreen('credits')}
-                />
-              )}
-              
-              {currentScreen === 'cocoboard' && (
-                <ErrorBoundary>
-                  <CocoBoard 
-                    projectId="demo-project" 
-                    userId="demo-user"
-                  />
-                </ErrorBoundary>
-              )}
-              
-              {currentScreen === 'credits' && (
-                <CreditsManager />
-              )}
-              
-              {currentScreen === 'settings' && (
-                <SettingsPanel />
-              )}
-              
-              {currentScreen === 'history' && (
-                <HistoryManager userId="demo-user" />
-              )}
-              
-              {currentScreen === 'profile' && (
-                <UserProfileCoconut 
-                  username="demo-user"
-                  onClose={() => setCurrentScreen('dashboard')}
-                  allPosts={[]}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+      {/* Sidebar - Desktop */}
+      <div className="hidden lg:block w-72 flex-shrink-0 relative z-10">
+        <NavigationPremium
+          currentScreen={currentScreen}
+          onNavigate={setCurrentScreen}
+          onToggleSidebar={() => {}}
+        />
       </div>
-    </NotificationProvider>
+
+      {/* Sidebar - Mobile */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+            />
+            
+            {/* Sidebar */}
+            <div className="lg:hidden fixed left-0 top-0 bottom-0 w-72 z-50">
+              <NavigationPremium
+                currentScreen={currentScreen}
+                onNavigate={setCurrentScreen}
+                onToggleSidebar={() => setSidebarOpen(false)}
+              />
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto relative z-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentScreen}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ 
+              duration: 0.4,
+              ease: [0.22, 1, 0.36, 1] // BDS M2 easing
+            }}
+            className="h-full"
+          >
+            {currentScreen === 'dashboard' && (
+              <DashboardPremium
+                onNavigateToCreate={handleNavigateToCreate}
+                onNavigateToCredits={() => setCurrentScreen('credits')}
+              />
+            )}
+            
+            {currentScreen === 'cocoboard' && (
+              <CocoBoardPremium 
+                projectId={currentProjectId || 'demo-project'} 
+                userId="demo-user"
+                analysis={geminiAnalysis}
+                uploadedReferences={uploadedReferences}
+                onGenerationStart={(generationId: string) => {
+                  console.log('🎬 Generation started:', generationId);
+                  // ✅ FIX 1.1: Use state instead of navigation
+                  setCurrentGenerationId(generationId);
+                  setCurrentScreen('generation');
+                }}
+              />
+            )}
+            
+            {currentScreen === 'credits' && (
+              <CreditsManager />
+            )}
+            
+            {currentScreen === 'settings' && (
+              <SettingsPanel />
+            )}
+            
+            {currentScreen === 'history' && (
+              <UnifiedHistoryManager 
+                userId={userId || 'demo-user'}
+                onViewCampaign={(cocoBoardId) => {
+                  console.log('📋 [App] Loading campaign for editing:', cocoBoardId);
+                  setEditingCampaignId(cocoBoardId);
+                  setSelectedType('campaign');
+                  setCurrentScreen('campaign');
+                }}
+              />
+            )}
+            
+            {currentScreen === 'profile' && (
+              <UserProfileCoconut 
+                username="demo-user"
+                onClose={() => setCurrentScreen('dashboard')}
+                allPosts={[]}
+              />
+            )}
+            
+            {currentScreen === 'intent-input' && (
+              <IntentInputPremium
+                selectedType={selectedType!} // ✅ PHASE 2: Pass selected type
+                onSubmit={handleIntentSubmit}
+                onBack={() => setCurrentScreen('type-select')} // ✅ PHASE 2: Back to type selector
+                isLoading={isAnalyzing}
+                userCredits={getCoconutCredits()}
+              />
+            )}
+            
+            {currentScreen === 'analyzing' && (
+              <AnalyzingLoaderPremium />
+            )}
+            
+            {currentScreen === 'analysis-view' && geminiAnalysis && (
+              <AnalysisViewPremium
+                analysis={geminiAnalysis}
+                onProceed={handleProceedFromAnalysis}
+                onEdit={handleEditIntent}
+                onReanalyze={handleReanalyze}
+                userCredits={getCoconutCredits()}
+              />
+            )}
+            
+            {currentScreen === 'asset-manager' && geminiAnalysis && (
+              <AssetManager
+                missingAssets={geminiAnalysis.assetsRequired.missing}
+                onGenerate={async (assetId: string) => {
+                  console.log('🎨 Generate asset:', assetId);
+                  // TODO: Call generation API
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                }}
+                onRequestFromUser={(assetId: string, message: string) => {
+                  console.log('📧 Request from user:', assetId, message);
+                  notify.success('Demande envoyée', 'Nous avons envoyé votre demande au client');
+                }}
+                onAssetUploaded={(assetId: string, file: File) => {
+                  console.log('📤 Asset uploaded:', assetId, file.name);
+                  notify.success('Asset uploadé', `${file.name} a été ajouté`);
+                }}
+                onSkip={(assetId: string) => {
+                  console.log('⏭️ Skip asset:', assetId);
+                }}
+                onComplete={() => {
+                  console.log('✅ All assets handled, proceeding to CocoBoard');
+                  setCurrentScreen('cocoboard');
+                }}
+              />
+            )}
+            
+            {currentScreen === 'direction-select' && geminiAnalysis && (
+              <DirectionSelectorPremium
+                analysis={geminiAnalysis}
+                availableDirections={availableDirections}
+                onDirectionSelect={async (directionId: string) => {
+                  console.log('🎨 Direction selected:', directionId);
+                  setSelectedDirection(directionId);
+                  setIsSelectingDirection(true);
+                  
+                  // Apply direction to analysis
+                  const updatedAnalysis = applyDirectionToAnalysis(
+                    geminiAnalysis,
+                    directionId,
+                    availableDirections // 🔧 FIX: Pass the directions array
+                  );
+                  
+                  setGeminiAnalysis(updatedAnalysis);
+                  setIsSelectingDirection(false);
+                  
+                  // Proceed to analysis view
+                  setCurrentScreen('analysis-view');
+                }}
+                onEdit={handleEditIntent}
+                onReanalyze={handleReanalyze}
+                userCredits={getCoconutCredits()}
+              />
+            )}
+            
+            {currentScreen === 'generation' && currentGenerationId && (
+              <GenerationViewPremium
+                generationId={currentGenerationId}
+                projectId={currentProjectId || 'demo-project'}
+                userId="demo-user"
+                analysis={geminiAnalysis}
+                uploadedReferences={uploadedReferences}
+                onNavigateToCreate={handleNavigateToCreate}
+              />
+            )}
+            
+            {currentScreen === 'type-select' && (
+              <TypeSelectorPremium
+                onSelectType={handleTypeSelect}
+                onBack={() => setCurrentScreen('dashboard')}
+              />
+            )}
+            
+            {currentScreen === 'boards' && (
+              <ProjectsList
+                onCreateNew={handleNavigateToCreate}
+                onProjectClick={(projectId) => {
+                  console.log('📂 Project clicked:', projectId);
+                  // TODO: Load project and navigate to cocoboard
+                  notify.info('Project', `Loading project ${projectId}...`);
+                  setCurrentProjectId(projectId);
+                  setCurrentScreen('cocoboard');
+                }}
+              />
+            )}
+            
+            {currentScreen === 'video-flow' && videoIntentData && (
+              <VideoFlowOrchestrator
+                intentData={videoIntentData}
+                userId={userId || 'demo-user'}
+                projectId={videoProjectId || undefined} // ✅ Pass projectId
+                onBack={() => setCurrentScreen('dashboard')}
+              />
+            )}
+            
+            {currentScreen === 'campaign' && (
+              <CampaignWorkflow
+                userId={userId || 'demo-user'}
+                onBack={() => {
+                  setEditingCampaignId(null); // Reset editing state
+                  setCurrentScreen('dashboard');
+                }}
+                existingCocoBoardId={editingCampaignId || undefined}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
-export default CoconutV14App;
+// ============================================
+// EXPORTED WRAPPER WITH NOTIFICATION PROVIDER
+// ============================================
+
+export function CoconutV14App() {
+  return (
+    <AdvancedErrorBoundary context="CoconutV14App">
+      <SoundProvider>
+        <NotificationProvider>
+          <CoconutV14AppContent />
+        </NotificationProvider>
+      </SoundProvider>
+    </AdvancedErrorBoundary>
+  );
+}

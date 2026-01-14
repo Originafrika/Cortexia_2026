@@ -81,32 +81,12 @@ export const ColorPaletteSchema = z.object({
 // FLUX PROMPT SCHEMA
 // ============================================
 
-export const CameraSpecSchema = z.object({
-  angle: z.string().min(5).max(100),
-  lens: z.string().min(5).max(100),
-  depth_of_field: z.string().min(5).max(100)
-});
-
-export const FluxSubjectSchema = z.object({
-  type: z.string().optional(),
-  description: z.string().min(10).max(500),
-  position: z.string().min(5).max(200),
-  color_palette: z.array(z.string().regex(/^#[0-9A-Fa-f]{6}$/)).optional(),
-  style: z.string().optional(),
-  references: z.array(z.string()).optional().describe('IDs des références à utiliser')
-});
-
-export const FluxPromptSchema = z.object({
-  scene: z.string().min(50).max(1000).describe('Description globale de la scène'),
-  subjects: z.array(FluxSubjectSchema).min(1).max(10),
-  style: z.string().min(20).max(500).describe('Style artistique et aesthetic'),
-  color_palette: z.array(z.string().regex(/^#[0-9A-Fa-f]{6}$/)).min(3).max(15),
-  lighting: z.string().min(20).max(500).describe('Description détaillée du lighting'),
-  background: z.string().min(20).max(500).optional(),
-  composition: z.string().min(20).max(500).describe('Règles de composition'),
-  mood: z.string().min(10).max(300).describe('Ambiance émotionnelle'),
-  camera: CameraSpecSchema.optional()
-});
+// ✅ SIMPLIFIED: finalPrompt is now just a TEXT STRING (max 5000 chars)
+// Gemini will generate an optimized text prompt directly, not a complex JSON
+export const FluxPromptSchema = z.string()
+  .min(100)
+  .max(5000)
+  .describe('Optimized text prompt for Flux 2 Pro (MAX 5000 chars). Direct, concise, descriptive. No placeholders like [USER_*].');
 
 // ============================================
 // ASSETS REQUIRED SCHEMA
@@ -381,53 +361,10 @@ export const GEMINI_OUTPUT_JSON_SCHEMA = {
       required: ["available", "missing"]
     },
     finalPrompt: {
-      type: "object",
-      properties: {
-        scene: { type: "string", minLength: 50, maxLength: 1000 },
-        subjects: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              type: { type: "string" },
-              description: { type: "string", minLength: 10, maxLength: 500 },
-              position: { type: "string", minLength: 5, maxLength: 200 },
-              color_palette: {
-                type: "array",
-                items: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" }
-              },
-              style: { type: "string" },
-              references: {
-                type: "array",
-                items: { type: "string" }
-              }
-            },
-            required: ["description", "position"]
-          },
-          minItems: 1,
-          maxItems: 10
-        },
-        style: { type: "string", minLength: 20, maxLength: 500 },
-        color_palette: {
-          type: "array",
-          items: { type: "string", pattern: "^#[0-9A-Fa-f]{6}$" },
-          minItems: 3,
-          maxItems: 15
-        },
-        lighting: { type: "string", minLength: 20, maxLength: 500 },
-        background: { type: "string", minLength: 20, maxLength: 500 },
-        composition: { type: "string", minLength: 20, maxLength: 500 },
-        mood: { type: "string", minLength: 10, maxLength: 300 },
-        camera: {
-          type: "object",
-          properties: {
-            angle: { type: "string", minLength: 5, maxLength: 100 },
-            lens: { type: "string", minLength: 5, maxLength: 100 },
-            depth_of_field: { type: "string", minLength: 5, maxLength: 100 }
-          }
-        }
-      },
-      required: ["scene", "subjects", "style", "color_palette", "lighting", "composition", "mood"]
+      type: "string",
+      minLength: 100,
+      maxLength: 5000,
+      description: "Optimized text prompt for Flux 2 Pro (MAX 5000 chars). Direct, concise, descriptive. No placeholders like [USER_*]."
     },
     technicalSpecs: {
       type: "object",

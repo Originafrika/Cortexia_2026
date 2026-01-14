@@ -2,9 +2,47 @@
 
 **Progressive Web App (PWA)** de génération de médias IA avec système de production créative professionnelle **Coconut V14**.
 
-**Last Updated:** 25 Décembre 2024  
-**Current Phase:** Phase 3 (Generation) - Ready to Start  
-**Status:** ✅ Phase 1 & 2 Complete (60% Global)
+**Last Updated:** 4 Janvier 2026  
+**Current Phase:** Auth0 Setup Required  
+**Status:** ⚠️ Action Required - Auth0 Configuration
+
+---
+
+## ⚠️ SETUP AUTH0 URGENT (6 MINUTES)
+
+### 🚨 PROBLÈMES ACTUELS
+
+1. ❌ **Nom technique visible** : Users voient "dev-3ipjnnnncplwcx0t account"
+2. ❌ **GitHub login erreur 401** : GitHub OAuth pas configuré
+3. ❌ **Callback URL mismatch** : URLs pas dans Auth0
+
+### ✅ SOLUTION RAPIDE
+
+**Commencez ici** : **`/⚡_START_HERE.md`** (lecture 1 min)
+
+**Plan complet** : **`/AUTH0_MASTER_SETUP.md`** (lecture 3 min)
+
+### 📋 GUIDES DISPONIBLES
+
+| Guide | Temps | Objectif |
+|-------|-------|----------|
+| **⚡_START_HERE.md** | 1 min | Vue d'ensemble et plan d'action |
+| `/AUTH0_BRANDING_QUICK.md` | 1 min | Fix "dev-xxx" → "Cortexia" |
+| `/QUICK_FIX_AUTH0.md` | 30 sec | Fix callback URLs |
+| `/GITHUB_OAUTH_QUICK_SETUP.md` | 3 min | Fix GitHub 401 error |
+| `/AUTH0_MASTER_SETUP.md` | 5 min | Guide complet avec troubleshooting |
+
+### ⚡ ACTION IMMÉDIATE (6 MIN 30)
+
+```
+1. Lisez /⚡_START_HERE.md             (1 min)
+2. Fix branding (Cortexia)             (1 min)
+3. Fix callback URLs (Figma Make)      (30 sec)
+4. Fix GitHub OAuth                    (3 min)
+5. Testez sur cortexia.figma.site      (1 min)
+```
+
+**Total : 6 min 30 sec** → Auth0 professionnel ✅
 
 ---
 
@@ -563,4 +601,4 @@ MIT License - Voir LICENSE file
 
 **Made with 💜 by Cortexia Team**
 
-Last Updated: December 25, 2024
+Last Updated: January 4, 2026

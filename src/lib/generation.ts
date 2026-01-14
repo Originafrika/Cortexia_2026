@@ -32,6 +32,7 @@ export async function generateMedia(
     referenceImages?: string[]; // Reference images for img2img
     model?: string; // ✅ Model selection
     enhancePrompt?: boolean; // ✅ Enhance prompt with Apriel (+1 credit)
+    userId?: string; // ✅ NEW: User ID for credit tracking
   }
 ): Promise<GenerationResult> {
   // Route to appropriate generator based on type
@@ -47,7 +48,7 @@ export async function generateMedia(
  */
 export async function generateImage(
   prompt: string,
-  options?: Partial<GenerationOptions> & { referenceImages?: string[]; model?: string; enhancePrompt?: boolean }
+  options?: Partial<GenerationOptions> & { referenceImages?: string[]; model?: string; enhancePrompt?: boolean; userId?: string }
 ): Promise<GenerationResult> {
   try {
     console.log('🎨 Starting image generation via backend');
@@ -109,6 +110,7 @@ export async function generateImage(
         nologo: true, // No watermark
         referenceImages: options?.referenceImages || [], // Reference images
         enhancePrompt: options?.enhancePrompt ?? true, // ✅ Default true - enhance with Apriel
+        userId: options?.userId // ✅ NEW: User ID for credit tracking
       }
     };
     

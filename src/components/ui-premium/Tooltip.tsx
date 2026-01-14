@@ -20,7 +20,7 @@ export function Tooltip({
   content,
   children,
   placement = 'top',
-  delay = 300,
+  delay = 200, // ✅ P2-15: Reduced from 300ms to 200ms
   className = '',
   disabled = false,
 }: TooltipProps) {

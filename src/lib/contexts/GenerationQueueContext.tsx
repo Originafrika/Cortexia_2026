@@ -1,6 +1,7 @@
 /**
  * GENERATION QUEUE CONTEXT
  * Gère l'historique et la file d'attente de toutes les générations
+ * ✅ UPDATED: Stores all users' history in one place, filtered by userId in hooks
  */
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -17,6 +18,7 @@ export interface QueueItem {
   model?: string;
   aspectRatio?: string;
   seed?: number | string;
+  userId?: string; // ✅ NEW: Track which user created this
   // Video specific
   taskId?: string;
   resolution?: string;
@@ -151,4 +153,28 @@ export function useGenerationQueue() {
     throw new Error('useGenerationQueue must be used within GenerationQueueProvider');
   }
   return context;
+}
+
+/**
+ * ✅ NEW: Hook that filters queue by current userId
+ * Use this in components that should only show user-specific history
+ */
+export function useUserGenerationQueue(userId: string | null) {
+  const context = useGenerationQueue();
+  
+  // Filter queue by userId
+  const userQueue = userId 
+    ? context.queue.filter(item => item.userId === userId)
+    : context.queue; // If no userId, show all (for backward compatibility)
+  
+  return {
+    ...context,
+    queue: userQueue,
+    getActiveGenerations: () => userQueue.filter(item => 
+      item.status === 'generating' || item.status === 'pending'
+    ),
+    getCompletedGenerations: () => userQueue.filter(item => 
+      item.status === 'completed' || item.status === 'failed'
+    ),
+  };
 }

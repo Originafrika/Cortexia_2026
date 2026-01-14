@@ -4,17 +4,34 @@
  */
 
 import { Hono } from 'npm:hono@4.6.14';
+import { cors } from 'npm:hono/cors';
+import { logger } from 'npm:hono/logger';
 import * as kv from './kv_store.tsx';
 
+// ✅ FIXED: Don't use basePath when mounting with app.route()
 const app = new Hono();
 
+console.log('🎨 Generation routes module loaded - v2 (no basePath)');
+
+// ============================================
+// MIDDLEWARE
+// ============================================
+
+app.use('*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use('*', logger(console.log));
+
 /**
- * POST /make-server-e55aa214/api/coconut-v14/generate
+ * POST /api/coconut-v14/generate
  * Start a new generation
  */
-app.post('/make-server-e55aa214/api/coconut-v14/generate', async (c) => {
+app.post('/api/coconut-v14/generate', async (c) => {
   try {
-    const { cocoBoardId } = await c.req.json();
+    const { cocoBoardId, overridePrompt } = await c.req.json();
 
     if (!cocoBoardId) {
       return c.json({ success: false, error: 'cocoBoardId is required' }, 400);
@@ -25,6 +42,16 @@ app.post('/make-server-e55aa214/api/coconut-v14/generate', async (c) => {
     if (!board) {
       return c.json({ success: false, error: 'CocoBoard not found' }, 404);
     }
+
+    // ✅ Use overridePrompt if provided (clean prompt from frontend), otherwise use board.finalPrompt
+    const promptToUse = overridePrompt || board.finalPrompt;
+    
+    console.log('🎨 Using prompt:', {
+      source: overridePrompt ? 'overridePrompt (clean from frontend)' : 'board.finalPrompt (from DB)',
+      type: typeof promptToUse,
+      length: typeof promptToUse === 'string' ? promptToUse.length : JSON.stringify(promptToUse).length,
+      preview: typeof promptToUse === 'string' ? promptToUse.substring(0, 100) + '...' : 'Object',
+    });
 
     // Generate unique ID
     const generationId = `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -38,7 +65,7 @@ app.post('/make-server-e55aa214/api/coconut-v14/generate', async (c) => {
       status: 'preparing',
       currentStep: 'prepare',
       progress: 0,
-      prompt: board.finalPrompt,
+      prompt: promptToUse, // ✅ Use the clean prompt
       specs: board.specs,
       references: board.references,
       startTime: Date.now(),
@@ -70,10 +97,10 @@ app.post('/make-server-e55aa214/api/coconut-v14/generate', async (c) => {
 });
 
 /**
- * GET /make-server-e55aa214/api/coconut-v14/generate/:id/status
+ * GET /api/coconut-v14/generate/:id/status
  * Get generation status
  */
-app.get('/make-server-e55aa214/api/coconut-v14/generate/:id/status', async (c) => {
+app.get('/api/coconut-v14/generate/:id/status', async (c) => {
   try {
     const generationId = c.req.param('id');
 
@@ -103,10 +130,10 @@ app.get('/make-server-e55aa214/api/coconut-v14/generate/:id/status', async (c) =
 });
 
 /**
- * POST /make-server-e55aa214/api/coconut-v14/generate/:id/cancel
+ * POST /api/coconut-v14/generate/:id/cancel
  * Cancel generation
  */
-app.post('/make-server-e55aa214/api/coconut-v14/generate/:id/cancel', async (c) => {
+app.post('/api/coconut-v14/generate/:id/cancel', async (c) => {
   try {
     const generationId = c.req.param('id');
 

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3B: Import sound
 import { X, Download, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 interface Generation {
@@ -22,13 +23,27 @@ interface CompareViewProps {
 }
 
 export function CompareView({ generations, onClose }: CompareViewProps) {
+  // 🔊 PHASE 3B: Sound context
+  const { playClick, playSuccess, playWhoosh } = useSoundContext();
+  
   const [zoom, setZoom] = useState(1);
   const [fullscreenIndex, setFullscreenIndex] = useState<number | null>(null);
 
   // Zoom controls
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.5));
-  const handleZoomReset = () => setZoom(1);
+  const handleZoomIn = () => {
+    playClick(); // 🔊 Sound feedback for zoom
+    setZoom(prev => Math.min(prev + 0.25, 3));
+  };
+  
+  const handleZoomOut = () => {
+    playClick(); // 🔊 Sound feedback for zoom
+    setZoom(prev => Math.max(prev - 0.25, 0.5));
+  };
+  
+  const handleZoomReset = () => {
+    playClick(); // 🔊 Sound feedback for reset
+    setZoom(1);
+  };
 
   // Format date
   const formatDate = (timestamp: number) => {
@@ -37,12 +52,36 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
 
   // Download all
   const handleDownloadAll = () => {
+    playSuccess(); // 🔊 Sound feedback for download
     generations.forEach((gen, index) => {
       const link = document.createElement('a');
       link.href = gen.imageUrl;
       link.download = `compare-${index + 1}-${Date.now()}.png`;
       link.click();
     });
+  };
+
+  const handleClose = () => {
+    playClick(); // 🔊 Sound feedback for close
+    onClose();
+  };
+
+  const handleFullscreen = (index: number) => {
+    playWhoosh(); // 🔊 Sound feedback for fullscreen
+    setFullscreenIndex(index);
+  };
+
+  const handleCloseFullscreen = () => {
+    playClick(); // 🔊 Sound feedback for closing fullscreen
+    setFullscreenIndex(null);
+  };
+
+  const handleDownloadSingle = (gen: Generation) => {
+    playSuccess(); // 🔊 Sound feedback for download
+    const link = document.createElement('a');
+    link.href = gen.imageUrl;
+    link.download = `generation-${gen.id}.png`;
+    link.click();
   };
 
   return (
@@ -81,15 +120,15 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
               {/* Download All */}
               <button
                 onClick={handleDownloadAll}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-[var(--coconut-husk)] hover:bg-[var(--coconut-shell)] text-white rounded-lg transition-colors"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-5 h-5" />
                 <span>Download All</span>
               </button>
 
               {/* Close */}
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-white" />
@@ -101,11 +140,11 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
 
       {/* Comparison Grid */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className={`grid ${
-          generations.length === 2 ? 'grid-cols-2' :
-          generations.length === 3 ? 'grid-cols-3' :
-          'grid-cols-2 lg:grid-cols-4'
-        } gap-6`}>
+        <div className={`grid ${ 
+          generations.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+          generations.length === 3 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' :
+          'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+        } gap-4 sm:gap-6`}>
           {generations.map((gen, index) => (
             <div key={gen.id} className="space-y-4">
               {/* Image */}
@@ -121,7 +160,7 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
 
                 {/* Fullscreen Button */}
                 <button
-                  onClick={() => setFullscreenIndex(index)}
+                  onClick={() => handleFullscreen(index)}
                   className="absolute top-3 right-3 p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors"
                 >
                   <Maximize2 className="w-4 h-4" />
@@ -171,12 +210,7 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
 
                 {/* Download Button */}
                 <button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = gen.imageUrl;
-                    link.download = `generation-${gen.id}.png`;
-                    link.click();
-                  }}
+                  onClick={() => handleDownloadSingle(gen)}
                   className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
                 >
                   <Download className="w-4 h-4" />
@@ -269,7 +303,7 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
       {fullscreenIndex !== null && (
         <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setFullscreenIndex(null)}
+          onClick={() => handleCloseFullscreen()}
         >
           <div className="max-w-6xl w-full">
             <img
@@ -280,7 +314,7 @@ export function CompareView({ generations, onClose }: CompareViewProps) {
             />
           </div>
           <button
-            onClick={() => setFullscreenIndex(null)}
+            onClick={() => handleCloseFullscreen()}
             className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
           >
             <X className="w-6 h-6" />

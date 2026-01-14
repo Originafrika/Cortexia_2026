@@ -98,7 +98,36 @@
     --color-error-600: #dc2626;
     --color-error-700: #b91c1c;
     --color-error-800: #991b1b;
-    --color-error-900: #7f1d1d;
+    
+    /* ============================================ */
+    /* 🥥 COCONUT WARM - Premium Palette Exclusive */
+    /* BDS: Palette exclusive pour Mode Campagne */
+    /* ============================================ */
+    
+    /* Warm - Coconut Cream to Coconut Shell */
+    --color-warm-50: #fdfbf8;    /* Coconut Mist - lightest cream */
+    --color-warm-100: #f8f3ec;   /* Coconut Cream - very light beige */
+    --color-warm-200: #f5efe7;   /* Coconut Silk - soft cream */
+    --color-warm-300: #ede4d5;   /* Coconut Latte - warm beige */
+    --color-warm-400: #ddc9b0;   /* Coconut Sand - medium beige */
+    --color-warm-500: #d4a574;   /* Coconut Shell - golden brown */
+    --color-warm-600: #b8894f;   /* Coconut Wood - rich brown */
+    --color-warm-700: #9a6e3a;   /* Coconut Bark - deep brown */
+    --color-warm-800: #7d5730;   /* Coconut Earth - dark brown */
+    --color-warm-900: #5c3e1f;   /* Coconut Espresso - darkest brown */
+    --color-warm-950: #3a2510;   /* Coconut Night - near black */
+    
+    /* Coconut Palm - Complementary green accent */
+    --color-palm-50: #f3f8f4;
+    --color-palm-100: #e0ede3;
+    --color-palm-200: #c1dbc6;
+    --color-palm-300: #9bc4a1;
+    --color-palm-400: #6fa978;
+    --color-palm-500: #6b8e70;   /* Main Coconut Palm - sage green */
+    --color-palm-600: #577358;
+    --color-palm-700: #455a46;
+    --color-palm-800: #364635;
+    --color-palm-900: #283228;
     
     /* ============================================ */
     /* GRADIENTS - Premium Gradient System */
@@ -128,6 +157,19 @@
     --gradient-glass: linear-gradient(135deg,
       rgba(255, 255, 255, 0.1) 0%,
       rgba(255, 255, 255, 0.05) 100%
+    );
+    
+    /* 🥥 Coconut Warm Gradients - Premium Campaign */
+    --gradient-warm: linear-gradient(135deg, var(--color-warm-200) 0%, var(--color-warm-400) 100%);
+    --gradient-warm-intense: linear-gradient(135deg, var(--color-warm-400) 0%, var(--color-warm-600) 100%);
+    --gradient-warm-hero: linear-gradient(135deg, 
+      var(--color-warm-50) 0%, 
+      var(--color-warm-100) 50%,
+      var(--color-warm-200) 100%
+    );
+    --gradient-warm-glass: linear-gradient(135deg,
+      rgba(248, 243, 236, 0.8) 0%,
+      rgba(245, 239, 231, 0.6) 100%
     );
     
     /* ============================================ */
@@ -324,49 +366,38 @@
     --interactive-active: var(--color-neutral-200);
     --interactive-disabled: var(--color-neutral-300);
   }
-}
 
-/* ============================================ */
-/* UTILITY CLASSES */
-/* ============================================ */
+  /* ============================================ */
+  /* DARK MODE - Semantic token overrides */
+  /* ============================================ */
+  .dark {
+    /* Backgrounds */
+    --bg-canvas: var(--color-neutral-950);
+    --bg-surface: var(--color-neutral-900);
+    --bg-elevated: var(--color-neutral-800);
+    --bg-overlay: rgba(0, 0, 0, 0.7);
+    
+    /* Text */
+    --text-primary: var(--color-neutral-50);
+    --text-secondary: var(--color-neutral-400);
+    --text-tertiary: var(--color-neutral-600);
+    --text-inverse: var(--color-neutral-900);
+    
+    /* Borders */
+    --border-default: var(--color-neutral-700);
+    --border-muted: var(--color-neutral-800);
+    --border-strong: var(--color-neutral-600);
+    
+    /* Interactive */
+    --interactive-hover: var(--color-neutral-800);
+    --interactive-active: var(--color-neutral-700);
+    --interactive-disabled: var(--color-neutral-700);
 
-@layer utilities {
-  .glass {
-    background: var(--glass-bg-light);
-    backdrop-filter: var(--glass-blur-md);
-    -webkit-backdrop-filter: var(--glass-blur-md);
-    border: 1px solid var(--glass-border);
-  }
-  
-  .glass-dark {
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: var(--glass-blur-md);
-    -webkit-backdrop-filter: var(--glass-blur-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .glass-subtle {
-    background: var(--glass-bg-dark);
-    backdrop-filter: var(--glass-blur-sm);
-    -webkit-backdrop-filter: var(--glass-blur-sm);
-  }
-  
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-  
-  .gradient-secondary {
-    background: var(--gradient-secondary);
-  }
-  
-  .gradient-cosmic {
-    background: var(--gradient-cosmic);
-    background-size: 200% 200%;
-    animation: gradient-shift 8s ease infinite;
-  }
-  
-  @keyframes gradient-shift {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    /* Glass effects for dark mode */
+    --glass-bg-light: rgba(15, 23, 42, 0.7);
+    --glass-bg-medium: rgba(15, 23, 42, 0.5);
+    --glass-bg-dark: rgba(15, 23, 42, 0.3);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.15);
   }
 }

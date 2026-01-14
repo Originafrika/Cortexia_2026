@@ -1,97 +1,123 @@
 /**
- * THEME CONTEXT - BDS Géométrie (Couleurs) + Musique (Transitions)
- * Purple (Create) ↔ Indigo (Coconut) theme interpolation
- * 7 Arts: Géométrie (proportions couleur), Musique (transitions fluides)
+ * THEME CONTEXT - Dark/Light mode management
+ * ✅ BDS Compliant: Astronomie (Vision Systémique)
+ * 
+ * Features:
+ * - Light/Dark/System modes
+ * - LocalStorage persistence
+ * - Smooth transitions
+ * - CSS variables for theming
+ * - System preference detection
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type ThemeMode = 'purple' | 'indigo';
+type Theme = 'light' | 'dark' | 'system';
+type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeContextValue {
-  theme: ThemeMode;
-  setTheme: (theme: ThemeMode) => void;
+  theme: Theme;
+  resolvedTheme: ResolvedTheme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-  colors: ThemeColors;
 }
-
-interface ThemeColors {
-  primary: string;
-  primaryLight: string;
-  primaryDark: string;
-  accent: string;
-  glow: string;
-  border: string;
-  bg: string;
-}
-
-// BDS: Géométrie - Theme color palettes (harmonious ratios)
-const THEME_COLORS: Record<ThemeMode, ThemeColors> = {
-  purple: {
-    primary: 'rgb(168, 85, 247)', // purple-500
-    primaryLight: 'rgb(216, 180, 254)', // purple-300
-    primaryDark: 'rgb(126, 34, 206)', // purple-700
-    accent: 'rgb(236, 72, 153)', // pink-500
-    glow: 'rgba(168, 85, 247, 0.5)',
-    border: 'rgba(168, 85, 247, 0.3)',
-    bg: 'rgba(168, 85, 247, 0.1)',
-  },
-  indigo: {
-    primary: 'rgb(99, 102, 241)', // indigo-500
-    primaryLight: 'rgb(165, 180, 252)', // indigo-300
-    primaryDark: 'rgb(67, 56, 202)', // indigo-700
-    accent: 'rgb(139, 92, 246)', // violet-500
-    glow: 'rgba(99, 102, 241, 0.5)',
-    border: 'rgba(99, 102, 241, 0.3)',
-    bg: 'rgba(99, 102, 241, 0.1)',
-  },
-};
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-interface ThemeProviderProps {
-  children: ReactNode;
-  defaultTheme?: ThemeMode;
-}
+const THEME_STORAGE_KEY = 'cortexia-theme';
 
-export function ThemeProvider({ children, defaultTheme = 'purple' }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<ThemeMode>(defaultTheme);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>('system');
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
 
-  // BDS: Musique - Smooth theme transition
-  const setTheme = useCallback((newTheme: ThemeMode) => {
-    setThemeState(newTheme);
-    
-    // BDS: Géométrie - Apply CSS variables for smooth interpolation
-    const colors = THEME_COLORS[newTheme];
-    const root = document.documentElement;
-    
-    root.style.setProperty('--theme-primary', colors.primary);
-    root.style.setProperty('--theme-primary-light', colors.primaryLight);
-    root.style.setProperty('--theme-primary-dark', colors.primaryDark);
-    root.style.setProperty('--theme-accent', colors.accent);
-    root.style.setProperty('--theme-glow', colors.glow);
-    root.style.setProperty('--theme-border', colors.border);
-    root.style.setProperty('--theme-bg', colors.bg);
-  }, []);
-
-  const toggleTheme = useCallback(() => {
-    setTheme(theme === 'purple' ? 'indigo' : 'purple');
-  }, [theme, setTheme]);
-
-  const value: ThemeContextValue = {
-    theme,
-    setTheme,
-    toggleTheme,
-    colors: THEME_COLORS[theme],
+  // Get system preference
+  const getSystemTheme = (): ResolvedTheme => {
+    if (typeof window === 'undefined') return 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   };
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  // Resolve actual theme
+  const resolveTheme = (themeValue: Theme): ResolvedTheme => {
+    if (themeValue === 'system') {
+      return getSystemTheme();
+    }
+    return themeValue;
+  };
+
+  // Apply theme to DOM
+  const applyTheme = (resolved: ResolvedTheme) => {
+    const root = document.documentElement;
+    
+    // Remove existing theme classes
+    root.classList.remove('light', 'dark');
+    
+    // Add new theme class
+    root.classList.add(resolved);
+    
+    // Update meta theme-color for mobile browsers
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute(
+        'content',
+        resolved === 'dark' ? '#0f172a' : '#ffffff'
+      );
+    }
+  };
+
+  // Initialize theme from localStorage or system
+  useEffect(() => {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+    const initialTheme = stored || 'system';
+    setThemeState(initialTheme);
+    
+    const resolved = resolveTheme(initialTheme);
+    setResolvedTheme(resolved);
+    applyTheme(resolved);
+  }, []);
+
+  // Listen to system theme changes
+  useEffect(() => {
+    if (theme !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = (e: MediaQueryListEvent) => {
+      const newResolved = e.matches ? 'dark' : 'light';
+      setResolvedTheme(newResolved);
+      applyTheme(newResolved);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
+
+  // Set theme function
+  const setTheme = (newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+    
+    const resolved = resolveTheme(newTheme);
+    setResolvedTheme(resolved);
+    applyTheme(resolved);
+  };
+
+  // Toggle between light and dark
+  const toggleTheme = () => {
+    const newTheme = resolvedTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    throw new Error('useTheme must be used within ThemeProvider');
   }
   return context;
 }

@@ -87,24 +87,33 @@ Pour chaque asset requis:
 - Demander au client sinon
 
 ### 7. PROMPT FLUX 2 PRO FINAL
-Format JSON structuré complet avec:
-- **scene:** Description globale détaillée
-- **subjects:** Array de sujets avec position, colors, references
-- **style:** Aesthetic et approach artistique
-- **color_palette:** Array de codes HEX
-- **lighting:** Description détaillée de l'éclairage
-- **background:** Description du fond
-- **composition:** Rules et guidelines
-- **mood:** Ambiance émotionnelle
-- **camera:** angle, lens, depth_of_field
 
-### 8. SPÉCIFICATIONS TECHNIQUES
+✅ **CRITICAL: TEXT STRING ONLY - NO JSON**
+
+Le champ **finalPrompt** DOIT être un **STRING TEXTE SIMPLE**.
+
+**LIMITE ABSOLUE: MAX 5000 CARACTÈRES**
+
+Exemple de format correct:
+```
+Hyper-realistic advertising poster featuring [product] as the hero element, shot on [camera] [lens] f/[aperture]. [Subject details]. [Action/dynamic elements]. The text '[EXACT_TEXT]' in [style], [position]. Lighting: [lighting description]. Background: [background details]. Mood: [mood]. Camera: [camera angle and settings]. Composition: [composition rules].
+```
+
+**RÈGLES:**
+- ❌ PAS de structure JSON
+- ❌ PAS de placeholders comme [USER_*]
+- ✅ Texte fluide en ANGLAIS
+- ✅ Camera specs: "shot on Hasselblad X2D, 85mm f/2.8"
+- ✅ Textes avec guillemets: "The text 'SLOGAN' in bold sans-serif"
+- ✅ Codes HEX: "The bottle is color #FFD700"
+
+## 8. SPÉCIFICATIONS TECHNIQUES
 - Mode Flux optimal (text-to-image ou image-to-image)
 - Références à utiliser (IDs)
 - Ratio recommandé
 - Résolution optimale
 
-### 9. RECOMMANDATIONS
+## 9. RECOMMANDATIONS
 - Approche de génération (single-pass ou multi-pass)
 - Justification technique et créative
 - Alternatives possibles
@@ -267,34 +276,24 @@ Pour chaque asset manquant du projet final:
 
 ## 6. PROMPT FLUX 2 PRO FINAL
 
-Crée le prompt JSON structuré final pour générer l'affiche complète:
+✅ **CRITICAL: TEXT STRING ONLY - NO JSON**
 
-\`\`\`json
-{
-  "scene": "Description globale très détaillée de la scène (50-1000 caractères)",
-  "subjects": [
-    {
-      "type": "product/character/element/etc",
-      "description": "Description détaillée du sujet (10-500 caractères)",
-      "position": "Position précise dans l'image (5-200 caractères)",
-      "color_palette": ["#HEXCODE", "#HEXCODE"],
-      "style": "Style spécifique",
-      "references": ["ref-id-1", "ref-id-2"]
-    }
-  ],
-  "style": "Aesthetic et approach artistique détaillée (20-500 caractères)",
-  "color_palette": ["#HEXCODE", "#HEXCODE", "#HEXCODE"],
-  "lighting": "Description détaillée de l'éclairage - source, direction, intensité, qualité (20-500 caractères)",
-  "background": "Description détaillée du fond (20-500 caractères)",
-  "composition": "Règles et guidelines de composition - règle des tiers, balance, hiérarchie (20-500 caractères)",
-  "mood": "Ambiance émotionnelle précise (10-300 caractères)",
-  "camera": {
-    "angle": "Angle de vue (ex: eye-level, bird's eye, low angle)",
-    "lens": "Type de lens (ex: 50mm, wide-angle, macro)",
-    "depth_of_field": "Profondeur de champ (ex: shallow, deep, selective)"
-  }
-}
+Le champ **finalPrompt** DOIT être un **STRING TEXTE SIMPLE**.
+
+**LIMITE ABSOLUE: MAX 5000 CARACTÈRES**
+
+Exemple:
 \`\`\`
+Hyper-realistic advertising poster featuring [product] shot on [camera] [lens] f/[aperture]. [Subject details]. The text '[EXACT_TEXT]' in [style], [position]. Lighting: [description]. Background: [details]. Mood: [mood]. Camera: [specs]. Composition: [rules].
+\`\`\`
+
+**RÈGLES:**
+- ❌ PAS de JSON
+- ❌ PAS de placeholders [USER_*]
+- ✅ Texte ANGLAIS fluide
+- ✅ "shot on Hasselblad X2D, 85mm f/2.8"
+- ✅ "The text 'SLOGAN' in bold sans-serif"
+- ✅ "The bottle is color #FFD700"
 
 ## 7. SPÉCIFICATIONS TECHNIQUES
 

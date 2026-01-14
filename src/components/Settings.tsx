@@ -34,7 +34,7 @@ const ChevronRight = ({ className, size }: { className?: string; size?: number }
   </svg>
 );
 
-const Wallet = ({ className, size }: { className?: string; size?: number }) => (
+const WalletIcon = ({ className, size }: { className?: string; size?: number }) => (
   <svg 
     width={size || 24} 
     height={size || 24} 
@@ -164,11 +164,14 @@ interface SettingsProps {
 }
 
 export function Settings({ onNavigate }: SettingsProps) {
+  // ✅ DEBUG: Log component render
+  console.log('🔧 [Settings] Rendering component');
+  
   const sections = [
     {
       title: 'ACCOUNT',
       items: [
-        { label: 'My Wallet', icon: Wallet, action: () => onNavigate('wallet') },
+        { label: 'My Wallet', icon: WalletIcon, action: () => onNavigate('wallet') },
         { label: 'Privacy & Security', icon: Shield, action: () => {} },
         { label: 'Notifications', icon: Bell, action: () => {} },
       ],
@@ -189,6 +192,16 @@ export function Settings({ onNavigate }: SettingsProps) {
       ],
     },
   ];
+  
+  // ✅ Protection: Ensure sections is valid
+  if (!sections || sections.length === 0) {
+    console.error('❌ [Settings] No sections defined');
+    return (
+      <div className="w-full h-screen bg-black flex items-center justify-center">
+        <p className="text-white/60">Error loading settings</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-screen bg-black overflow-y-auto">
@@ -204,31 +217,45 @@ export function Settings({ onNavigate }: SettingsProps) {
 
       {/* Settings Sections */}
       <div className="p-4">
-        {sections.map((section, sectionIdx) => (
-          <div key={sectionIdx} className="mb-6">
-            <h3 className="text-[#6366f1] text-sm mb-3 px-2">{section.title}</h3>
-            <div className="bg-[#1A1A1A] rounded-lg overflow-hidden">
-              {section.items.map((item, itemIdx) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={itemIdx}
-                    onClick={item.action}
-                    className={`w-full flex items-center justify-between p-4 hover:bg-[#262626] transition-colors ${
-                      itemIdx < section.items.length - 1 ? 'border-b border-gray-800' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className="text-[#6366f1]" size={20} />
-                      <span className="text-white">{item.label}</span>
-                    </div>
-                    <ChevronRight className="text-gray-400" size={20} />
-                  </button>
-                );
-              })}
+        {sections.map((section, sectionIdx) => {
+          // ✅ Protection: Skip invalid sections
+          if (!section || !section.items) {
+            console.warn(`⚠️ [Settings] Invalid section at index ${sectionIdx}`);
+            return null;
+          }
+          
+          return (
+            <div key={sectionIdx} className="mb-6">
+              <h3 className="text-[#6366f1] text-sm mb-3 px-2">{section.title}</h3>
+              <div className="bg-[#1A1A1A] rounded-lg overflow-hidden">
+                {section.items.map((item, itemIdx) => {
+                  // ✅ Protection: Skip invalid items
+                  if (!item || !item.icon) {
+                    console.warn(`⚠️ [Settings] Invalid item at ${sectionIdx}.${itemIdx}`);
+                    return null;
+                  }
+                  
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={itemIdx}
+                      onClick={item.action}
+                      className={`w-full flex items-center justify-between p-4 hover:bg-[#262626] transition-colors ${
+                        itemIdx < section.items.length - 1 ? 'border-b border-gray-800' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="text-[#6366f1]" size={20} />
+                        <span className="text-white">{item.label}</span>
+                      </div>
+                      <ChevronRight className="text-gray-400" size={20} />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* App Version */}
         <div className="text-center text-gray-400 text-sm mb-6">

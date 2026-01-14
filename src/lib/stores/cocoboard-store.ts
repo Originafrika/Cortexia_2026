@@ -1,14 +1,30 @@
 /**
  * COCONUT V14 - COCOBOARD STORE
  * Phase 3 - Jour 3: Zustand store for CocoBoard state management
+ * ✅ FIX 1.2: Extended to include Gemini analysis (single source of truth)
  */
 
 import { create } from 'zustand';
 import type { CocoBoard } from '../types/coconut-v14';
 
+// ✅ FIX 1.2: Add GeminiAnalysisResponse type
+interface GeminiAnalysisResponse {
+  analysis: any;
+  cocoBoardId: string;
+  createdAt: string;
+  [key: string]: any;
+}
+
 interface CocoBoardState {
   // Current CocoBoard
   currentBoard: CocoBoard | null;
+  
+  // ✅ FIX 1.2: Add Gemini analysis data
+  geminiAnalysis: GeminiAnalysisResponse | null;
+  uploadedReferences: {
+    images: Array<{ url: string; description?: string; filename: string }>;
+    videos: Array<{ url: string; description?: string; filename: string }>;
+  } | null;
   
   // UI State
   isLoading: boolean;
@@ -27,6 +43,11 @@ interface CocoBoardState {
   
   // Actions
   setCurrentBoard: (board: CocoBoard | null) => void;
+  
+  // ✅ FIX 1.2: Add Gemini data actions
+  setGeminiAnalysis: (analysis: GeminiAnalysisResponse | null) => void;
+  setUploadedReferences: (refs: any) => void;
+  
   updateBoard: (updates: Partial<CocoBoard>) => void;
   updatePrompt: (prompt: any) => void;
   updateSpecs: (specs: any) => void;
@@ -49,6 +70,8 @@ interface CocoBoardState {
 
 const initialState = {
   currentBoard: null,
+  geminiAnalysis: null,
+  uploadedReferences: null,
   isLoading: false,
   isSaving: false,
   isGenerating: false,
@@ -68,6 +91,10 @@ export const useCocoBoardStore = create<CocoBoardState>((set) => ({
     isDirty: false,
     lastSaved: board ? new Date() : null
   }),
+  
+  // ✅ FIX 1.2: Add Gemini data actions
+  setGeminiAnalysis: (analysis) => set({ geminiAnalysis: analysis }),
+  setUploadedReferences: (refs) => set({ uploadedReferences: refs }),
   
   updateBoard: (updates) => set((state) => ({
     currentBoard: state.currentBoard 

@@ -34,7 +34,7 @@ export function CreateHeader({
           {/* Left: Back button */}
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition-all group"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--coconut-husk)] hover:text-white transition-all group"
             aria-label="Retour"
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
@@ -42,17 +42,16 @@ export function CreateHeader({
           </button>
 
           {/* Center: Branding */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400 animate-pulse" />
-            <span className="text-purple-300 text-sm sm:text-base hidden sm:inline">Creation Hub</span>
-            <span className="text-purple-300 text-sm sm:inline sm:hidden">Create</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[var(--coconut-palm)]/10 to-[var(--coconut-husk)]/10 border border-[var(--coconut-palm)]/20">
+            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-[var(--coconut-palm)] animate-pulse" />
+            <span className="text-[var(--coconut-palm)] text-sm sm:text-base hidden sm:inline">Creation Hub</span>
           </div>
 
           {/* Right: Options */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Credits */}
             <div
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 flex items-center gap-1.5"
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-[var(--coconut-palm)]/10 border border-[var(--coconut-palm)]/30 text-[var(--coconut-palm)] flex items-center gap-1.5"
               title={`${credits} crédits restants`}
             >
               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -63,7 +62,7 @@ export function CreateHeader({
             {onOpenHistory && (
               <button
                 onClick={onOpenHistory}
-                className="p-1.5 sm:p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition-all"
+                className="p-1.5 sm:p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--coconut-husk)] hover:text-white transition-all"
                 aria-label="Historique"
                 title="Historique des créations"
               >
@@ -75,7 +74,7 @@ export function CreateHeader({
             {onOpenSettings && (
               <button
                 onClick={onOpenSettings}
-                className="p-1.5 sm:p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white transition-all"
+                className="p-1.5 sm:p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--coconut-husk)] hover:text-white transition-all"
                 aria-label="Paramètres"
                 title="Paramètres"
               >
@@ -87,7 +86,7 @@ export function CreateHeader({
             {onOpenProfile && (
               <button
                 onClick={onOpenProfile}
-                className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 hover:border-purple-500/50 transition-all"
+                className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-[var(--coconut-palm)]/20 to-[var(--coconut-husk)]/20 border border-[var(--coconut-palm)]/30 text-[var(--coconut-palm)] hover:border-[var(--coconut-palm)]/50 transition-all"
                 aria-label="Profil"
                 title="Mon profil"
               >

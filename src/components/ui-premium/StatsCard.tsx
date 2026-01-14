@@ -1,19 +1,21 @@
 /**
- * COCONUT V14 - PHASE 4 JOUR 5
- * Premium Stats Card Component
+ * STATS CARD COMPONENT
+ * Premium glass card pour afficher des statistiques
  * 
  * Features:
- * - Animated counters
- * - Trend indicators
- * - Sparkline charts
+ * - Animated counter
+ * - Trend indicators (up/down/neutral)
+ * - Sparkline chart
  * - Multiple variants
- * - Glass morphism
+ * 🎭 PHASE 9: PERFORMANCE OPTIMIZATIONS
+ * - React.memo for render optimization
+ * - useMemo for expensive calculations
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, TrendingDown, Minus, LucideIcon } from 'lucide-react';
 import { GlassCard } from '../ui/glass-card';
+import { TrendingUp, TrendingDown, Minus, type LucideIcon } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -46,9 +48,9 @@ function AnimatedCounter({
   value: number; 
   duration?: number; 
 }) {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = React.useState(0);
 
-  useEffect(() => {
+  React.useEffect(() => {
     let startTime: number;
     let animationFrame: number;
 
@@ -250,4 +252,5 @@ export function StatsCard({
   );
 }
 
-export default StatsCard;
+// 🎭 PHASE 9: Memoize component to prevent unnecessary re-renders
+export default React.memo(StatsCard);

@@ -6,7 +6,8 @@
 import { uploadAssetFromUrl } from './storage.tsx';
 
 const KIE_AI_API_KEY = Deno.env.get('KIE_AI_API_KEY');
-const KIE_AI_ENDPOINT = 'https://api.kie.ai/v1/video/generations';
+// Updated endpoint - Kie AI uses /predictions for async generation
+const KIE_AI_ENDPOINT = 'https://api.kie.ai/v1/predictions';
 
 /**
  * Generate video from text prompt
@@ -43,8 +44,12 @@ export async function generateVideo(params: {
     })
   });
   
+  console.log('📡 API Response Status:', response.status, response.statusText);
+  
   if (!response.ok) {
     const error = await response.text();
+    console.error('❌ Kie AI API Error Details:', error);
+    console.error('❌ Endpoint Used:', KIE_AI_ENDPOINT);
     throw new Error(`Kie AI API error: ${error}`);
   }
   
@@ -111,8 +116,12 @@ export async function generateVideoFromImage(params: {
     body: JSON.stringify(requestBody)
   });
   
+  console.log('📡 API Response Status:', response.status, response.statusText);
+  
   if (!response.ok) {
     const error = await response.text();
+    console.error('❌ Kie AI API Error Details:', error);
+    console.error('❌ Endpoint Used:', KIE_AI_ENDPOINT);
     throw new Error(`Kie AI API error: ${error}`);
   }
   
@@ -168,8 +177,12 @@ export async function extendVideo(params: {
     })
   });
   
+  console.log('📡 API Response Status:', response.status, response.statusText);
+  
   if (!response.ok) {
     const error = await response.text();
+    console.error('❌ Kie AI API Error Details:', error);
+    console.error('❌ Endpoint Used:', KIE_AI_ENDPOINT);
     throw new Error(`Kie AI API error: ${error}`);
   }
   

@@ -16,6 +16,7 @@ import { CoconutPremiumHeader } from './CoconutPremiumHeader';
 import { ParallaxBackground } from '../shared/ParallaxBackground';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../lib/contexts/ThemeContext';
+import { toast } from 'sonner@2.0.3';
 
 // ✅ REAL API (not mock)
 import {
@@ -28,9 +29,15 @@ import {
 } from '../../lib/services/cortexia-api';
 
 import {
+  createProject
+} from '../../lib/services/cortexia-projects-api';
+
+import {
   applyTemplateVariables,
   type CocoTemplate
 } from '../../lib/templates/coconut-templates';
+
+import { useAuth } from '../../lib/contexts/AuthContext';
 
 type CreateStep = 'templates' | 'intent' | 'configure-template' | 'analysis' | 'cocoboard';
 
@@ -51,6 +58,9 @@ export function CreatePage() {
   
   // Error handling
   const [error, setError] = useState<string | null>(null);
+
+  // Get current user
+  const { user } = useAuth();
 
   // BDS: Astronomie - Switch theme to indigo on mount
   const { setTheme } = useTheme();
@@ -170,6 +180,44 @@ export function CreatePage() {
       const objectiveForBoard = objective;
       const assetsForBoard = uploadedAssets;
       
+      // 🎬 VIDEO FLOW: Redirect to Coconut V14 Video
+      if (selectedType === 'video') {
+        console.log('🎬 Video flow detected - creating project in DB...');
+        
+        if (!user?.userId) {
+          toast.error('Vous devez être connecté pour créer une vidéo');
+          return;
+        }
+        
+        try {
+          // Create project in database
+          const project = await createProject({
+            userId: user.userId,
+            type: 'video',
+            intent,
+            objective,
+            assets: uploadedAssets,
+            metadata: {
+              source: 'cortexia-create-page',
+              timestamp: Date.now()
+            }
+          });
+          
+          console.log('✅ Video project created:', project.id);
+          toast.success('Projet créé ! Redirection...');
+          
+          // Navigate to Coconut V14 with projectId
+          window.location.href = `/create-v4?projectId=${project.id}`;
+          
+        } catch (error) {
+          console.error('❌ Failed to create video project:', error);
+          toast.error('Erreur lors de la création du projet');
+          setError(error instanceof Error ? error.message : 'Failed to create video project');
+        }
+        
+        return;
+      }
+      
       // Analyze reference images if provided
       if (uploadedAssets && uploadedAssets.length > 0) {
         setIsAnalyzingReferences(true);
@@ -183,7 +231,7 @@ export function CreatePage() {
         setIsAnalyzingReferences(false);
       }
       
-      // Analyze intent with REAL BACKEND
+      // Analyze intent with REAL BACKEND (image/campaign only)
       setIsAnalyzing(true);
       console.log(`🧠 Analyzing intent with backend (type: ${selectedType})...`);
       

@@ -1,13 +1,21 @@
 /**
  * COCONUT V14 - MONACO PROMPT EDITOR
- * Phase 3 - Jour 4: Monaco editor for JSON prompts
+ * 
+ * ✅ FIXED: BDS Compliance Phase 2B
+ * - Design tokens integration
+ * - Consistent spacing and radius
+ * - Icon sizing standardized
+ * - Focus states
+ * - French labels
  */
 
 import React, { useRef, useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
+import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { fluxPromptSchema, defaultFluxPrompt, fluxPromptSuggestions } from '../../lib/schemas/flux-prompt-schema';
 import { Check, AlertCircle, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
+import { tokens } from '../../lib/design/tokens';
 
 interface PromptEditorProps {
   value: any;
@@ -24,6 +32,9 @@ export function PromptEditor({
   readOnly = false,
   height = '600px'
 }: PromptEditorProps) {
+  // 🔊 PHASE 2A: Sound context
+  const { playClick, playSuccess } = useSoundContext();
+  
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [isValid, setIsValid] = useState(true);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -211,20 +222,20 @@ export function PromptEditor({
   return (
     <div className={`relative ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-900' : ''}`}>
       {/* Toolbar */}
-      <div className="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className={`bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between ${tokens.gap.normal}`}>
+        <div className={`flex items-center ${tokens.gap.normal}`}>
           {/* Validation Status */}
-          <div className="flex items-center space-x-2">
+          <div className={`flex items-center ${tokens.gap.tight}`}>
             {isValid ? (
               <>
-                <Check className="w-4 h-4 text-green-400" />
-                <span className="text-sm text-green-400">Valid</span>
+                <Check className={`${tokens.iconSize.sm} text-[var(--coconut-husk)]`} />
+                <span className="text-sm text-[var(--coconut-husk)]">Valide</span>
               </>
             ) : (
               <>
-                <AlertCircle className="w-4 h-4 text-red-400" />
-                <span className="text-sm text-red-400">
-                  {validationErrors.length} error{validationErrors.length !== 1 ? 's' : ''}
+                <AlertCircle className={`${tokens.iconSize.sm} text-[var(--coconut-shell)]`} />
+                <span className="text-sm text-[var(--coconut-shell)]">
+                  {validationErrors.length} erreur{validationErrors.length !== 1 ? 's' : ''}
                 </span>
               </>
             )}
@@ -232,14 +243,14 @@ export function PromptEditor({
 
           {/* Errors dropdown */}
           {!isValid && validationErrors.length > 0 && (
-            <div className="bg-red-900/50 rounded-lg px-3 py-1.5 max-w-md">
-              <div className="text-xs text-red-200 space-y-1">
+            <div className={`bg-[var(--coconut-shell)]/50 ${tokens.radius.md} px-3 py-1.5 max-w-md`}>
+              <div className="text-xs text-[var(--coconut-milk)] space-y-1">
                 {validationErrors.slice(0, 3).map((error, idx) => (
                   <div key={idx}>• {error}</div>
                 ))}
                 {validationErrors.length > 3 && (
-                  <div className="text-red-300">
-                    +{validationErrors.length - 3} more errors
+                  <div className="text-[var(--coconut-cream)]">
+                    +{validationErrors.length - 3} erreurs supplémentaires
                   </div>
                 )}
               </div>
@@ -248,30 +259,42 @@ export function PromptEditor({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-2">
+        <div className={`flex items-center ${tokens.gap.tight}`}>
           <button
-            onClick={handleFormat}
-            className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
+            onClick={() => {
+              playClick(); // 🔊 Sound feedback
+              handleFormat();
+            }}
+            className={`px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm ${tokens.radius.md} transition-colors ${tokens.focus}`}
+            aria-label="Formater le JSON"
           >
-            Format
+            Formater
           </button>
           
           <button
-            onClick={handleReset}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
+            onClick={() => {
+              playClick(); // 🔊 Sound feedback
+              handleReset();
+            }}
+            className={`flex items-center ${tokens.gap.tight} px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm ${tokens.radius.md} transition-colors ${tokens.focus}`}
+            aria-label="Réinitialiser"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
+            <RotateCcw className={tokens.iconSize.sm} />
+            <span>Réinitialiser</span>
           </button>
 
           <button
-            onClick={toggleFullscreen}
-            className="flex items-center space-x-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
+            onClick={() => {
+              playClick(); // 🔊 Sound feedback
+              toggleFullscreen();
+            }}
+            className={`flex items-center ${tokens.gap.tight} px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm ${tokens.radius.md} transition-colors ${tokens.focus}`}
+            aria-label={isFullscreen ? 'Quitter plein écran' : 'Plein écran'}
           >
             {isFullscreen ? (
-              <Minimize2 className="w-3 h-3" />
+              <Minimize2 className={tokens.iconSize.sm} />
             ) : (
-              <Maximize2 className="w-3 h-3" />
+              <Maximize2 className={tokens.iconSize.sm} />
             )}
           </button>
         </div>
@@ -318,9 +341,9 @@ export function PromptEditor({
       {!isFullscreen && (
         <div className="bg-slate-50 border-t border-slate-200 px-4 py-2">
           <div className="text-xs text-slate-600 space-y-1">
-            <div>💡 <strong>Ctrl+Space</strong> for auto-complete suggestions</div>
-            <div>💡 <strong>Ctrl+Shift+F</strong> to auto-format</div>
-            <div>💡 Hover over fields for documentation</div>
+            <div>💡 <strong>Ctrl+Space</strong> pour les suggestions d'auto-complétion</div>
+            <div>💡 <strong>Ctrl+Shift+F</strong> pour formater automatiquement</div>
+            <div>💡 Passez la souris sur les champs pour la documentation</div>
           </div>
         </div>
       )}

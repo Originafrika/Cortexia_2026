@@ -24,6 +24,48 @@
   outline-offset: 2px;
 }
 
+/* ✅ P2-16: Enhanced Focus States for Accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 3px solid #F97316; /* Orange accent - Coconut theme */
+  outline-offset: 3px;
+  border-radius: 6px;
+  transition: outline 0.2s ease, outline-offset 0.2s ease;
+}
+
+/* Focus within for containers - DISABLED to prevent visual pollution on hover */
+/* 
+*:focus-within {
+  outline: 2px solid #F97316;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+*/
+
+/* Skip to content link for keyboard users */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: #1E293B;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 0.5rem 0;
+  z-index: 9999;
+  transition: top 0.3s ease;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 3px solid #F97316;
+  outline-offset: 2px;
+}
+
 /* BDS: Scrollbar hide - pour scroll horizontal templates */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -307,6 +349,30 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* 🥥 Coconut Warm Palette - Premium Campaign Mode */
+  --color-warm-50: #fdfbf8;
+  --color-warm-100: #f8f3ec;
+  --color-warm-200: #f5efe7;
+  --color-warm-300: #ede4d5;
+  --color-warm-400: #ddc9b0;
+  --color-warm-500: #d4a574;
+  --color-warm-600: #b8894f;
+  --color-warm-700: #9a6e3a;
+  --color-warm-800: #7d5730;
+  --color-warm-900: #5c3e1f;
+  --color-warm-950: #3a2510;
+  
+  --color-palm-50: #f3f8f4;
+  --color-palm-100: #e0ede3;
+  --color-palm-200: #c1dbc6;
+  --color-palm-300: #9bc4a1;
+  --color-palm-400: #6fa978;
+  --color-palm-500: #6b8e70;
+  --color-palm-600: #577358;
+  --color-palm-700: #455a46;
+  --color-palm-800: #364635;
+  --color-palm-900: #283228;
 }
 
 @layer base {

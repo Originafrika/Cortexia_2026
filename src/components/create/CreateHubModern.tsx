@@ -5,21 +5,11 @@
  */
 
 import { useState } from 'react';
-import { motion } from 'motion/react';
-import { 
-  ArrowLeft, 
-  Image, 
-  Video, 
-  Sparkles, 
-  Grid3x3,
-  Upload,
-  Wand2,
-  Settings2,
-  Crown
-} from 'lucide-react';
+import { ArrowLeft, Image, Video, Crown, Grid3x3, Zap, Sparkles, ChevronDown } from 'lucide-react';
+import type { Screen } from '../../App';
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';
-import type { Screen } from '../../App';
+import { useCredits } from '../../lib/contexts/CreditsContext'; // ✅ Import useCredits
 
 type CreateTab = 'image' | 'video' | 'coconut' | 'tools';
 
@@ -40,7 +30,8 @@ export function CreateHubModern({
   const { playClick, playHover } = useSound();
   const { light, medium } = useHaptic();
 
-  const credits = 25; // Mock
+  const { credits: creditsData } = useCredits(); // ✅ Use useCredits
+  const totalCredits = (creditsData?.free || 0) + (creditsData?.paid || 0);
 
   const tabs = [
     { id: 'image' as CreateTab, label: 'Image', icon: Image },
@@ -92,12 +83,12 @@ export function CreateHubModern({
                 className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
                 title="Settings"
               >
-                <Settings2 className="w-5 h-5" />
+                <Zap className="w-5 h-5" />
               </button>
               
               <div className="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4" />
-                <span className="text-sm">{credits}</span>
+                <span className="text-sm">{totalCredits}</span>
               </div>
             </div>
           </div>

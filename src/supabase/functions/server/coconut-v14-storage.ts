@@ -12,6 +12,15 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('❌ Missing Supabase configuration!');
+  console.error('SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
+  console.error('SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
+  throw new Error('Supabase configuration is missing');
+}
+
+console.log('✅ Supabase Storage configured:', SUPABASE_URL);
+
 // Bucket names (prefixed pour Coconut)
 const BUCKETS = {
   REFERENCES: 'coconut-v14-references',      // User-provided references
@@ -20,6 +29,21 @@ const BUCKETS = {
   COCOBOARDS: 'coconut-v14-cocoboards',      // CocoBoard exports
   GENERATIONS: 'coconut-v14-generations'     // Phase 3 - Generated images
 } as const;
+
+// ============================================
+// UTILITIES
+// ============================================
+
+/**
+ * Sanitize userId for storage paths (remove invalid characters like | from OAuth providers)
+ */
+function sanitizeUserId(userId: string): string {
+  return userId.replace(/[|:*?"<>]/g, '_');
+}
+
+// ============================================
+// FILE CONSTRAINTS
+// ============================================
 
 // File constraints
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
@@ -50,13 +74,31 @@ export async function initializeStorageBuckets(): Promise<void> {
     
     const existingBucketNames = new Set(existingBuckets?.map(b => b.name) || []);
     
+    // ✅ MIGRATION: Update REFERENCES bucket to public if it exists and is private
+    const referencesBucket = existingBuckets?.find(b => b.name === BUCKETS.REFERENCES);
+    if (referencesBucket && !referencesBucket.public) {
+      console.log('🔄 Migrating coconut-v14-references bucket to PUBLIC...');
+      const { error: updateError } = await supabase.storage.updateBucket(BUCKETS.REFERENCES, {
+        public: true
+      });
+      
+      if (updateError) {
+        console.error('❌ Failed to update bucket to public:', updateError);
+      } else {
+        console.log('✅ REFERENCES bucket is now PUBLIC (required for Kie AI access)');
+      }
+    }
+    
     // Create missing buckets
     for (const [key, bucketName] of Object.entries(BUCKETS)) {
       if (!existingBucketNames.has(bucketName)) {
         console.log(`📦 Creating bucket: ${bucketName}`);
         
+        // ✅ REFERENCES bucket must be PUBLIC for Kie AI to access images
+        const isPublic = key === 'REFERENCES'; 
+        
         const { error: createError } = await supabase.storage.createBucket(bucketName, {
-          public: false, // Private buckets
+          public: isPublic, // ✅ Public only for REFERENCES bucket (Kie AI needs access)
           fileSizeLimit: MAX_FILE_SIZE,
           allowedMimeTypes: key === 'REFERENCES' 
             ? [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES]
@@ -66,7 +108,7 @@ export async function initializeStorageBuckets(): Promise<void> {
         if (createError) {
           console.error(`❌ Failed to create bucket ${bucketName}:`, createError);
         } else {
-          console.log(`✅ Bucket created: ${bucketName}`);
+          console.log(`✅ Bucket created: ${bucketName} (${isPublic ? 'PUBLIC' : 'PRIVATE'})`);
         }
       } else {
         console.log(`✅ Bucket exists: ${bucketName}`);
@@ -204,7 +246,9 @@ export async function uploadReference(
       .replace(/[^a-zA-Z0-9.-]/g, '_')
       .replace(/_{2,}/g, '_');
     
-    const path = `${params.userId}/${params.projectId}/${timestamp}-${sanitizedName}`;
+    // ✅ FIX: Sanitize userId to remove invalid characters for storage paths
+    const sanitizedUserId = sanitizeUserId(params.userId);
+    const path = `${sanitizedUserId}/${params.projectId}/${timestamp}-${sanitizedName}`;
     
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage

@@ -8,6 +8,7 @@ import { analyzeMissingAssets, calculateAssetGenerationCost } from './coconut-v1
 import * as storage from './coconut-v14-storage.ts';
 import * as cocoboard from './coconut-v14-cocoboard.ts';
 import * as flux from './coconut-v14-flux.ts';
+import { initDemoUserCredits, getUserCredits, addCredits } from './coconut-v14-init-credits.ts';
 import type { 
   CreateProjectPayload,
   AnalyzeIntentPayload,
@@ -19,12 +20,24 @@ import type {
 const app = new Hono().basePath('/make-server-e55aa214');
 
 // ============================================
+// STARTUP: INITIALIZE DEMO USER CREDITS
+// ============================================
+console.log('🚀 Coconut V14 Routes initializing...');
+(async () => {
+  try {
+    await initDemoUserCredits('demo-user', 1000); // Give 1000 credits to start
+  } catch (error) {
+    console.error('⚠️ Failed to initialize demo user credits:', error);
+  }
+})();
+
+// ============================================
 // MIDDLEWARE
 // ============================================
 
 app.use('*', cors({
   origin: '*',
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // ✅ Added PATCH
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -417,35 +430,6 @@ app.get('/coconut-v14/generation/:taskId', async (c) => {
 // ============================================
 // CREDITS ROUTES
 // ============================================
-
-/**
- * GET /coconut-v14/credits/:userId
- * Récupérer le solde de crédits
- */
-app.get('/coconut-v14/credits/:userId', async (c) => {
-  try {
-    const userId = c.req.param('userId');
-    
-    const balance = await credits.getCreditBalance(userId);
-    
-    return c.json<ApiResponse>({ 
-      success: true, 
-      data: {
-        userId,
-        balance,
-        formatted: credits.formatCredits(balance)
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Error fetching credits:', error);
-    return c.json<ApiResponse>({ 
-      success: false,
-      error: 'Failed to fetch credits',
-      message: error.message 
-    }, 500);
-  }
-});
 
 /**
  * GET /credits/:userId

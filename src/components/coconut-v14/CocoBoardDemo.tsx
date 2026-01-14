@@ -1,29 +1,49 @@
 /**
  * COCONUT V14 - COCOBOARD DEMO PAGE
  * Phase 3 - Jour 3: Demo page for testing CocoBoard UI
+ * 
+ * ✨ PHASE 4 - SESSION 15: SOUND INTEGRATION
+ * - Pattern: playClick (navigation buttons)
  */
 
 import React, { useState } from 'react';
 import { CocoBoard } from './CocoBoard';
 import { ArrowLeft } from 'lucide-react';
+import { useSoundContext } from './SoundProvider';
 
 interface CocoBoardDemoProps {
   onNavigate?: (screen: any) => void;
 }
 
 export function CocoBoardDemo({ onNavigate }: CocoBoardDemoProps) {
+  const { playClick } = useSoundContext();
   const [showDemo, setShowDemo] = useState(false);
 
   // Demo data
   const DEMO_USER_ID = 'demo-user-123';
   const DEMO_PROJECT_ID = 'demo-project-456';
+  
+  const handleLaunchDemo = () => {
+    playClick();
+    setShowDemo(true);
+  };
+  
+  const handleBackToDashboard = () => {
+    playClick();
+    window.location.href = '/';
+  };
+  
+  const handleBackToInfo = () => {
+    playClick();
+    setShowDemo(false);
+  };
 
   if (!showDemo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-husk)] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -33,9 +53,9 @@ export function CocoBoardDemo({ onNavigate }: CocoBoardDemoProps) {
           </div>
 
           <div className="space-y-4 mb-8">
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="text-sm text-blue-900 mb-1">✅ Completed</h3>
-              <ul className="text-sm text-blue-700 space-y-1">
+            <div className="bg-[var(--coconut-cream)] border border-[var(--coconut-milk)] rounded-xl p-4">
+              <h3 className="text-sm text-[var(--coconut-shell)] mb-1">✅ Completed</h3>
+              <ul className="text-sm text-[var(--coconut-husk)] space-y-1">
                 <li>• CocoBoard main component</li>
                 <li>• Header with Save/Validate/Generate actions</li>
                 <li>• Zustand state management</li>
@@ -59,14 +79,14 @@ export function CocoBoardDemo({ onNavigate }: CocoBoardDemoProps) {
 
           <div className="space-y-3">
             <button
-              onClick={() => setShowDemo(true)}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-4 rounded-xl transition-all shadow-lg shadow-purple-500/30"
+              onClick={handleLaunchDemo}
+              className="w-full bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-husk)] hover:from-[var(--coconut-shell)]/90 hover:to-[var(--coconut-husk)]/90 text-white py-4 rounded-xl transition-all shadow-lg shadow-[var(--coconut-shell)]/30"
             >
               Launch CocoBoard Demo
             </button>
 
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={handleBackToDashboard}
               className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-4 rounded-xl transition-colors"
             >
               Back to Dashboard
@@ -85,7 +105,7 @@ export function CocoBoardDemo({ onNavigate }: CocoBoardDemoProps) {
               </div>
               <div className="flex items-center justify-between">
                 <span>Status:</span>
-                <span className="font-medium text-green-600">In Progress</span>
+                <span className="font-medium text-[var(--coconut-palm)]">In Progress</span>
               </div>
             </div>
           </div>
@@ -99,7 +119,7 @@ export function CocoBoardDemo({ onNavigate }: CocoBoardDemoProps) {
       {/* Back button */}
       <div className="fixed top-4 left-4 z-50">
         <button
-          onClick={() => setShowDemo(false)}
+          onClick={handleBackToInfo}
           className="flex items-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-xl shadow-lg transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

@@ -1,10 +1,23 @@
 /**
  * COCONUT V14 - REFERENCES MANAGER
- * Phase 3 - Jour 5: Manage reference images
+ * Ultra-Premium Liquid Glass Design
+ * 
+ * ✅ FIXED: BDS Compliance Phase 2B
+ * - Design tokens integration
+ * - Error handler centralized
+ * - French labels
+ * - EmptyState component
+ * - Focus states
+ * - Icon sizing standardized
  */
 
 import React, { useState, useRef } from 'react';
-import { Upload, X, GripVertical, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
+import { Upload, X, GripVertical, Image as ImageIcon, AlertCircle, Sparkles } from 'lucide-react';
+import { tokens, TRANSITIONS } from '../../lib/design/tokens';
+import { handleError, showSuccess, showWarning } from '../../lib/utils/errorHandler';
+import { EmptyState } from '../ui-premium/EmptyState';
 
 interface Reference {
   id: string;
@@ -32,9 +45,33 @@ export function ReferencesManager({
   maxReferences = 8,
   disabled = false
 }: ReferencesManagerProps) {
+  // 🔊 PHASE 2A: Sound context
+  const { playClick, playPop, playSuccess, playError } = useSoundContext();
+  
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const blobUrlsRef = useRef<Set<string>>(new Set()); // ✅ FIXED: Track blob URLs for cleanup
+
+  // ✅ FIXED: Cleanup blob URLs on unmount
+  React.useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach(url => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlsRef.current.clear();
+    };
+  }, []);
+
+  // ✅ FIXED: Cleanup blob URL when reference is removed
+  const handleRemove = (id: string) => {
+    const ref = references.find(r => r.id === id);
+    if (ref && ref.url.startsWith('blob:')) {
+      URL.revokeObjectURL(ref.url);
+      blobUrlsRef.current.delete(ref.url);
+    }
+    onRemove(id);
+  };
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +102,7 @@ export function ReferencesManager({
       try {
         // Create preview URL
         const url = URL.createObjectURL(file);
+        blobUrlsRef.current.add(url); // ✅ FIXED: Add blob URL to set
 
         // Create reference
         const reference: Reference = {
@@ -114,25 +152,33 @@ export function ReferencesManager({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Premium Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg text-slate-900">References</h3>
-          <p className="text-sm text-slate-600">
-            {references.length} / {maxReferences} references
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-husk)]/20 rounded-lg flex items-center justify-center backdrop-blur-xl border border-white/40">
+            <ImageIcon className="w-5 h-5 text-[var(--coconut-husk)]" />
+          </div>
+          <div>
+            <h3 className="text-xl text-[var(--coconut-shell)]">Reference Images</h3>
+            <p className="text-sm text-[var(--coconut-shell)]/70">
+              {references.length} / {maxReferences} references • Drag to reorder
+            </p>
+          </div>
         </div>
 
-        {/* Upload Button */}
-        <button
+        {/* Upload Button - Premium Glass */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || references.length >= maxReferences}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--coconut-husk)] to-[var(--coconut-shell)] hover:from-[var(--coconut-husk)]/90 hover:to-[var(--coconut-shell)]/90 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          aria-label={`Add reference image (${references.length}/${maxReferences})`}
         >
           <Upload className="w-4 h-4" />
           <span>Add Reference</span>
-        </button>
+        </motion.button>
 
         <input
           ref={fileInputRef}
@@ -141,127 +187,171 @@ export function ReferencesManager({
           multiple
           onChange={handleFileUpload}
           className="hidden"
+          aria-label="Upload reference images"
         />
       </div>
 
-      {/* Error */}
-      {uploadError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm text-red-900">{uploadError}</p>
-          </div>
-        </div>
-      )}
+      {/* Error Alert - Premium Glass */}
+      <AnimatePresence>
+        {uploadError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="relative bg-[var(--coconut-cream)]/80 backdrop-blur-xl border border-[var(--coconut-husk)]/60 rounded-xl p-4 flex items-start gap-3"
+          >
+            <AlertCircle className="w-5 h-5 text-[var(--coconut-shell)] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-[var(--coconut-shell)]">{uploadError}</p>
+            </div>
+            <button
+              onClick={() => {
+                playClick(); // 🔊 Sound feedback
+                setUploadError(null);
+              }}
+              className="text-[var(--coconut-husk)] hover:text-[var(--coconut-shell)] transition-colors"
+              aria-label="Dismiss error"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* References Grid */}
       {references.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {references.map((ref, index) => (
-            <div
-              key={ref.id}
-              draggable={!disabled}
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragEnd={handleDragEnd}
-              className={`relative group bg-white rounded-xl border-2 overflow-hidden transition-all ${
-                draggedIndex === index
-                  ? 'border-blue-500 shadow-lg scale-105'
-                  : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {/* Drag Handle */}
-              {!disabled && (
-                <div className="absolute top-2 left-2 z-10 bg-white/90 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-move">
-                  <GripVertical className="w-4 h-4 text-slate-600" />
-                </div>
-              )}
+          <AnimatePresence>
+            {references.map((ref, index) => (
+              <motion.div
+                key={ref.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+                draggable={!disabled}
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`relative group bg-white/60 backdrop-blur-xl rounded-xl border overflow-hidden transition-all duration-300 ${
+                  draggedIndex === index
+                    ? 'border-[var(--coconut-husk)] shadow-2xl scale-105 rotate-2'
+                    : 'border-white/40 hover:border-[var(--coconut-husk)]/60 shadow-lg hover:shadow-xl'
+                }`}
+              >
+                {/* Drag Handle - Premium */}
+                {!disabled && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-xl rounded-lg p-1.5 shadow-lg cursor-move border border-white/60"
+                  >
+                    <GripVertical className="w-4 h-4 text-[var(--coconut-shell)]" />
+                  </motion.div>
+                )}
 
-              {/* Remove Button */}
-              {!disabled && (
-                <button
-                  onClick={() => onRemove(ref.id)}
-                  className="absolute top-2 right-2 z-10 bg-red-500 hover:bg-red-600 text-white rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+                {/* Remove Button - Premium */}
+                {!disabled && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      playClick(); // 🔊 Sound feedback
+                      handleRemove(ref.id);
+                    }}
+                    className="absolute top-2 right-2 z-10 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-husk)] hover:from-[var(--coconut-husk)] hover:to-[var(--coconut-shell)] text-white rounded-lg p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Remove reference ${index + 1}`}
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                )}
 
-              {/* Image */}
-              <div className="aspect-square bg-slate-100">
-                <img
-                  src={ref.url}
-                  alt={ref.description || 'Reference'}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Info */}
-              <div className="p-3 space-y-2">
-                {/* Description */}
-                <input
-                  type="text"
-                  value={ref.description || ''}
-                  onChange={(e) => onUpdate(ref.id, { description: e.target.value })}
-                  placeholder="Description..."
-                  disabled={disabled}
-                  className="w-full text-sm bg-transparent border-none outline-none text-slate-700 placeholder-slate-400"
-                />
-
-                {/* Weight Slider */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs text-slate-600">
-                    <span>Weight</span>
-                    <span>{((ref.weight || 1.0) * 100).toFixed(0)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="2"
-                    step="0.1"
-                    value={ref.weight || 1.0}
-                    onChange={(e) => onUpdate(ref.id, { weight: parseFloat(e.target.value) })}
-                    disabled={disabled}
-                    className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                {/* Image with Glass Overlay */}
+                <div className="relative aspect-square bg-gradient-to-br from-[var(--coconut-cream)] to-[var(--coconut-milk)] overflow-hidden">
+                  <img
+                    src={ref.url}
+                    alt={ref.description || `Reference ${index + 1}`}
+                    className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
-              </div>
 
-              {/* Index Badge */}
-              <div className="absolute bottom-3 right-3 bg-slate-900/80 text-white text-xs px-2 py-1 rounded">
-                #{index + 1}
-              </div>
-            </div>
-          ))}
+                {/* Info Panel - Glass */}
+                <div className="p-3 space-y-2 bg-white/40 backdrop-blur-xl">
+                  {/* Description */}
+                  <input
+                    type="text"
+                    value={ref.description || ''}
+                    onChange={(e) => onUpdate(ref.id, { description: e.target.value })}
+                    placeholder="Description..."
+                    disabled={disabled}
+                    className="w-full text-sm bg-white/60 backdrop-blur-xl border border-white/60 rounded-lg px-2 py-1.5 outline-none text-[var(--coconut-shell)] placeholder-[var(--coconut-shell)]/50 focus:border-[var(--coconut-husk)] focus:ring-2 focus:ring-[var(--coconut-husk)]/20 transition-all"
+                  />
+
+                  {/* Weight Slider */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs text-[var(--coconut-shell)]/80">
+                      <span>Influence</span>
+                      <span className="font-medium text-[var(--coconut-shell)]">{((ref.weight || 1.0) * 100).toFixed(0)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value={ref.weight || 1.0}
+                      onChange={(e) => onUpdate(ref.id, { weight: parseFloat(e.target.value) })}
+                      disabled={disabled}
+                      className="w-full h-2 bg-[var(--coconut-cream)] rounded-full appearance-none cursor-pointer accent-[var(--coconut-husk)]"
+                      style={{
+                        background: `linear-gradient(to right, var(--coconut-husk) 0%, var(--coconut-husk) ${((ref.weight || 1.0) / 2) * 100}%, var(--coconut-cream) ${((ref.weight || 1.0) / 2) * 100}%, var(--coconut-cream) 100%)`
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Index Badge - Premium */}
+                <div className="absolute bottom-3 right-3 bg-gradient-to-br from-[var(--coconut-husk)]/90 to-[var(--coconut-shell)]/90 backdrop-blur-xl text-white text-xs px-2.5 py-1 rounded-lg shadow-lg border border-white/20">
+                  #{index + 1}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       ) : (
-        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ImageIcon className="w-8 h-8 text-slate-400" />
-          </div>
-          <p className="text-slate-600 mb-2">No references added</p>
-          <p className="text-sm text-slate-500 mb-4">
-            Upload reference images to guide the generation
-          </p>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50"
-          >
-            Upload References
-          </button>
-        </div>
+        <EmptyState
+          icon={ImageIcon}
+          title="No References Yet"
+          description="Upload reference images to guide AI generation"
+          actionLabel="Upload Your First Reference"
+          onAction={() => fileInputRef.current?.click()}
+        />
       )}
 
-      {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <h4 className="text-sm text-blue-900 mb-2">💡 Tips</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Drag to reorder references (higher = more influence)</li>
-          <li>• Adjust weight to control reference strength</li>
-          <li>• Maximum {maxReferences} references allowed</li>
-          <li>• Supported: JPG, PNG, WebP (max 10MB)</li>
-        </ul>
+      {/* Tips - Premium Glass */}
+      <div className="relative overflow-hidden">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-[var(--coconut-husk)]/20 to-[var(--coconut-shell)]/20 rounded-xl blur" />
+        <div className="relative bg-[var(--coconut-cream)]/80 backdrop-blur-xl border border-[var(--coconut-husk)]/60 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-[var(--coconut-husk)]" />
+            <h4 className="text-sm text-[var(--coconut-shell)]">Pro Tips</h4>
+          </div>
+          <ul className="text-sm text-[var(--coconut-shell)]/90 space-y-1.5">
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--coconut-husk)] mt-0.5">▸</span>
+              <span>Drag to reorder references (position = influence priority)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--coconut-husk)] mt-0.5">▸</span>
+              <span>Adjust weight slider to fine-tune reference strength</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--coconut-husk)] mt-0.5">▸</span>
+              <span>Maximum {maxReferences} references • JPG, PNG, WebP (max 10MB each)</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );

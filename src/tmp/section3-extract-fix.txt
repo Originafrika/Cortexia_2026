@@ -1,8 +1,0 @@
-  try {
-    // Extract complete JSON using brace counting (handles nested validation object)
-    const jsonText = extractCompleteJSON(responseText, /SECTION 3:[^\n]*\n/);
-    
-    if (jsonText) {
-      
-      // 🔍 DEBUG: Log raw JSON before parsing
-      console.log(`   🔍 [DEBUG] Raw JSON length: ${jsonText.length} chars`);

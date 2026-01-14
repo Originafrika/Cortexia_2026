@@ -27,6 +27,7 @@ interface ResultModalProps {
   onDownload: (format: 'png' | 'jpg' | 'webp') => void;
   onCreateAnother: () => void;
   onRemix?: (imageUrl: string) => void; // New callback for remix
+  onPublishToFeed?: () => void; // ✅ NEW: Publish to feed callback
 }
 
 export function ResultModal({
@@ -37,7 +38,8 @@ export function ResultModal({
   selectedModel,
   onDownload,
   onCreateAnother,
-  onRemix
+  onRemix,
+  onPublishToFeed
 }: ResultModalProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sliderPosition, setSliderPosition] = useState(50);
@@ -328,6 +330,22 @@ export function ResultModal({
                 Remix
               </button>
             )}
+
+            {/* Publish to feed button */}
+            {onPublishToFeed && (
+              <button
+                onClick={() => {
+                  playClick();
+                  medium();
+                  onPublishToFeed();
+                }}
+                onMouseEnter={() => playHover()}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#6366f1]/40 to-[#8b5cf6]/40 border border-[#6366f1]/60 hover:shadow-2xl hover:shadow-[#6366f1]/40 transition-all text-sm font-medium flex items-center justify-center gap-2"
+              >
+                <UploadCloud size={16} />
+                Publish to Feed
+              </button>
+            )}
           </div>
         </motion.div>
       </motion.div>
@@ -339,6 +357,14 @@ function Sparkles({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4L18.4 5.6"/>
+    </svg>
+  );
+}
+
+function UploadCloud({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4l2 3h6l2-3h4a2 2 0 0 1 2 2zM10 9v6M14 9v6M12 13h4"/>
     </svg>
   );
 }

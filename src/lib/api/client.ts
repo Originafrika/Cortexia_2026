@@ -94,7 +94,8 @@ function getRetryDelay(attempt: number): number {
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},
-  attempt: number = 0
+  attempt: number = 0,
+  skipRetries: boolean = false // NEW: Skip retries for demo mode
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
 
@@ -123,13 +124,22 @@ async function apiFetch<T>(
     return data;
 
   } catch (error) {
+    // NEW: Skip retries if in demo mode
+    if (skipRetries) {
+      throw new ApiError(
+        'Demo mode: API unavailable',
+        0,
+        { originalError: error }
+      );
+    }
+
     if (error instanceof ApiError) {
       // Check if we should retry
       if (shouldRetry(error.status) && attempt < MAX_RETRIES) {
         const delay = getRetryDelay(attempt);
         console.log(`⏳ Retrying request (attempt ${attempt + 1}/${MAX_RETRIES}) after ${delay}ms...`);
         await sleep(delay);
-        return apiFetch<T>(endpoint, options, attempt + 1);
+        return apiFetch<T>(endpoint, options, attempt + 1, skipRetries);
       }
       throw error;
     }
@@ -139,7 +149,7 @@ async function apiFetch<T>(
       const delay = getRetryDelay(attempt);
       console.log(`⏳ Network error, retrying (attempt ${attempt + 1}/${MAX_RETRIES}) after ${delay}ms...`);
       await sleep(delay);
-      return apiFetch<T>(endpoint, options, attempt + 1);
+      return apiFetch<T>(endpoint, options, attempt + 1, skipRetries);
     }
 
     throw new ApiError(
@@ -154,9 +164,12 @@ async function apiFetch<T>(
 // DASHBOARD API
 // ============================================
 
-export async function fetchDashboardStats(): Promise<DashboardStats> {
+export async function fetchDashboardStats(skipRetries: boolean = false): Promise<DashboardStats> {
   const response = await apiFetch<{ stats: DashboardStats }>(
-    '/coconut/stats'
+    '/coconut/stats',
+    {},
+    0,
+    skipRetries
   );
   return response.stats;
 }
@@ -172,12 +185,13 @@ export interface GenerationHistoryResponse {
 
 export async function fetchGenerationHistory(
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
+  skipRetries: boolean = false
 ): Promise<GenerationHistoryResponse> {
   const response = await apiFetch<{
     generations: Generation[];
     pagination: PaginationInfo;
-  }>(`/coconut/projects/history?page=${page}&pageSize=${pageSize}`);
+  }>(`/coconut/projects/history?page=${page}&pageSize=${pageSize}`, {}, 0, skipRetries);
 
   return {
     generations: response.generations,
@@ -196,12 +210,13 @@ export interface TransactionsResponse {
 
 export async function fetchTransactions(
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
+  skipRetries: boolean = false
 ): Promise<TransactionsResponse> {
   const response = await apiFetch<{
     transactions: Transaction[];
     pagination: PaginationInfo;
-  }>(`/credits/transactions?page=${page}&pageSize=${pageSize}`);
+  }>(`/coconut/transactions?page=${page}&pageSize=${pageSize}`, {}, 0, skipRetries);
 
   return {
     transactions: response.transactions,
@@ -213,9 +228,12 @@ export async function fetchTransactions(
 // SETTINGS API
 // ============================================
 
-export async function fetchUserSettings(): Promise<UserSettings> {
+export async function fetchUserSettings(skipRetries: boolean = false): Promise<UserSettings> {
   const response = await apiFetch<{ settings: UserSettings }>(
-    '/user/settings'
+    '/user/settings',
+    {},
+    0,
+    skipRetries
   );
   return response.settings;
 }
@@ -233,9 +251,12 @@ export async function saveUserSettings(
 // ANALYTICS API
 // ============================================
 
-export async function fetchAnalytics(): Promise<UsageAnalytics> {
+export async function fetchAnalytics(skipRetries: boolean = false): Promise<UsageAnalytics> {
   const response = await apiFetch<{ analytics: UsageAnalytics }>(
-    '/coconut/analytics'
+    '/coconut/analytics',
+    {},
+    0,
+    skipRetries
   );
   return response.analytics;
 }

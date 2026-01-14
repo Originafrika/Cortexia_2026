@@ -8,6 +8,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useNotifications, UseNotificationsReturn } from '../../lib/hooks/useNotifications';
+import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { ToastContainer } from '../ui-premium/Toast';
 import { ConfirmDialog } from '../ui-premium/ConfirmDialog';
 import { AnimatePresence } from 'motion/react';
@@ -43,6 +44,7 @@ export function NotificationProvider({
   position = 'top-right' 
 }: NotificationProviderProps) {
   const notifications = useNotifications();
+  const soundContext = useSoundContext(); // 🔊 PHASE 2A: Get sound context
   
   return (
     <NotificationContext.Provider value={notifications}>
@@ -91,39 +93,42 @@ const positionStyles: Record<string, string> = {
   'bottom-right': 'bottom-4 right-4',
 };
 
-const variantConfig = {
+const notificationStyles = {
   success: {
     icon: CheckCircle,
-    bgColor: 'bg-green-900/30',
-    borderColor: 'border-green-700/50',
-    iconColor: 'text-green-400',
+    bgColor: 'bg-[var(--coconut-palm)]/30',
+    borderColor: 'border-[var(--coconut-palm)]/50',
+    iconColor: 'text-[var(--coconut-palm)]',
   },
   error: {
     icon: AlertCircle,
-    bgColor: 'bg-red-900/30',
-    borderColor: 'border-red-700/50',
-    iconColor: 'text-red-400',
+    bgColor: 'bg-[var(--coconut-shell)]/30',
+    borderColor: 'border-[var(--coconut-shell)]/50',
+    iconColor: 'text-[var(--coconut-shell)]',
   },
   warning: {
     icon: AlertTriangle,
-    bgColor: 'bg-amber-900/30',
-    borderColor: 'border-amber-700/50',
-    iconColor: 'text-amber-400',
+    bgColor: 'bg-[var(--coconut-husk)]/30',
+    borderColor: 'border-[var(--coconut-husk)]/50',
+    iconColor: 'text-[var(--coconut-husk)]',
   },
   info: {
     icon: Info,
-    bgColor: 'bg-blue-900/30',
-    borderColor: 'border-blue-700/50',
-    iconColor: 'text-blue-400',
+    bgColor: 'bg-[var(--coconut-cream)]',
+    borderColor: 'border-[var(--coconut-husk)]/50',
+    iconColor: 'text-[var(--coconut-husk)]',
   },
 };
 
 function NotificationToasts({ notifications, onDismiss, position }: NotificationToastsProps) {
+  // 🔊 PHASE 2A: Sound context
+  const { playClick } = useSoundContext();
+  
   return (
     <div className={`fixed ${positionStyles[position]} z-[10000] space-y-3 pointer-events-none`}>
       <AnimatePresence mode="popLayout">
         {notifications.map((notification) => {
-          const config = variantConfig[notification.type];
+          const config = notificationStyles[notification.type];
           const Icon = config.icon;
           
           return (
@@ -161,6 +166,7 @@ function NotificationToasts({ notifications, onDismiss, position }: Notification
                     {notification.action && (
                       <button
                         onClick={() => {
+                          playClick(); // 🔊 Sound feedback
                           notification.action.onClick();
                           onDismiss(notification.id);
                         }}
@@ -173,7 +179,10 @@ function NotificationToasts({ notifications, onDismiss, position }: Notification
                   
                   {/* Close Button */}
                   <button
-                    onClick={() => onDismiss(notification.id)}
+                    onClick={() => {
+                      playClick(); // 🔊 Sound feedback
+                      onDismiss(notification.id);
+                    }}
                     className="flex-shrink-0 p-1 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors"
                     aria-label="Close"
                   >

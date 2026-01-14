@@ -33,24 +33,24 @@ interface ToolCardProps {
 
 const COLOR_CLASSES = {
   yellow: {
-    hover: 'hover:shadow-yellow-500/20',
-    text: 'text-yellow-400 group-hover:text-yellow-300',
-    chevron: 'group-hover:text-yellow-400',
+    hover: 'hover:shadow-[var(--coconut-palm)]/20',
+    text: 'text-[var(--coconut-palm)] group-hover:text-[var(--coconut-palm)]',
+    chevron: 'group-hover:text-[var(--coconut-palm)]',
   },
   pink: {
-    hover: 'hover:shadow-pink-500/20',
-    text: 'text-pink-400 group-hover:text-pink-300',
-    chevron: 'group-hover:text-pink-400',
+    hover: 'hover:shadow-[var(--coconut-husk)]/20',
+    text: 'text-[var(--coconut-husk)] group-hover:text-[var(--coconut-cream)]',
+    chevron: 'group-hover:text-[var(--coconut-husk)]',
   },
   orange: {
-    hover: 'hover:shadow-orange-500/20',
-    text: 'text-orange-400 group-hover:text-orange-300',
-    chevron: 'group-hover:text-orange-400',
+    hover: 'hover:shadow-[var(--coconut-shell)]/20',
+    text: 'text-[var(--coconut-shell)] group-hover:text-[var(--coconut-husk)]',
+    chevron: 'group-hover:text-[var(--coconut-shell)]',
   },
   indigo: {
-    hover: 'hover:shadow-indigo-500/20',
-    text: 'text-indigo-400 group-hover:text-indigo-300',
-    chevron: 'group-hover:text-indigo-400',
+    hover: 'hover:shadow-[var(--coconut-palm)]/20',
+    text: 'text-[var(--coconut-palm)] group-hover:text-[var(--coconut-cream)]',
+    chevron: 'group-hover:text-[var(--coconut-palm)]',
   },
 };
 
@@ -77,7 +77,7 @@ export function ToolCard({
       className={`
         group relative rounded-xl sm:rounded-2xl border overflow-hidden bg-gradient-to-br transition-all duration-400 hover:scale-[1.02] snap-start flex-shrink-0 text-left
         ${isCoconut
-          ? 'w-[320px] sm:w-[400px] md:w-[480px] border-indigo-500/30 from-indigo-500/10 via-purple-500/5 to-indigo-500/10 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/20'
+          ? 'w-[320px] sm:w-[400px] md:w-[480px] border-[var(--coconut-palm)]/30 from-[var(--coconut-palm)]/10 via-[var(--coconut-husk)]/5 to-[var(--coconut-palm)]/10 hover:border-[var(--coconut-palm)]/50 hover:shadow-2xl hover:shadow-[var(--coconut-palm)]/20'
           : `w-[240px] sm:w-[280px] md:w-[320px] border-white/10 from-white/5 to-transparent hover:from-white/10 hover:shadow-xl ${colors.hover}`
         }
       `}
@@ -94,7 +94,7 @@ export function ToolCard({
           <div className={`
             absolute top-2 sm:top-3 left-2 sm:left-3 rounded-lg sm:rounded-xl bg-black/40 backdrop-blur-md border flex items-center justify-center group-hover:scale-110 transition-transform
             ${isCoconut 
-              ? 'w-10 sm:w-11 md:w-12 h-10 sm:h-11 md:h-12 border-indigo-400/30' 
+              ? 'w-10 sm:w-11 md:w-12 h-10 sm:h-11 md:h-12 border-[var(--coconut-palm)]/30' 
               : 'w-8 sm:w-9 md:w-10 h-8 sm:h-9 md:h-10 border-white/20'
             }
           `}>
@@ -106,15 +106,15 @@ export function ToolCard({
               <div className={`
                 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg backdrop-blur-sm text-[10px] sm:text-xs font-bold text-white shadow-lg
                 ${isCoconut 
-                  ? 'bg-indigo-500/90 border border-indigo-400/30' 
-                  : 'bg-blue-500/90 border border-blue-400/30 animate-pulse'
+                  ? 'bg-[var(--coconut-palm)]/90 border border-[var(--coconut-palm)]/30' 
+                  : 'bg-[var(--coconut-palm)]/90 border border-[var(--coconut-palm)]/30 animate-pulse'
                 }
               `}>
                 {tool.badge}
               </div>
             )}
             {tool.comingSoon && (
-              <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-orange-500/90 backdrop-blur-sm border border-orange-400/30 text-[10px] sm:text-xs font-bold text-white shadow-lg">
+              <div className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-[var(--coconut-shell)]/90 backdrop-blur-sm border border-[var(--coconut-shell)]/30 text-[10px] sm:text-xs font-bold text-white shadow-lg">
                 Soon
               </div>
             )}
@@ -123,11 +123,11 @@ export function ToolCard({
       )}
 
       <div className="p-3 sm:p-4">
-        <h4 className={`mb-1 sm:mb-1.5 transition-colors ${isCoconut ? 'text-white group-hover:text-indigo-300' : `text-white group-hover:${accentColor}-300`}`}>
+        <h4 className={`mb-1 sm:mb-1.5 transition-colors ${isCoconut ? 'text-white group-hover:text-[var(--coconut-cream)]' : `text-white`}`}>
           {tool.name}
         </h4>
 
-        <p className="text-gray-400 mb-2 sm:mb-3 leading-relaxed line-clamp-2">
+        <p className="text-[var(--coconut-husk)] mb-2 sm:mb-3 leading-relaxed line-clamp-2">
           {tool.description}
         </p>
 
@@ -136,7 +136,7 @@ export function ToolCard({
             {technologies.slice(0, 2).map((tech) => (
               <span 
                 key={tech.id}
-                className="px-1.5 py-0.5 rounded text-[10px] sm:text-xs bg-white/5 text-gray-500 border border-white/10"
+                className="px-1.5 py-0.5 rounded text-[10px] sm:text-xs bg-white/5 text-[var(--coconut-husk)] border border-white/10"
               >
                 {tech.icon} {tech.name}
               </span>
@@ -148,7 +148,7 @@ export function ToolCard({
           <span className={`transition-colors ${colors.text}`}>
             {isCoconut ? 'Ouvrir →' : 'Utiliser →'}
           </span>
-          <ChevronRight className={`w-4 h-4 group-hover:translate-x-1 transition-all ${isCoconut ? 'text-indigo-400' : `text-gray-600 ${colors.chevron}`}`} />
+          <ChevronRight className={`w-4 h-4 group-hover:translate-x-1 transition-all ${isCoconut ? 'text-[var(--coconut-palm)]' : `text-[var(--coconut-husk)] ${colors.chevron}`}`} />
         </div>
       </div>
     </button>

@@ -26,9 +26,10 @@ interface UserProfileProps {
   onClose: () => void;
   allPosts?: Post[];
   onOpenPost?: (postId: string) => void;
+  onOpenRemix?: (imageUrl: string, prompt?: string) => void; // ✅ NEW: Remix handler
 }
 
-export function UserProfile({ username, onClose, allPosts = [], onOpenPost }: UserProfileProps) {
+export function UserProfile({ username, onClose, allPosts = [], onOpenPost, onOpenRemix }: UserProfileProps) {
   const [following, setFollowing] = useState(false);
   const [showOptionsSheet, setShowOptionsSheet] = useState(false);
   const [showCreatorFeed, setShowCreatorFeed] = useState(false);
@@ -245,6 +246,7 @@ export function UserProfile({ username, onClose, allPosts = [], onOpenPost }: Us
           creatorPosts={userPosts}
           initialPostIndex={selectedPostIndex}
           onClose={() => setShowCreatorFeed(false)}
+          onOpenRemix={onOpenRemix}
         />
       )}
     </>

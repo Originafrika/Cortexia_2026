@@ -2,7 +2,7 @@ const KIE_AI_BASE_URL = 'https://api.kie.ai/api/v1/jobs';
 const KIE_AI_API_KEY = Deno.env.get('KIE_AI_API_KEY');
 
 export interface KieAIImageGenerationParams {
-  prompt: string;
+  prompt: string | Record<string, any>; // ✅ Support both string and object prompts
   model: 'flux-2-pro' | 'flux-2-flex';
   aspectRatio?: '1:1' | '4:3' | '3:4' | '16:9' | '9:16' | '3:2' | '2:3' | 'auto';
   resolution?: '1K' | '2K';
@@ -95,7 +95,12 @@ export async function createKieAIImageTask(
 
   // Build input object
   const input: Record<string, any> = {
-    prompt: params.prompt,
+    // ✅ Support both string and object prompts
+    // If prompt is object (JSON structured prompt), stringify it for Flux 2 Pro
+    // Flux 2 Pro can parse JSON strings as structured prompts
+    prompt: typeof params.prompt === 'object' 
+      ? JSON.stringify(params.prompt) 
+      : params.prompt,
     aspect_ratio: params.aspectRatio || '1:1',
     resolution: params.resolution || '1K'
   };

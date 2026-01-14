@@ -1,0 +1,7 @@
+interface CreateHubGlassProps {
+  onNavigate: (screen: Screen) => void;
+  onSelectTool: (toolId: string) => void;
+  remixImage?: string; // ✅ Optional: Pre-fill reference image for remix
+  remixPrompt?: string; // ✅ Optional: Pre-fill prompt for remix
+  remixParentId?: string; // ✅ NEW: Parent creation ID for remix chain
+}

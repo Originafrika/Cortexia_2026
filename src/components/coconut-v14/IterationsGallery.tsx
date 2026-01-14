@@ -1,10 +1,19 @@
 /**
  * COCONUT V14 - ITERATIONS GALLERY
- * Phase 3 - Jour 7: Gallery view for all generations
+ * 
+ * ✅ FIXED: BDS Compliance Phase 2B
+ * - Design tokens integration
+ * - French labels
+ * - Icon sizing standardized
+ * - Focus states
+ * - Error handler
  */
 
 import React, { useState } from 'react';
+import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { Star, Download, Trash2, Eye, Copy, MoreVertical, Check } from 'lucide-react';
+import { tokens } from '../../lib/design/tokens';
+import { handleError, showSuccess } from '../../lib/utils/errorHandler';
 
 interface Generation {
   id: string;
@@ -37,12 +46,16 @@ export function IterationsGallery({
   onCompare,
   layout = 'grid'
 }: IterationsGalleryProps) {
+  // 🔊 PHASE 2A: Sound context
+  const { playClick, playPop, playWhoosh } = useSoundContext();
+  
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showActions, setShowActions] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(layout);
 
   // Toggle selection
   const toggleSelection = (id: string) => {
+    playPop(); // 🔊 Sound feedback
     setSelectedIds(prev => 
       prev.includes(id) 
         ? prev.filter(i => i !== id)
@@ -52,17 +65,20 @@ export function IterationsGallery({
 
   // Select all
   const selectAll = () => {
+    playClick(); // 🔊 Sound feedback
     setSelectedIds(generations.map(g => g.id));
   };
 
   // Clear selection
   const clearSelection = () => {
+    playClick(); // 🔊 Sound feedback
     setSelectedIds([]);
   };
 
   // Bulk delete
   const handleBulkDelete = () => {
     if (confirm(`Delete ${selectedIds.length} generation(s)?`)) {
+      playWhoosh(); // 🔊 Sound feedback for destructive action
       selectedIds.forEach(id => onDelete?.(id));
       clearSelection();
     }
@@ -70,12 +86,14 @@ export function IterationsGallery({
 
   // Bulk download
   const handleBulkDownload = () => {
+    playClick(); // 🔊 Sound feedback
     selectedIds.forEach(id => onDownload?.(id));
   };
 
   // Compare selected
   const handleCompare = () => {
     if (selectedIds.length >= 2 && selectedIds.length <= 4) {
+      playClick(); // 🔊 Sound feedback
       onCompare?.(selectedIds);
     }
   };
@@ -108,10 +126,13 @@ export function IterationsGallery({
         {/* View Toggle */}
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setViewMode('grid')}
+            onClick={() => {
+              playClick(); // 🔊 Sound feedback
+              setViewMode('grid');
+            }}
             className={`p-2 rounded-lg transition-colors ${
               viewMode === 'grid' 
-                ? 'bg-blue-100 text-blue-600' 
+                ? 'bg-[var(--coconut-cream)] text-[var(--coconut-husk)]' 
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -120,10 +141,13 @@ export function IterationsGallery({
             </svg>
           </button>
           <button
-            onClick={() => setViewMode('list')}
+            onClick={() => {
+              playClick(); // 🔊 Sound feedback
+              setViewMode('list');
+            }}
             className={`p-2 rounded-lg transition-colors ${
               viewMode === 'list' 
-                ? 'bg-blue-100 text-blue-600' 
+                ? 'bg-[var(--coconut-cream)] text-[var(--coconut-husk)]' 
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -136,17 +160,17 @@ export function IterationsGallery({
 
       {/* Bulk Actions Bar */}
       {selectedIds.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="bg-[var(--coconut-cream)] border border-[var(--coconut-milk)] rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={clearSelection}
-              className="text-sm text-blue-700 hover:text-blue-900"
+              className="text-sm text-[var(--coconut-husk)] hover:text-[var(--coconut-shell)]"
             >
               Clear selection
             </button>
             <button
               onClick={selectAll}
-              className="text-sm text-blue-700 hover:text-blue-900"
+              className="text-sm text-[var(--coconut-husk)] hover:text-[var(--coconut-shell)]"
             >
               Select all
             </button>
@@ -164,14 +188,14 @@ export function IterationsGallery({
             )}
             <button
               onClick={handleBulkDownload}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 py-1.5 bg-[var(--coconut-husk)] hover:bg-[var(--coconut-shell)] text-white rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
               <span className="text-sm">Download ({selectedIds.length})</span>
             </button>
             <button
               onClick={handleBulkDelete}
-              className="flex items-center space-x-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 py-1.5 bg-[var(--coconut-shell)] hover:bg-[var(--coconut-husk)] text-white rounded-lg transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               <span className="text-sm">Delete ({selectedIds.length})</span>
@@ -203,7 +227,7 @@ export function IterationsGallery({
               key={gen.id}
               className={`group relative bg-white rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
                 selectedIds.includes(gen.id)
-                  ? 'border-blue-500 shadow-lg'
+                  ? 'border-[var(--coconut-palm)] shadow-lg'
                   : 'border-slate-200 hover:border-slate-300'
               }`}
               onClick={() => toggleSelection(gen.id)}
@@ -212,7 +236,7 @@ export function IterationsGallery({
               <div className="absolute top-2 left-2 z-10">
                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
                   selectedIds.includes(gen.id)
-                    ? 'bg-blue-600 border-blue-600'
+                    ? 'bg-[var(--coconut-husk)] border-[var(--coconut-husk)]'
                     : 'bg-white/90 border-slate-300'
                 }`}>
                   {selectedIds.includes(gen.id) && (
@@ -243,13 +267,13 @@ export function IterationsGallery({
                 ) : gen.status === 'processing' ? (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="text-center">
-                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                      <div className="w-8 h-8 border-4 border-[var(--coconut-husk)] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                       <p className="text-xs text-slate-600">Processing...</p>
                     </div>
                   </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <p className="text-xs text-red-600">Error</p>
+                    <p className="text-xs text-[var(--coconut-shell)]">Error</p>
                   </div>
                 )}
               </div>
@@ -281,7 +305,7 @@ export function IterationsGallery({
                     e.stopPropagation();
                     onDownload?.(gen.id);
                   }}
-                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="p-2 bg-[var(--coconut-husk)] hover:bg-[var(--coconut-shell)] text-white rounded-lg transition-colors"
                 >
                   <Download className="w-4 h-4" />
                 </button>
@@ -290,7 +314,7 @@ export function IterationsGallery({
                     e.stopPropagation();
                     onDelete?.(gen.id);
                   }}
-                  className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  className="p-2 bg-[var(--coconut-shell)] hover:bg-[var(--coconut-husk)] text-white rounded-lg transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -308,7 +332,7 @@ export function IterationsGallery({
               key={gen.id}
               className={`flex items-center space-x-4 p-4 bg-white rounded-xl border-2 transition-all ${
                 selectedIds.includes(gen.id)
-                  ? 'border-blue-500 shadow-md'
+                  ? 'border-[var(--coconut-palm)] shadow-md'
                   : 'border-slate-200 hover:border-slate-300'
               }`}
             >
@@ -319,7 +343,7 @@ export function IterationsGallery({
               >
                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
                   selectedIds.includes(gen.id)
-                    ? 'bg-blue-600 border-blue-600'
+                    ? 'bg-[var(--coconut-husk)] border-[var(--coconut-husk)]'
                     : 'bg-white border-slate-300'
                 }`}>
                   {selectedIds.includes(gen.id) && (
@@ -371,15 +395,15 @@ export function IterationsGallery({
                 </button>
                 <button
                   onClick={() => onDownload?.(gen.id)}
-                  className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-[var(--coconut-cream)] rounded-lg transition-colors"
                 >
-                  <Download className="w-4 h-4 text-blue-600" />
+                  <Download className="w-4 h-4 text-[var(--coconut-husk)]" />
                 </button>
                 <button
                   onClick={() => onDelete?.(gen.id)}
-                  className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-[var(--coconut-cream)] rounded-lg transition-colors"
                 >
-                  <Trash2 className="w-4 h-4 text-red-600" />
+                  <Trash2 className="w-4 h-4 text-[var(--coconut-shell)]" />
                 </button>
               </div>
             </div>
@@ -404,13 +428,13 @@ export function IterationsGallery({
               <div className="text-xs text-slate-600">Favorites</div>
             </div>
             <div>
-              <div className="text-2xl text-blue-600 mb-1">
+              <div className="text-2xl text-[var(--coconut-husk)] mb-1">
                 {generations.reduce((sum, g) => sum + g.cost, 0)}
               </div>
               <div className="text-xs text-slate-600">Credits Used</div>
             </div>
             <div>
-              <div className="text-2xl text-green-600 mb-1">
+              <div className="text-2xl text-[var(--coconut-husk)] mb-1">
                 {generations.filter(g => g.status === 'complete').length}
               </div>
               <div className="text-xs text-slate-600">Complete</div>

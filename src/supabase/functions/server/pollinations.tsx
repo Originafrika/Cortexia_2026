@@ -89,7 +89,7 @@ export async function generateImage(
 ): Promise<GenerateImageResult> {
   try {
     // ✅ Build URL parameters in EXACT order matching working Pollinations API format
-    // Format: ?model=X&private=true&nologo=true&enhance=false&quality=high&negative_prompt=&seed=&image=X&width=&height=
+    // Format: ?model=X&private=true&nologo=true&enhance=false&safe=true&quality=high&negative_prompt=&seed=&width=&height=&image=X
     const params = new URLSearchParams();
     
     // Model selection (FIRST parameter)
@@ -103,17 +103,15 @@ export async function generateImage(
     // No logo flag (always true)
     params.set('nologo', 'true');
     
-    // Enhance flag - CRITICAL for upscaling models like NANOBANANA
-    // ✅ NANOBANANA requires enhance=true to activate upscaling (2x-4x resolution boost)
-    // ✅ SEEDREAM/TURBO/KONTEXT/ZIMAGE use enhance=false by default (they generate at target resolution)
+    // Enhance flag - Default to false (system handles enhancement differently)
+    // ✅ Can be explicitly enabled via options.enhance = true if needed
+    // ✅ Our enhancement system uses separate logic for upscaling/refinement
     const shouldEnhance = options.enhance === true; // Default to false unless explicitly enabled
     params.set('enhance', shouldEnhance ? 'true' : 'false');
     console.log(`🔧 Enhance parameter: ${shouldEnhance} (Model: ${model})`);
     
-    // Safe mode - Content filtering
-    // ✅ ALWAYS ENABLED to comply with content policies
+    // Safe mode - Content filtering (always enabled)
     // ✅ NSFW content will be rejected by Pollinations API
-    const isSafe = true; // Always enabled for content safety
     params.set('safe', 'true');
     console.log(`🔒 Safe mode: enabled (content filtering active)`);
     
@@ -125,6 +123,20 @@ export async function generateImage(
     
     // Seed (include even if empty)
     params.set('seed', options.seed ? String(options.seed) : '');
+    
+    // ✅ Width and height (BEFORE image param to match Pollinations API format)
+    if (options.width && options.height) {
+      const { width, height, scaled } = ensureMinimumDimensions(options.width, options.height);
+      params.set('width', String(width));
+      params.set('height', String(height));
+      if (scaled) {
+        console.log(`📐 Scaled dimensions to meet Seedream requirements`);
+      }
+    } else {
+      // Include empty width/height params to match working format
+      params.set('width', '');
+      params.set('height', '');
+    }
     
     // ✅ Handle multiple reference images (img2img)
     const referenceImagesArray: string[] = [];
@@ -176,7 +188,7 @@ export async function generateImage(
       }
     }
     
-    // ✅ Add reference images to params (AFTER negative_prompt and seed, BEFORE width/height)
+    // ✅ Add reference images to params (AFTER width/height, matching Pollinations API format)
     // For Pollinations API with multiple images (like face swap):
     // - Join raw URLs with comma (URLSearchParams will handle encoding automatically)
     // - params.toString() will properly encode everything including the comma to %2C
@@ -190,20 +202,6 @@ export async function generateImage(
       console.log(`📋 Combined image param (before URLSearchParams encoding):`, imagesParam);
     } else {
       console.log(`⚠️ NO REFERENCE IMAGES - Text-to-image mode`);
-    }
-    
-    // Width and height (include even if empty, AFTER image param)
-    if (options.width && options.height) {
-      const { width, height, scaled } = ensureMinimumDimensions(options.width, options.height);
-      params.set('width', String(width));
-      params.set('height', String(height));
-      if (scaled) {
-        console.log(`📐 Scaled dimensions to meet Seedream requirements`);
-      }
-    } else {
-      // Include empty width/height params to match working format
-      params.set('width', '');
-      params.set('height', '');
     }
     
     // ✅ Use enterprise endpoint with GET + Authorization Bearer token

@@ -1,11 +1,22 @@
 /**
  * COCONUT V14 - COST CALCULATOR DISPLAY
- * Phase 3 - Jour 5: Real-time cost calculation display
+ * 
+ * ✅ FIXED: BDS Compliance Phase 2B
+ * - Design tokens integration
+ * - French labels
+ * - Icon sizing standardized
+ * 
+ * ✨ PHASE 4 - SESSION 15: SOUND INTEGRATION
+ * - Pattern: playPop (toggle breakdown - if we add interactivity later)
+ * Note: Currently no user interactions in this component
  */
 
 import React, { useMemo } from 'react';
 import { DollarSign, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { calculateCost, formatCost, getCostTier, type GenerationSpecs } from '../../lib/utils/cost-calculator';
+import { tokens } from '../../lib/design/tokens';
+// Sound context imported for future use if we add toggle interactions
+import { useSoundContext } from './SoundProvider';
 
 interface CostCalculatorProps {
   specs: GenerationSpecs;
@@ -15,7 +26,7 @@ interface CostCalculatorProps {
 
 export function CostCalculator({ 
   specs, 
-  userCredits = 1000,
+  userCredits, // ✅ No default, must be passed from parent
   showBreakdown = true 
 }: CostCalculatorProps) {
   // Calculate cost
@@ -29,10 +40,10 @@ export function CostCalculator({
 
   // Tier colors
   const tierColors = {
-    low: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-900', badge: 'bg-green-600' },
-    medium: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-900', badge: 'bg-blue-600' },
-    high: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-900', badge: 'bg-orange-600' },
-    premium: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-900', badge: 'bg-purple-600' },
+    low: { bg: 'bg-[var(--coconut-palm)]/10', border: 'border-[var(--coconut-palm)]/20', text: 'text-[var(--coconut-palm)]', badge: 'bg-[var(--coconut-palm)]' },
+    medium: { bg: 'bg-[var(--coconut-cream)]', border: 'border-[var(--coconut-husk)]/20', text: 'text-[var(--coconut-shell)]', badge: 'bg-[var(--coconut-husk)]' },
+    high: { bg: 'bg-[var(--coconut-husk)]/10', border: 'border-[var(--coconut-shell)]/30', text: 'text-[var(--coconut-shell)]', badge: 'bg-[var(--coconut-shell)]' },
+    premium: { bg: 'bg-[var(--coconut-cream)]', border: 'border-[var(--coconut-husk)]/20', text: 'text-[var(--coconut-shell)]', badge: 'bg-[var(--coconut-palm)]' },
   };
 
   const colors = tierColors[tier];
@@ -66,14 +77,14 @@ export function CostCalculator({
 
         {/* Affordability Status */}
         {canAfford ? (
-          <div className="flex items-center space-x-2 text-green-700 bg-green-100 rounded-lg px-3 py-2">
+          <div className="flex items-center space-x-2 text-[var(--coconut-palm)] bg-[var(--coconut-palm)]/10 rounded-lg px-3 py-2">
             <CheckCircle className="w-4 h-4" />
             <span className="text-sm">
               You have enough credits ({remainingCredits} remaining after generation)
             </span>
           </div>
         ) : (
-          <div className="flex items-center space-x-2 text-red-700 bg-red-100 rounded-lg px-3 py-2">
+          <div className="flex items-center space-x-2 text-[var(--coconut-shell)] bg-[var(--coconut-shell)]/10 rounded-lg px-3 py-2">
             <AlertCircle className="w-4 h-4" />
             <span className="text-sm">
               Insufficient credits (need {costBreakdown.total - userCredits} more)
@@ -111,21 +122,21 @@ export function CostCalculator({
           {/* Summary */}
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <div className="text-xs text-blue-700 mb-1">Analysis</div>
-                <div className="text-lg text-blue-900">{costBreakdown.geminiAnalysis}</div>
+              <div className="text-center p-3 bg-[var(--coconut-husk)]/10 rounded-lg">
+                <div className="text-xs text-[var(--coconut-husk)] mb-1">Analysis</div>
+                <div className="text-lg text-[var(--coconut-shell)]">{costBreakdown.geminiAnalysis}</div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <div className="text-xs text-purple-700 mb-1">Generation</div>
-                <div className="text-lg text-purple-900">{costBreakdown.fluxGeneration}</div>
+              <div className="text-center p-3 bg-[var(--coconut-cream)] rounded-lg">
+                <div className="text-xs text-[var(--coconut-husk)] mb-1">Generation</div>
+                <div className="text-lg text-[var(--coconut-shell)]">{costBreakdown.fluxGeneration}</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-xs text-green-700 mb-1">References</div>
-                <div className="text-lg text-green-900">{costBreakdown.references}</div>
+              <div className="text-center p-3 bg-[var(--coconut-palm)]/10 rounded-lg">
+                <div className="text-xs text-[var(--coconut-palm)] mb-1">References</div>
+                <div className="text-lg text-[var(--coconut-shell)]">{costBreakdown.references}</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <div className="text-xs text-orange-700 mb-1">Multi-Pass</div>
-                <div className="text-lg text-orange-900">{costBreakdown.multiPass}</div>
+              <div className="text-center p-3 bg-[var(--coconut-shell)]/10 rounded-lg">
+                <div className="text-xs text-[var(--coconut-shell)] mb-1">Multi-Pass</div>
+                <div className="text-lg text-[var(--coconut-shell)]">{costBreakdown.multiPass}</div>
               </div>
             </div>
           </div>
@@ -133,7 +144,7 @@ export function CostCalculator({
       )}
 
       {/* User Credits */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-[var(--coconut-cream)] to-[var(--coconut-milk)] border border-[var(--coconut-husk)]/20 rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm text-slate-700 mb-1">Your Balance</div>
@@ -142,7 +153,7 @@ export function CostCalculator({
           </div>
           <div className="text-right">
             <div className="text-sm text-slate-700 mb-1">After Generation</div>
-            <div className={`text-2xl ${remainingCredits >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl ${remainingCredits >= 0 ? 'text-[var(--coconut-palm)]' : 'text-[var(--coconut-shell)]'}`}>
               {remainingCredits >= 0 ? remainingCredits : 0} credits
             </div>
             <div className="text-xs text-slate-600">
@@ -161,10 +172,10 @@ export function CostCalculator({
             <div 
               className={`h-2 rounded-full transition-all ${
                 costBreakdown.total / userCredits > 0.8 
-                  ? 'bg-red-600' 
+                  ? 'bg-[var(--coconut-shell)]' 
                   : costBreakdown.total / userCredits > 0.5 
-                    ? 'bg-orange-500' 
-                    : 'bg-green-500'
+                    ? 'bg-[var(--coconut-husk)]' 
+                    : 'bg-[var(--coconut-palm)]'
               }`}
               style={{ width: `${Math.min((costBreakdown.total / userCredits) * 100, 100)}%` }}
             />
@@ -173,9 +184,9 @@ export function CostCalculator({
       </div>
 
       {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <h4 className="text-sm text-blue-900 mb-2">💡 Cost Optimization Tips</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="bg-[var(--coconut-cream)] border border-[var(--coconut-husk)]/20 rounded-xl p-4">
+        <h4 className="text-sm text-[var(--coconut-shell)] mb-2">💡 Cost Optimization Tips</h4>
+        <ul className="text-sm text-[var(--coconut-husk)] space-y-1">
           <li>• Use single-pass mode for faster, cheaper generation</li>
           <li>• Lower resolution (1K) costs less than 4K</li>
           <li>• Each reference adds {costBreakdown.references / Math.max(specs.referencesCount, 1)} credits</li>

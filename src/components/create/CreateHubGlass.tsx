@@ -31,11 +31,14 @@ import {
   ArrowLeftRight,
   Clock
 } from 'lucide-react';
+import { toast } from 'sonner@2.0.3'; // ✅ NEW: Add toast for publish feedback
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';
 import { useVideoGeneration } from '../../lib/hooks/useVideoGeneration';
 import { useAvatarGeneration } from '../../lib/hooks/useAvatarGeneration';
-import { useGenerationQueue } from '../../lib/contexts/GenerationQueueContext';
+import { useUserGenerationQueue } from '../../lib/contexts/GenerationQueueContext'; // ✅ Use user-filtered queue
+import { useCredits } from '../../lib/contexts/CreditsContext'; // ✅ NEW: Use real credits
+import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: For username
 import { generateMedia } from '../../lib/generation';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { ResultModal } from './ResultModal';
@@ -62,6 +65,9 @@ interface Template {
 interface CreateHubGlassProps {
   onNavigate: (screen: Screen) => void;
   onSelectTool: (toolId: string) => void;
+  remixImage?: string; // ✅ Optional: Pre-fill reference image for remix
+  remixPrompt?: string; // ✅ Optional: Pre-fill prompt for remix
+  remixParentId?: string; // ✅ NEW: Parent creation ID for remix chain
 }
 
 interface GenerationResult {
@@ -209,14 +215,18 @@ const AVATAR_TEMPLATES: Template[] = [
 export function CreateHubGlass({ 
   onNavigate, 
   onSelectTool,
+  remixImage,
+  remixPrompt,
+  remixParentId, // ✅ NEW: Parent creation ID for remix chain
 }: CreateHubGlassProps) {
   const [mode, setMode] = useState<CreateMode>('image');
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(remixPrompt || '');
   const [isFocused, setIsFocused] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(!!remixImage); // ✅ Open settings if remix mode
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [selectedModel, setSelectedModel] = useState('zimage'); // ✅ DEFAULT
-  const [referenceImages, setReferenceImages] = useState<string[]>([]); // ✅ Reference images URLs
+  // ✅ REMIX MODE: When remixImage is provided from feed, pre-fill as reference image
+  const [referenceImages, setReferenceImages] = useState<string[]>(remixImage ? [remixImage] : []); // ✅ Reference images URLs
   const [uploadingImages, setUploadingImages] = useState(false); // ✅ Upload state
   const [enhancePrompt, setEnhancePrompt] = useState(true); // ✅ Enhance prompt with Cortexia (default: true)
   
@@ -245,17 +255,21 @@ export function CreateHubGlass({
   const avatarAudioPlayerRef = useRef<HTMLAudioElement>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
-  // ✅ CREDITS STATE
-  const [freeCredits, setFreeCredits] = useState(25);
-  const [paidCredits, setPaidCredits] = useState(0);
+  // ✅ CREDITS from context (no local state)
+  const { credits, refetchCredits, userId } = useCredits();
+  const freeCredits = credits.free;
+  const paidCredits = credits.paid;
+  
+  // ✅ AUTH from context (for username/email)
+  const { user } = useAuth();
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const { playClick, playHover } = useSound();
   const { light, medium } = useHaptic();
   
-  // ✅ GENERATION QUEUE HOOK
-  const { addToQueue, updateQueueItem, getActiveGenerations } = useGenerationQueue();
+  // ✅ GENERATION QUEUE HOOK (filtered by userId)
+  const { addToQueue, updateQueueItem, getActiveGenerations } = useUserGenerationQueue(userId);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const currentImageQueueIdRef = useRef<string | null>(null);
   const currentVideoQueueIdRef = useRef<string | null>(null);
@@ -309,7 +323,7 @@ export function CreateHubGlass({
       playErrorSound();
       medium();
     },
-    userId: 'anonymous'
+    userId: userId || 'anonymous' // ✅ Use real userId
   });
 
   // ✅ Avatar generation hook
@@ -344,18 +358,8 @@ export function CreateHubGlass({
       playSuccessSound();
       light();
       
-      // ✅ Reload credits
-      fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/anonymous`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setFreeCredits(data.credits.free);
-            setPaidCredits(data.credits.paid);
-          }
-        })
-        .catch(err => console.error('Failed to reload credits:', err));
+      // ✅ Reload credits from context
+      refetchCredits().catch(err => console.error('Failed to reload credits:', err));
     },
     onError: (error) => {
       console.error('❌ Avatar generation failed:', error);
@@ -374,50 +378,44 @@ export function CreateHubGlass({
       playErrorSound();
       medium();
     },
-    userId: 'anonymous'
+    userId: userId || 'anonymous' // ✅ Use real userId
   });
 
-  // ✅ Load user credits on mount
+  // ✅ REMIX MODE: Initialize reference images AND select model
   useEffect(() => {
-    const loadCredits = async () => {
-      try {
-        // ✅ Check if we need to force reset (first time or if paid credits are 0)
-        const needsReset = localStorage.getItem('cortexia-credits-initialized') !== 'true';
-        const resetParam = needsReset ? '?reset=true' : '';
-        
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/anonymous${resetParam}`, {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
-        });
-        
-        const data = await response.json();
-        if (data.success) {
-          setFreeCredits(data.credits.free);
-          setPaidCredits(data.credits.paid);
-          
-          // ✅ Set default model based on credits
-          if (data.credits.paid > 0) {
-            // Paid users start with Flux 2 Pro
-            setSelectedModel('flux-2-pro');
-          } else {
-            // Free users start with Zimage
-            setSelectedModel('zimage');
-          }
-          
-          // Mark as initialized
-          if (needsReset) {
-            localStorage.setItem('cortexia-credits-initialized', 'true');
-            console.log('✅ Credits initialized with defaults: 25 free, 100 paid');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load credits:', error);
+    if (remixImage) {
+      console.log('🎨 Remix mode activated, setting reference image:', remixImage);
+      setReferenceImages([remixImage]);
+      
+      // Immediately select the right model for remix
+      if (paidCredits > 0) {
+        console.log('💎 Selecting Flux 2 Pro for paid user remix');
+        setSelectedModel('flux-2-pro');
+      } else {
+        console.log('🆓 Selecting Kontext for free user remix');
+        setSelectedModel('kontext');
       }
-    };
-    
-    loadCredits();
-  }, []);
+    } else {
+      // ✅ NORMAL MODE: Default selection based on credits only
+      if (paidCredits > 0) {
+        console.log('💎 Selecting Flux 2 Pro for paid user (normal mode)');
+        setSelectedModel('flux-2-pro');
+      } else {
+        console.log('🆓 Selecting Z-Image for free user (normal mode)');
+        setSelectedModel('zimage');
+      }
+    }
+  }, [remixImage, paidCredits]);
+
+  // ✅ Show toast when remix mode auto-selects a model
+  useEffect(() => {
+    if (remixImage) {
+      const modelName = paidCredits > 0 ? 'Flux 2 Pro' : 'Kontext';
+      toast.info(`🎨 Remix mode: ${modelName} selected for image-to-image generation`, {
+        duration: 3000,
+      });
+    }
+  }, [remixImage]); // Only run once when remixImage is set
 
   // Auto-resize textarea with max height
   useEffect(() => {
@@ -444,12 +442,18 @@ export function CreateHubGlass({
     }
     
     if (mode === 'avatar') {
-      // InfiniteTalk avatar costs (handled in component, but for display purposes)
-      return 1; // Default 480p
+      // InfiniteTalk avatar costs
+      return avatarResolution === '480p' ? 1 : 2;
     }
     
-    // Image generation costs
-    // Flux 2 supports image-to-image with reference images (+1 credit per image)
+    // ✅ IMAGE GENERATION COSTS
+    
+    // Free models (Pollinations) - 1 free credit each
+    if (['zimage', 'seedream', 'kontext', 'nanobanana'].includes(selectedModel)) {
+      return 1; // 1 free credit
+    }
+    
+    // Premium models (Kie AI) - paid credits
     if (selectedModel === 'flux-2-pro') {
       const baseCost = resolution === '1K' ? 1 : 2;
       return baseCost + referenceImages.length;
@@ -465,27 +469,73 @@ export function CreateHubGlass({
       return baseCost + referenceImages.length;
     }
     
-    // Free models
+    // Default fallback
     return 1;
   };
 
   // ✅ Check if user can use selected model
   const canUseModel = (modelId: string): boolean => {
+    const cost = calculateGenerationCost();
+    
     // Free models require free credits
     if (['zimage', 'seedream', 'kontext', 'nanobanana'].includes(modelId)) {
-      return freeCredits > 0;
+      return freeCredits >= cost;
     }
     
     // Premium models require paid credits
     if (['flux-2-pro', 'flux-2-flex', 'nano-banana-pro'].includes(modelId)) {
-      return paidCredits >= calculateGenerationCost();
+      return paidCredits >= cost;
     }
     
     return false;
   };
+  
+  // ✅ Check if user has enough credits for current mode
+  const hasEnoughCredits = (): { ok: boolean; error?: string } => {
+    const cost = calculateGenerationCost();
+    
+    if (mode === 'video' || mode === 'avatar') {
+      // Video and avatar always use paid credits
+      if (paidCredits < cost) {
+        return { 
+          ok: false, 
+          error: `Insufficient paid credits. Need ${cost}, have ${paidCredits}` 
+        };
+      }
+      return { ok: true };
+    }
+    
+    // Image generation
+    const isFreeModel = ['zimage', 'seedream', 'kontext', 'nanobanana'].includes(selectedModel);
+    
+    if (isFreeModel && freeCredits < cost) {
+      return { 
+        ok: false, 
+        error: `Insufficient free credits. Need ${cost}, have ${freeCredits}` 
+      };
+    }
+    
+    if (!isFreeModel && paidCredits < cost) {
+      return { 
+        ok: false, 
+        error: `Insufficient paid credits. Need ${cost}, have ${paidCredits}` 
+      };
+    }
+    
+    return { ok: true };
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim() || isGenerating) return;
+    
+    // ✅ CHECK CREDITS BEFORE GENERATION
+    const creditCheck = hasEnoughCredits();
+    if (!creditCheck.ok) {
+      setGenerationError(creditCheck.error || 'Insufficient credits');
+      playErrorSound();
+      medium();
+      return;
+    }
     
     playClick();
     medium();
@@ -499,7 +549,8 @@ export function CreateHubGlass({
         mode, 
         prompt, 
         selectedModel: mode === 'avatar' ? 'infinitalk' : mode === 'video' ? videoModel : selectedModel, 
-        aspectRatio: mode === 'avatar' ? avatarResolution : mode === 'video' ? videoAspectRatio : aspectRatio 
+        aspectRatio: mode === 'avatar' ? avatarResolution : mode === 'video' ? videoAspectRatio : aspectRatio,
+        userId // ✅ Log real userId
       });
       
       // Get dimensions from aspect ratio
@@ -519,6 +570,7 @@ export function CreateHubGlass({
           prompt,
           model: selectedModel,
           aspectRatio,
+          userId, // ✅ Track which user created this
         });
         currentImageQueueIdRef.current = queueId;
         
@@ -533,7 +585,7 @@ export function CreateHubGlass({
               resolution,
               aspectRatio,
               referenceImages,
-              userId: 'anonymous'
+              userId: userId || 'anonymous' // ✅ Use real userId
             };
             console.log('💎 Sending Kie AI request:', requestBody);
             
@@ -569,14 +621,18 @@ export function CreateHubGlass({
               light();
               playSuccessSound();
               
-              // ✅ Reload credits
-              const creditsResponse = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/anonymous`, {
-                headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-              });
-              const creditsData = await creditsResponse.json();
-              if (creditsData.success) {
-                setPaidCredits(creditsData.credits.paid);
-              }
+              // ✅ Reload credits from context
+              await refetchCredits();
+
+              // ✅ Track creator stats
+              await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/creators/track/creation`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${publicAnonKey}`
+                },
+                body: JSON.stringify({ userId: userId || 'anonymous' }) // ✅ Use real userId
+              }).catch(err => console.warn('Failed to track creation:', err));
             } else {
               throw new Error(data.error || 'Kie AI generation failed');
             }
@@ -601,7 +657,7 @@ export function CreateHubGlass({
               aspectRatio,
               resolution,
               outputFormat: 'png',
-              userId: 'anonymous'
+              userId: userId || 'anonymous' // ✅ Use real userId
             };
             console.log('🍌 Sending Nano Banana Pro request:', requestBody);
             
@@ -637,14 +693,8 @@ export function CreateHubGlass({
               light();
               playSuccessSound();
               
-              // ✅ Reload credits
-              const creditsResponse = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/anonymous`, {
-                headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-              });
-              const creditsData = await creditsResponse.json();
-              if (creditsData.success) {
-                setPaidCredits(creditsData.credits.paid);
-              }
+              // ✅ Reload credits from context
+              await refetchCredits();
             } else {
               throw new Error(data.error || 'Nano Banana Pro generation failed');
             }
@@ -668,7 +718,8 @@ export function CreateHubGlass({
             width: dimensions.width,
             height: dimensions.height,
             referenceImages: referenceImages,
-            enhancePrompt: enhancePrompt // ✅ Pass enhance option
+            enhancePrompt: enhancePrompt, // ✅ Pass enhance option
+            userId // ✅ Pass userId for credit tracking
           });
           
           console.log('✅ Generation result:', result);
@@ -683,6 +734,9 @@ export function CreateHubGlass({
             
             setGenerationResult(result);
             light();
+            
+            // ✅ Refresh credits after successful generation
+            await refetchCredits();
             
             // ✅ Play success sound
             playSuccessSound();
@@ -707,6 +761,7 @@ export function CreateHubGlass({
           prompt,
           model: videoModel,
           aspectRatio: videoAspectRatio,
+          userId, // ✅ Track which user created this
         });
         currentVideoQueueIdRef.current = queueId;
         console.log('📊 Video queue ID stored:', queueId);
@@ -759,6 +814,7 @@ export function CreateHubGlass({
           prompt,
           model: 'infinitalk',
           aspectRatio: avatarResolution,
+          userId, // ✅ Track which user created this
         });
         currentAvatarQueueIdRef.current = queueId;
         console.log('📊 Avatar queue ID stored:', queueId);
@@ -770,7 +826,7 @@ export function CreateHubGlass({
           audio_url: avatarAudioUrl,
           prompt,
           resolution: avatarResolution,
-          userId: 'anonymous'
+          userId: userId || 'anonymous' // ✅ Use real userId
         });
         
         // Store taskId in queue
@@ -821,19 +877,114 @@ export function CreateHubGlass({
       console.log('📥 Downloading image as', format);
       console.log('🔗 Image URL:', generationResult.url);
       
-      // Simple direct download - browser handles it natively
-      // No target="_blank" to prevent opening in new tab
+      // ✅ Download as blob to bypass CORS restrictions
+      const response = await fetch(generationResult.url);
+      const blob = await response.blob();
+      
+      // Create blob URL
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Download with proper filename
       const a = document.createElement('a');
-      a.href = generationResult.url;
+      a.href = blobUrl;
       a.download = `cortexia-${Date.now()}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       
+      // Clean up blob URL
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      
       console.log('✅ Download initiated');
+      toast.success('Image downloaded successfully');
     } catch (error) {
       console.error('❌ Download error:', error);
+      toast.error('Failed to download image');
       setGenerationError('Failed to download image. Try right-click > Save Image As');
+    }
+  };
+
+  // ✅ NEW: Publish to Feed
+  const handlePublishToFeed = async () => {
+    if (!generationResult?.url) {
+      toast.error('No image to publish');
+      return;
+    }
+
+    try {
+      playClick();
+      medium();
+      
+      console.log('📤 Publishing to feed...', {
+        assetUrl: generationResult.url,
+        prompt,
+        model: selectedModel,
+        type: mode,
+        parentCreationId: remixParentId // ✅ NEW: Log parent ID for debugging
+      });
+
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/publish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({
+          userId: userId || 'anonymous', // ✅ Use real userId
+          username: user?.name || user?.email?.split('@')[0] || 'user',
+          userAvatar: user?.picture || '',
+          type: mode,
+          assetUrl: generationResult.url,
+          thumbnailUrl: mode === 'video' ? generationResult.url : undefined,
+          prompt,
+          caption: prompt,
+          model: selectedModel,
+          tags: [],
+          isPublic: true,
+          parentCreationId: remixParentId, // ✅ NEW: Link to parent for remix chain
+          metadata: {
+            aspectRatio: mode === 'image' ? aspectRatio : undefined,
+            resolution: mode === 'image' ? resolution : undefined,
+            duration: mode === 'video' ? parseInt(videoDuration.replace('s', '')) : undefined
+          }
+        })
+      });
+
+      const data = await response.json();
+      console.log('📤 Publish response:', data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${response.status}: Failed to publish`);
+      }
+
+      toast.success('🎉 Published to feed!', {
+        description: 'Your creation is now visible in the community feed'
+      });
+      
+      playSuccessSound();
+      light();
+
+      setGenerationResult(null);
+      
+      await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/creators/track/post`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        },
+        body: JSON.stringify({
+          userId: userId || 'anonymous', // ✅ Use real userId
+          postId: data.creationId
+        })
+      }).catch(err => console.warn('Failed to track creator post:', err));
+
+    } catch (error: any) {
+      console.error('❌ Publish to feed error:', error);
+      toast.error('Failed to publish', {
+        description: error.message || 'Please try again'
+      });
+      playErrorSound();
+      medium();
     }
   };
 
@@ -874,7 +1025,7 @@ export function CreateHubGlass({
                   imageData: base64,
                   filename: file.name,
                   contentType: file.type,
-                  userId: 'anonymous'
+                  userId: userId || 'anonymous' // ✅ Use real userId
                 })
               });
               
@@ -950,7 +1101,7 @@ export function CreateHubGlass({
             imageData: base64,
             filename: file.name,
             contentType: file.type,
-            userId: 'anonymous'
+            userId: userId || 'anonymous' // ✅ Use real userId
           })
         });
         
@@ -1041,7 +1192,7 @@ export function CreateHubGlass({
             audioData: base64,
             filename: file.name,
             contentType: file.type,
-            userId: 'anonymous'
+            userId: userId || 'anonymous' // ✅ Use real userId
           })
         });
         
@@ -1145,7 +1296,7 @@ export function CreateHubGlass({
         >
           <div className="flex items-center justify-between h-14 px-4 max-w-4xl mx-auto">
             <button 
-              onClick={() => onNavigate('home')}
+              onClick={() => onNavigate('feed')}
               onMouseEnter={() => playHover()}
               className="w-9 h-9 rounded-xl backdrop-blur-3xl flex items-center justify-center transition-all hover:bg-white/15 border border-white/10"
               style={{
@@ -1706,6 +1857,7 @@ export function CreateHubGlass({
                 <span className="text-sm md:text-sm">
                   Generate {mode === 'image' ? 'Image' : mode === 'video' ? 'Video' : 'Avatar'} 
                   {mode === 'image' && ` (${calculateGenerationCost()} credit${calculateGenerationCost() > 1 ? 's' : ''})`}
+                  {mode === 'video' && ` (${calculateGenerationCost()} credit${calculateGenerationCost() > 1 ? 's' : ''})`}
                   {mode === 'avatar' && ` (${avatarResolution === '480p' ? 1 : 2} credit${avatarResolution === '720p' ? 's' : ''})`}
                 </span>
               </>
@@ -2235,6 +2387,7 @@ export function CreateHubGlass({
             referenceImages={referenceImages}
             selectedModel={selectedModel}
             onDownload={downloadImage}
+            onPublishToFeed={handlePublishToFeed}
             onCreateAnother={() => {
               setGenerationResult(null);
               setPrompt('');
@@ -2339,6 +2492,7 @@ export function CreateHubGlass({
                 prompt: extendPrompt,
                 model: videoModel,
                 aspectRatio: videoAspectRatio,
+                userId, // ✅ Track which user created this
               });
               currentVideoQueueIdRef.current = queueId;
               console.log('📊 Extend video queue ID stored:', queueId);

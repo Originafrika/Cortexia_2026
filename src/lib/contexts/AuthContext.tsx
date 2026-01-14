@@ -1,55 +1,814 @@
 /**
- * AuthContext - MVP Mock version
- * TODO: Replace with real Supabase auth
+ * AuthContext - Complete Authentication System
+ * Supports: Individual, Enterprise, Developer accounts
+ * Features: Route protection, Read-only mode, Type-based access
+ * Auth Methods: Supabase Auth (email/password) + Auth0 (social login)
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase, handleAuth0Callback, signOutAuth0, updateAuth0UserMetadata, onAuth0StateChange, getAuth0Session } from '../services/auth0-service';
+import { projectId, publicAnonKey } from '../../utils/supabase/info'; // ✅ FIX: Correct path
 
-interface User {
+// ============================================
+// TYPES
+// ============================================
+
+export type UserType = 'individual' | 'enterprise' | 'developer';
+
+export interface User {
   id: string;
   email: string;
   name?: string;
+  type: UserType; // ✅ User type for access control
+  onboardingComplete: boolean; // ✅ Onboarding status
+  createdAt: string;
+  
+  // ✅ Enterprise branding
+  companyLogo?: string | null; // ✅ Company logo URL
+  brandColors?: string[]; // ✅ Brand color palette
+  companyName?: string; // ✅ Company name
+  
+  // ✅ Auth provider info
+  provider?: 'supabase' | 'auth0'; // ✅ Which auth method was used
+  auth0Id?: string; // ✅ Auth0 user ID (if using Auth0)
+  picture?: string; // ✅ Profile picture URL (from Auth0)
+  referralCode?: string; // ✅ Referral code (from sessionStorage during signup)
+  
+  subscription?: {
+    plan: 'free' | 'pro' | 'enterprise';
+    credits: number;
+  };
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  isAuthenticated: boolean;
+  userType: UserType | null;
+  
+  // ✅ NEW: Track if user just signed up (needs onboarding)
+  isNewUser: boolean;
+  
+  // Auth methods
+  signIn: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  signUp: (email: string, password: string, type: UserType, name?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signOut: () => Promise<void>;
+  
+  // ✅ NEW: Update user from OAuth callback
+  updateUserFromCallback: (user: User) => Promise<{ isNewUser: boolean }>;
+  
+  // ✅ NEW: Update user profile/branding
+  updateUserProfile: (updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
+  completeOnboarding: (onboardingData?: { companyLogo?: string | null; brandColors?: string[]; companyName?: string }) => Promise<{ success: boolean; error?: string }>;
+  
+  // Access control
+  canAccessRoute: (route: string) => boolean;
+  requiresAuth: (route: string) => boolean;
 }
+
+// ============================================
+// MOCK USER STORAGE (localStorage) - For Supabase fallback
+// ============================================
+
+const STORAGE_KEY = 'cortexia_users';
+const SESSION_KEY = 'cortexia_session';
+
+interface StoredUser {
+  id: string;
+  email: string;
+  // ❌ REMOVED: password field (security risk)
+  name?: string;
+  type: UserType;
+  onboardingComplete: boolean;
+  createdAt: string;
+  
+  // ✅ Enterprise branding
+  companyLogo?: string | null;
+  brandColors?: string[];
+  companyName?: string;
+  
+  // ✅ Provider info
+  provider?: 'supabase' | 'auth0';
+  auth0Id?: string; // ✅ Auth0 user ID
+  accessToken?: string; // ✅ Store access token for API calls
+}
+
+const getStoredUsers = (): StoredUser[] => {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
+
+const saveUser = (user: StoredUser) => {
+  const users = getStoredUsers();
+  users.push(user);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+};
+
+const findUser = (email: string, password: string): StoredUser | null => {
+  // ❌ REMOVED: Password comparison - use Supabase Auth only
+  // This function is deprecated but kept for backward compatibility
+  console.warn('[AuthContext] findUser is deprecated - use Supabase Auth signIn instead');
+  return null;
+};
+
+const getSession = (): string | null => {
+  return localStorage.getItem(SESSION_KEY);
+};
+
+const setSession = (userId: string) => {
+  localStorage.setItem(SESSION_KEY, userId);
+};
+
+const clearSession = () => {
+  localStorage.removeItem(SESSION_KEY);
+};
+
+const getUserById = (id: string): StoredUser | null => {
+  const users = getStoredUsers();
+  return users.find(u => u.id === id) || null;
+};
+
+// ✅ NEW: Save/update Auth0 user in localStorage for persistence
+const saveOrUpdateAuth0User = (user: User) => {
+  const users = getStoredUsers();
+  const existingIndex = users.findIndex(u => u.email === user.email);
+  
+  const storedUser: StoredUser = {
+    id: user.id,
+    email: user.email,
+    // ❌ REMOVED: password field (security risk)
+    name: user.name,
+    type: user.type,
+    onboardingComplete: user.onboardingComplete,
+    createdAt: user.createdAt,
+    companyLogo: user.companyLogo,
+    brandColors: user.brandColors,
+    companyName: user.companyName,
+    provider: 'auth0'
+  };
+  
+  if (existingIndex !== -1) {
+    users[existingIndex] = storedUser;
+  } else {
+    users.push(storedUser);
+  }
+  
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+};
+
+// ============================================
+// ROUTE ACCESS CONTROL
+// ============================================
+
+// Routes that require authentication
+const PROTECTED_ROUTES = [
+  'create',
+  'create-v4',
+  'profile',
+  'messages',
+  'new-message',
+  'wallet',
+  'creator-dashboard',
+  'settings'
+];
+
+// Routes accessible by user type
+const TYPE_ROUTES: Record<UserType, string[]> = {
+  individual: ['feed', 'discovery', 'create', 'create-v4', 'profile', 'messages', 'wallet', 'creator-dashboard', 'settings'],
+  enterprise: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'], // ✅ Enterprise = Coconut ONLY
+  developer: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'] // ✅ Developer = API + Coconut
+};
+
+// ============================================
+// CONTEXT
+// ============================================
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
 
+  // ✅ Auto-restore session on mount (Supabase Auth + localStorage fallback)
   useEffect(() => {
-    // MVP: Auto-login with mock user
-    const mockUser: User = {
-      id: 'user_mock_123',
-      email: 'demo@cortexia.ai',
-      name: 'Demo User'
+    let mounted = true;
+    
+    const initAuth = async () => {
+      try {
+        // 1. Check for Supabase session first (priority)
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!error && session?.user) {
+          // Supabase OAuth session found
+          const supabaseUser = session.user;
+          const metadata = supabaseUser.user_metadata || {};
+          
+          // Get user type from sessionStorage or metadata
+          const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
+                                 sessionStorage.getItem('cortexia_pending_user_type') ||
+                                 metadata.user_type || 
+                                 'individual';
+          
+          const userData: User = {
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
+            type: storedUserType as UserType,
+            onboardingComplete: metadata.onboarding_complete || false,
+            createdAt: supabaseUser.created_at,
+            companyLogo: metadata.company_logo,
+            brandColors: metadata.brand_colors,
+            companyName: metadata.company_name,
+            provider: 'auth0', // Keep naming for compatibility
+            auth0Id: supabaseUser.id,
+            picture: metadata.picture,
+            referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
+          };
+          
+          if (mounted) {
+            setUser(userData);
+            saveOrUpdateAuth0User(userData); // Sync to localStorage
+            setSession(supabaseUser.id);
+            
+            // Store user type for future use
+            sessionStorage.setItem('cortexia_user_type', userData.type);
+          }
+        } else {
+          // 2. Fallback to localStorage session (for email/password users)
+          const sessionUserId = getSession();
+          if (sessionUserId) {
+            const storedUser = getUserById(sessionUserId);
+            if (storedUser) {
+              if (mounted) {
+                setUser({
+                  id: storedUser.id,
+                  email: storedUser.email,
+                  name: storedUser.name,
+                  type: storedUser.type,
+                  onboardingComplete: storedUser.onboardingComplete,
+                  createdAt: storedUser.createdAt,
+                  companyLogo: storedUser.companyLogo,
+                  brandColors: storedUser.brandColors,
+                  companyName: storedUser.companyName,
+                  provider: storedUser.provider || 'supabase'
+                });
+              }
+            } else {
+              clearSession();
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[AuthContext] Init error:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
-    setUser(mockUser);
-    setLoading(false);
+    
+    initAuth();
+    
+    // ✅ Listen to Supabase auth state changes
+    const { data: authListener } = onAuth0StateChange((session) => {
+      if (!mounted) return;
+      
+      console.log('🔄 [AuthContext] Auth state changed:', session ? 'SESSION EXISTS' : 'NO SESSION', session?.user?.id);
+      
+      if (session?.user) {
+        const supabaseUser = session.user;
+        const metadata = supabaseUser.user_metadata || {};
+        
+        const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
+                               sessionStorage.getItem('cortexia_pending_user_type') ||
+                               metadata.user_type || 
+                               'individual';
+        
+        const userData: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+          name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
+          type: storedUserType as UserType,
+          onboardingComplete: metadata.onboarding_complete || false,
+          createdAt: supabaseUser.created_at,
+          companyLogo: metadata.company_logo,
+          brandColors: metadata.brand_colors,
+          companyName: metadata.company_name,
+          provider: 'auth0',
+          auth0Id: supabaseUser.id,
+          picture: metadata.picture,
+          referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
+        };
+        
+        console.log('✅ [AuthContext] Setting user from auth state change:', userData.id);
+        setUser(userData);
+        saveOrUpdateAuth0User(userData);
+        setSession(supabaseUser.id);
+        
+        // Store user type for future use
+        sessionStorage.setItem('cortexia_user_type', userData.type);
+      }
+      // ✅ FIX V3: NEVER auto-clear user from session events
+      // OAuth sessions can expire/refresh without meaning the user signed out
+      // Only clear user on explicit signOut() call
+      // This prevents false logouts from token refresh or session expiry
+      else if (!session) {
+        console.log('ℹ️ [AuthContext] Session event shows no session, but ignoring - only signOut() can clear user');
+      }
+    });
+    
+    return () => {
+      mounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
   }, []);
 
+  // ✅ Sign In
   const signIn = async (email: string, password: string) => {
-    // MVP: Mock sign in
-    setUser({
-      id: 'user_mock_123',
-      email,
-      name: 'Demo User'
-    });
+    try {
+      console.log('[AuthContext] Signing in with email:', email);
+      
+      // ✅ Use Supabase auth instead of localStorage
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error('[AuthContext] Sign in error:', error);
+        return { success: false, error: 'Email ou mot de passe incorrect' };
+      }
+      
+      if (!data.user || !data.session) {
+        return { success: false, error: 'Erreur lors de la connexion' };
+      }
+      
+      // Extract user data from Supabase
+      const supabaseUser = data.user;
+      const metadata = supabaseUser.user_metadata || {};
+      
+      const userData: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        name: metadata.name || supabaseUser.email?.split('@')[0],
+        type: (metadata.user_type || 'individual') as UserType,
+        onboardingComplete: metadata.onboarding_complete || false,
+        createdAt: supabaseUser.created_at,
+        companyLogo: metadata.company_logo,
+        brandColors: metadata.brand_colors,
+        companyName: metadata.company_name,
+        provider: 'supabase',
+      };
+      
+      console.log('[AuthContext] Sign in successful:', userData);
+      
+      setUser(userData);
+      setSession(supabaseUser.id);
+      saveOrUpdateAuth0User(userData); // Sync to localStorage for compatibility
+      
+      return { success: true, user: userData };
+    } catch (error: any) {
+      console.error('[AuthContext] Sign in exception:', error);
+      return { success: false, error: 'Erreur lors de la connexion' };
+    }
   };
 
+  // ✅ Sign Up
+  const signUp = async (email: string, password: string, type: UserType, name?: string) => {
+    try {
+      console.log('[AuthContext] Signing up with email:', email, 'type:', type);
+      
+      // ✅ CRITICAL FIX: Call backend signup endpoint to create user profile in KV store
+      const endpoint = type === 'individual' 
+        ? '/auth/signup-individual'
+        : type === 'enterprise'
+        ? '/auth/signup-enterprise'
+        : '/auth/signup-developer';
+      
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          // Add type-specific fields if needed in the future
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[AuthContext] Backend signup error:', errorData);
+        return { 
+          success: false, 
+          error: errorData.error || 'Erreur lors de la création du compte' 
+        };
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success || !data.userId) {
+        return { 
+          success: false, 
+          error: data.error || 'Erreur lors de la création du compte' 
+        };
+      }
+      
+      console.log('[AuthContext] Backend signup successful:', data);
+      
+      // ✅ Now sign in with Supabase to get session
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (signInError || !authData.user) {
+        console.error('[AuthContext] Auto sign-in after signup failed:', signInError);
+        // User was created but auto sign-in failed - that's okay
+        return { 
+          success: true, 
+          user: {
+            id: data.userId,
+            email,
+            name: name || email.split('@')[0],
+            type,
+            onboardingComplete: false,
+            createdAt: new Date().toISOString(),
+            provider: 'supabase',
+          }
+        };
+      }
+      
+      // Extract user data from Supabase
+      const supabaseUser = authData.user;
+      const metadata = supabaseUser.user_metadata || {};
+      
+      const userData: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email!,
+        name: metadata.name || name || supabaseUser.email?.split('@')[0],
+        type: type,
+        onboardingComplete: false,
+        createdAt: supabaseUser.created_at,
+        provider: 'supabase',
+      };
+      
+      console.log('[AuthContext] Sign up successful:', userData);
+      
+      setUser(userData);
+      setSession(supabaseUser.id);
+      saveOrUpdateAuth0User(userData); // Sync to localStorage for compatibility
+      
+      // ✅ NEW: Mark user as new
+      setIsNewUser(true);
+      
+      return { success: true, user: userData };
+    } catch (error: any) {
+      console.error('[AuthContext] Sign up exception:', error);
+      return { success: false, error: 'Erreur lors de la création du compte' };
+    }
+  };
+
+  // ✅ Sign Out
   const signOut = async () => {
+    // ✅ Check if user is Auth0 user
+    if (user?.provider === 'auth0') {
+      await signOutAuth0();
+    }
+    
     setUser(null);
+    clearSession();
+  };
+
+  // ✅ Check if route requires authentication
+  const requiresAuth = (route: string): boolean => {
+    return PROTECTED_ROUTES.includes(route);
+  };
+
+  // ✅ Check if user can access route
+  const canAccessRoute = (route: string): boolean => {
+    // Public routes (accessible without auth)
+    if (['landing', 'login', 'signup-individual', 'signup-enterprise', 'signup-developer', 'feed', 'discovery'].includes(route)) {
+      return true;
+    }
+    
+    // Protected routes require auth
+    if (!user) {
+      return false;
+    }
+    
+    // Check type-specific access
+    const allowedRoutes = TYPE_ROUTES[user.type] || [];
+    return allowedRoutes.includes(route);
+  };
+
+  // ✅ Update user from OAuth callback
+  const updateUserFromCallback = async (user: User): Promise<{ isNewUser: boolean }> => {
+    try {
+      if (!user) {
+        return { isNewUser: false };
+      }
+      
+      // ✅ For Auth0 users, just update localStorage (no Supabase session)
+      if (user.provider === 'auth0') {
+        console.log('[AuthContext] Updating Auth0 user (localStorage only)');
+        
+        // Update local state
+        setUser(user);
+        saveOrUpdateAuth0User(user);
+        setSession(user.id);
+        
+        // ✅ NEW: Create user profile in backend if new user
+        try {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/create-or-update-auth0`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${publicAnonKey}`,
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                email: user.email,
+                name: user.name,
+                userType: user.type,
+                auth0Id: user.auth0Id,
+                picture: user.picture,
+                referralCode: user.referralCode, // ✅ Pass referral code from user object
+              }),
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[AuthContext] Auth0 user profile created/updated in backend', data);
+            
+            // ✅ NEW: Update user object with backend data
+            const updatedUser: User = {
+              ...user,
+              // ✅ CRITICAL: Sync userType from backend (in case sessionStorage was cleared)
+              type: data.profile?.accountType || user.type,
+              onboardingComplete: data.profile?.onboardingComplete ?? user.onboardingComplete,
+              // Sync other fields from backend if available
+              companyLogo: data.profile?.companyLogo ?? user.companyLogo,
+              brandColors: data.profile?.brandColors ?? user.brandColors,
+              companyName: data.profile?.companyName ?? user.companyName,
+            };
+            
+            // ✅ Update state with synced user
+            setUser(updatedUser);
+            saveOrUpdateAuth0User(updatedUser);
+            
+            // ✅ NEW: Mark user as new if backend says so
+            if (data.isNewUser) {
+              console.log('[AuthContext] 🎉 New user detected! Will need onboarding.');
+              setIsNewUser(true);
+              return { isNewUser: true };
+            } else {
+              console.log('[AuthContext] ✅ Existing user, skip onboarding.');
+              setIsNewUser(false);
+              return { isNewUser: false };
+            }
+          }
+        } catch (err) {
+          console.error('[AuthContext] Failed to create Auth0 user profile in backend:', err);
+          // Non-blocking error - user can still continue
+        }
+        
+        return { isNewUser: false };
+      }
+      
+      // ✅ For Supabase users, update via Supabase Auth
+      if (user.provider === 'supabase') {
+        const result = await updateAuth0UserMetadata(user);
+        if (!result.success) {
+          console.error('[AuthContext] Failed to update Supabase metadata');
+          return { isNewUser: false };
+        }
+        
+        // Update local state
+        setUser(user);
+        saveOrUpdateAuth0User(user);
+        
+        return { isNewUser: false };
+      }
+      
+      // ✅ Legacy fallback: update localStorage
+      const storedUser = getUserById(user.id);
+      if (!storedUser) {
+        return { isNewUser: false };
+      }
+      
+      const updatedUser: StoredUser = {
+        ...storedUser,
+        ...user
+      };
+      
+      const users = getStoredUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+      if (userIndex !== -1) {
+        users[userIndex] = updatedUser;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        
+        setUser({
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          type: updatedUser.type,
+          onboardingComplete: updatedUser.onboardingComplete,
+          createdAt: updatedUser.createdAt,
+          companyLogo: updatedUser.companyLogo,
+          brandColors: updatedUser.brandColors,
+          companyName: updatedUser.companyName,
+          provider: updatedUser.provider
+        });
+        
+        return { isNewUser: false };
+      } else {
+        return { isNewUser: false };
+      }
+    } catch (error) {
+      return { isNewUser: false };
+    }
+  };
+
+  // ✅ Update user profile/branding
+  const updateUserProfile = async (updates: Partial<User>) => {
+    try {
+      if (!user) {
+        return { success: false, error: 'Utilisateur non authentifié' };
+      }
+      
+      // ✅ If Auth0 user, update via Supabase Auth
+      if (user.provider === 'auth0') {
+        const result = await updateAuth0UserMetadata(updates);
+        if (!result.success) {
+          return { success: false, error: result.error };
+        }
+        
+        // Update local state
+        const updatedUser = { ...user, ...updates };
+        setUser(updatedUser);
+        saveOrUpdateAuth0User(updatedUser);
+        
+        return { success: true };
+      }
+      
+      // ✅ Otherwise, update localStorage (legacy)
+      const storedUser = getUserById(user.id);
+      if (!storedUser) {
+        return { success: false, error: 'Utilisateur non trouvé' };
+      }
+      
+      const updatedUser: StoredUser = {
+        ...storedUser,
+        ...updates
+      };
+      
+      const users = getStoredUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+      if (userIndex !== -1) {
+        users[userIndex] = updatedUser;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        
+        setUser({
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          type: updatedUser.type,
+          onboardingComplete: updatedUser.onboardingComplete,
+          createdAt: updatedUser.createdAt,
+          companyLogo: updatedUser.companyLogo,
+          brandColors: updatedUser.brandColors,
+          companyName: updatedUser.companyName
+        });
+        
+        return { success: true };
+      } else {
+        return { success: false, error: 'Utilisateur non trouvé' };
+      }
+    } catch (error) {
+      return { success: false, error: 'Erreur lors de la mise à jour du profil' };
+    }
+  };
+
+  // ✅ Complete onboarding
+  const completeOnboarding = async (onboardingData?: { companyLogo?: string | null; brandColors?: string[]; companyName?: string }) => {
+    try {
+      if (!user) {
+        return { success: false, error: 'Utilisateur non authentifié' };
+      }
+      
+      // ✅ If Auth0 user, update backend KV store (not Supabase Auth metadata)
+      if (user.provider === 'auth0') {
+        try {
+          // ✅ Update backend profile
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${user.id}/complete-onboarding`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${publicAnonKey}`,
+              },
+              body: JSON.stringify({
+                companyLogo: onboardingData?.companyLogo,
+                brandColors: onboardingData?.brandColors,
+                companyName: onboardingData?.companyName
+              }),
+            }
+          );
+          
+          if (!response.ok) {
+            console.error('[AuthContext] Failed to complete onboarding in backend');
+            return { success: false, error: 'Failed to update backend' };
+          }
+          
+          const data = await response.json();
+          console.log('[AuthContext] Onboarding completed in backend:', data);
+          
+          // ✅ Update local state
+          const updatedUser = { 
+            ...user, 
+            onboardingComplete: true,
+            companyLogo: onboardingData?.companyLogo || user.companyLogo,
+            brandColors: onboardingData?.brandColors || user.brandColors,
+            companyName: onboardingData?.companyName || user.companyName
+          };
+          setUser(updatedUser);
+          saveOrUpdateAuth0User(updatedUser);
+          
+          return { success: true };
+        } catch (err) {
+          console.error('[AuthContext] Complete onboarding error:', err);
+          return { success: false, error: 'Network error' };
+        }
+      }
+      
+      // ✅ Otherwise, update localStorage (legacy)
+      const storedUser = getUserById(user.id);
+      if (!storedUser) {
+        return { success: false, error: 'Utilisateur non trouvé' };
+      }
+      
+      const updatedUser: StoredUser = {
+        ...storedUser,
+        onboardingComplete: true,
+        companyLogo: onboardingData?.companyLogo || storedUser.companyLogo,
+        brandColors: onboardingData?.brandColors || storedUser.brandColors,
+        companyName: onboardingData?.companyName || storedUser.companyName
+      };
+      
+      const users = getStoredUsers();
+      const userIndex = users.findIndex(u => u.id === user.id);
+      if (userIndex !== -1) {
+        users[userIndex] = updatedUser;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        
+        setUser({
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          type: updatedUser.type,
+          onboardingComplete: updatedUser.onboardingComplete,
+          createdAt: updatedUser.createdAt,
+          companyLogo: updatedUser.companyLogo,
+          brandColors: updatedUser.brandColors,
+          companyName: updatedUser.companyName
+        });
+        
+        return { success: true };
+      } else {
+        return { success: false, error: 'Utilisateur non trouvé' };
+      }
+    } catch (error) {
+      return { success: false, error: 'Erreur lors de la finalisation de l\'onboarding' };
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    userType: user?.type || null,
+    isNewUser,
+    signIn,
+    signUp,
+    signOut,
+    updateUserFromCallback,
+    updateUserProfile,
+    completeOnboarding,
+    canAccessRoute,
+    requiresAuth
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,3 +1,16 @@
+/**
+ * ⚠️ DEPRECATED: This file is deprecated and will be removed in a future version.
+ * Use /supabase/functions/server/projects.tsx instead for unified project management.
+ * 
+ * Legacy Coconut V14 Projects System
+ * Kept for backward compatibility only.
+ * 
+ * New unified system:
+ * - Route: /projects/* (not /coconut-v14/projects/*)
+ * - KV prefix: project:${id} (not coconut-v14:project:${id})
+ * - Supports: image, video, campaign (unified types)
+ */
+
 import * as kv from './kv_store.tsx';
 import type { 
   Project, 

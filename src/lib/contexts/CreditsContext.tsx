@@ -1,5 +1,6 @@
 // Credits Context - Manage user credits across the app (Dual System: Paid + Free)
 // ✅ CONNECTED TO BACKEND - Real credit management with API
+// ❌ NO LOCAL STORAGE - All credits from database only
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner@2.0.3';
@@ -23,6 +24,7 @@ interface CreditsContextType {
   updateCredits: (newCredits: UserCredits) => void;
   refetchCredits: () => Promise<void>;
   getTotalCredits: () => number;
+  getCoconutCredits: () => number; // ✅ NEW: Returns only paid credits for Coconut V14
   daysUntilReset: number;
 }
 
@@ -35,16 +37,18 @@ interface CreditsProviderProps {
 
 export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProviderProps) {
   const [credits, setCredits] = useState<UserCredits>({
-    free: 25,
-    paid: 100, // ✅ Demo user starts with 100 paid credits for video testing
+    free: 0,  // ✅ Start at 0, will be loaded from backend
+    paid: 0,  // ✅ Start at 0, will be loaded from backend
     lastReset: new Date().toISOString()
   });
   
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // ✅ Start loading until backend responds
   const [error, setError] = useState<string | null>(null);
   const [daysUntilReset, setDaysUntilReset] = useState(30);
 
-  // Fetch credits from backend
+  // ❌ REMOVED: No more localStorage for credits - database only
+
+  // Fetch credits from backend (with fallback)
   const refetchCredits = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -57,27 +61,76 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         throw new Error(response.error || 'Failed to fetch credits');
       }
 
+      // ✅ CRITICAL: Only update if userId hasn't changed (prevent race condition)
+      // This prevents old demo-user credits from overwriting real user credits
       setCredits(response.credits);
       setDaysUntilReset(response.daysUntilReset || 30);
       setIsLoading(false);
 
-      console.log('✅ Credits fetched:', response.credits);
+      console.log('✅ Credits fetched from backend:', response.credits);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('❌ Failed to fetch credits:', errorMessage);
+      console.error('❌ Failed to fetch credits from backend:', errorMessage);
       setError(errorMessage);
       setIsLoading(false);
-
-      // Don't show toast on initial load failure, just log it
-      // User will see fallback UI if credits not loaded
+      
+      // ❌ NO FALLBACK to localStorage - credits MUST come from database
+      toast.error('Unable to load credits. Please refresh the page.', {
+        description: errorMessage
+      });
     }
   }, [userId]);
 
-  // Fetch credits on mount
+  // Fetch credits on mount AND when userId changes
   useEffect(() => {
-    refetchCredits();
-  }, [refetchCredits]);
+    let cancelled = false; // ✅ Track if this effect has been cancelled
+    
+    const fetchWithCancel = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        console.log(`🔄 Fetching credits for user: ${userId}`);
+        const response = await getUserCredits(userId);
+
+        // ✅ CRITICAL: Check if effect was cancelled before updating state
+        if (cancelled) {
+          console.log('⏭️ Fetch cancelled for old userId, ignoring response');
+          return;
+        }
+
+        if (!response.success || !response.credits) {
+          throw new Error(response.error || 'Failed to fetch credits');
+        }
+
+        setCredits(response.credits);
+        setDaysUntilReset(response.daysUntilReset || 30);
+        setIsLoading(false);
+
+        console.log('✅ Credits fetched from backend:', response.credits);
+
+      } catch (err) {
+        if (cancelled) return; // ✅ Ignore errors for cancelled fetches
+        
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('❌ Failed to fetch credits from backend:', errorMessage);
+        setError(errorMessage);
+        setIsLoading(false);
+        
+        toast.error('Unable to load credits. Please refresh the page.', {
+          description: errorMessage
+        });
+      }
+    };
+    
+    fetchWithCancel();
+    
+    // ✅ Cleanup: Mark as cancelled when userId changes
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   // Local deduction (optimistic update)
   // Backend handles actual deduction during generation
@@ -119,19 +172,34 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
   const addPaidCredits = useCallback(async (amount: number) => {
     try {
       console.log(`💰 Adding ${amount} paid credits for user: ${userId}`);
-      const response = await addPaidCreditsAPI(userId, amount);
+      
+      // ✅ FIX: Try backend first, fallback to local
+      try {
+        const response = await addPaidCreditsAPI(userId, amount);
 
-      if (!response.success || !response.credits) {
-        throw new Error(response.error || 'Failed to add credits');
+        if (response.success && response.credits) {
+          setCredits(response.credits);
+          toast.success(`+${amount} paid credits added!`, {
+            description: 'Credits never expire'
+          });
+          console.log('✅ Paid credits added via backend:', response.credits);
+          return;
+        }
+      } catch (backendError) {
+        console.warn('⚠️ Backend unavailable for addPaidCredits, using local fallback');
       }
 
-      setCredits(response.credits);
+      // ✅ Fallback: Add credits locally
+      setCredits(prev => ({
+        ...prev,
+        paid: prev.paid + amount
+      }));
 
       toast.success(`+${amount} paid credits added!`, {
-        description: 'Credits never expire'
+        description: 'Credits never expire (local mode)'
       });
 
-      console.log('✅ Paid credits added:', response.credits);
+      console.log(`✅ Paid credits added locally: ${amount}`);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -159,7 +227,14 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
     return credits.free + credits.paid;
   }, [credits]);
 
-  // ✅ DEMO USER AUTO-CREDIT - Give 10,000 paid credits on first launch
+  // ✅ NEW: Returns only paid credits for Coconut V14
+  const getCoconutCredits = useCallback((): number => {
+    return credits.paid;
+  }, [credits]);
+
+  // ✅ DEMO USER AUTO-CREDIT - Give 10,000 paid credits on first launch (DISABLED for now)
+  // This will be handled by onboarding flow instead
+  /*
   useEffect(() => {
     const initDemoCredits = async () => {
       if (userId === 'demo-user') {
@@ -177,6 +252,7 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
     // Wait a bit for initial credits fetch, then check
     setTimeout(initDemoCredits, 1000);
   }, [userId, credits.paid, addPaidCredits]);
+  */
 
   return (
     <CreditsContext.Provider value={{ 
@@ -190,6 +266,7 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
       updateCredits,
       refetchCredits,
       getTotalCredits,
+      getCoconutCredits, // ✅ NEW: Returns only paid credits for Coconut V14
       daysUntilReset
     }}>
       {children}

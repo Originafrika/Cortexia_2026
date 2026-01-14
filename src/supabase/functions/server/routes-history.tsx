@@ -8,11 +8,13 @@ import * as kv from './kv_store.tsx';
 
 const app = new Hono();
 
+console.log('📜 History routes module loaded - v2 (no manual prefix)');
+
 /**
- * GET /make-server-e55aa214/api/coconut-v14/history
+ * GET /api/coconut-v14/history
  * Get all generations for a user
  */
-app.get('/make-server-e55aa214/api/coconut-v14/history', async (c) => {
+app.get('/api/coconut-v14/history', async (c) => {
   try {
     const { userId, projectId } = c.req.query();
 
@@ -59,10 +61,10 @@ app.get('/make-server-e55aa214/api/coconut-v14/history', async (c) => {
 });
 
 /**
- * GET /make-server-e55aa214/api/coconut-v14/history/:id
+ * GET /api/coconut-v14/history/:id
  * Get single generation details
  */
-app.get('/make-server-e55aa214/api/coconut-v14/history/:id', async (c) => {
+app.get('/api/coconut-v14/history/:id', async (c) => {
   try {
     const generationId = c.req.param('id');
 
@@ -86,10 +88,10 @@ app.get('/make-server-e55aa214/api/coconut-v14/history/:id', async (c) => {
 });
 
 /**
- * POST /make-server-e55aa214/api/coconut-v14/history/:id/favorite
+ * POST /api/coconut-v14/history/:id/favorite
  * Toggle favorite status
  */
-app.post('/make-server-e55aa214/api/coconut-v14/history/:id/favorite', async (c) => {
+app.post('/api/coconut-v14/history/:id/favorite', async (c) => {
   try {
     const generationId = c.req.param('id');
     const { isFavorite } = await c.req.json();
@@ -114,10 +116,10 @@ app.post('/make-server-e55aa214/api/coconut-v14/history/:id/favorite', async (c)
 });
 
 /**
- * DELETE /make-server-e55aa214/api/coconut-v14/history/:id
+ * DELETE /api/coconut-v14/history/:id
  * Delete generation
  */
-app.delete('/make-server-e55aa214/api/coconut-v14/history/:id', async (c) => {
+app.delete('/api/coconut-v14/history/:id', async (c) => {
   try {
     const generationId = c.req.param('id');
 
@@ -143,10 +145,10 @@ app.delete('/make-server-e55aa214/api/coconut-v14/history/:id', async (c) => {
 });
 
 /**
- * POST /make-server-e55aa214/api/coconut-v14/history/bulk-delete
+ * POST /api/coconut-v14/history/bulk-delete
  * Delete multiple generations
  */
-app.post('/make-server-e55aa214/api/coconut-v14/history/bulk-delete', async (c) => {
+app.post('/api/coconut-v14/history/bulk-delete', async (c) => {
   try {
     const { ids } = await c.req.json();
 
@@ -172,10 +174,10 @@ app.post('/make-server-e55aa214/api/coconut-v14/history/bulk-delete', async (c) 
 });
 
 /**
- * GET /make-server-e55aa214/api/coconut-v14/history/stats
+ * GET /api/coconut-v14/history/stats
  * Get statistics for user's generations
  */
-app.get('/make-server-e55aa214/api/coconut-v14/history/stats', async (c) => {
+app.get('/api/coconut-v14/history/stats', async (c) => {
   try {
     const { userId, projectId } = c.req.query();
 
@@ -228,10 +230,10 @@ app.get('/make-server-e55aa214/api/coconut-v14/history/stats', async (c) => {
 });
 
 /**
- * GET /make-server-e55aa214/api/coconut-v14/cocoboard/:id/generations
+ * GET /api/coconut-v14/cocoboard/:id/generations
  * Get all generations for a specific CocoBoard
  */
-app.get('/make-server-e55aa214/api/coconut-v14/cocoboard/:id/generations', async (c) => {
+app.get('/api/coconut-v14/cocoboard/:id/generations', async (c) => {
   try {
     const cocoBoardId = c.req.param('id');
 

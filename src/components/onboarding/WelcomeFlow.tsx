@@ -273,7 +273,7 @@ function WelcomeStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => voi
         <Badge variant="premium" size="lg" className="mb-2">
           🎁 Welcome Bonus
         </Badge>
-        <p className="text-white font-semibold">100 Free Credits</p>
+        <p className="text-white font-semibold">25 Free Credits</p>
         <p className="text-sm text-gray-400">Start creating immediately</p>
       </div>
 
@@ -446,7 +446,7 @@ function CompleteStep({ onComplete }: { onComplete: () => void }) {
       <div className="bg-gradient-to-r from-primary-500/10 to-purple-500/10 rounded-xl p-6 border border-primary-500/20">
         <div className="flex items-center justify-center gap-3 mb-2">
           <Zap className="w-6 h-6 text-primary-400" />
-          <span className="text-2xl font-bold text-white">100 Free Credits</span>
+          <span className="text-2xl font-bold text-white">25 Free Credits</span>
         </div>
         <p className="text-gray-400">Available in your account now</p>
       </div>
