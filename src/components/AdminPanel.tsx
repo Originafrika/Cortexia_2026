@@ -11,6 +11,7 @@ interface UserProfile {
   accountType: 'individual' | 'enterprise' | 'developer';
   onboardingComplete?: boolean;
   referralCode: string;
+  referralLink?: string; // ✅ Add referral link
   freeCredits: number;
   paidCredits: number;
   createdAt: string;
@@ -28,6 +29,7 @@ export function AdminPanel() {
     username: '',
     email: '',
     accountType: 'individual' as 'individual' | 'enterprise' | 'developer',
+    referralCode: '', // ✅ Add referral code
     freeCredits: 0,
     paidCredits: 0,
     expiresAt: null as string | null,
@@ -136,6 +138,7 @@ export function AdminPanel() {
       username: user.username,
       email: user.email,
       accountType: user.accountType,
+      referralCode: user.referralCode, // ✅ Add referral code
       freeCredits: user.freeCredits,
       paidCredits: user.paidCredits,
       expiresAt: user.expiresAt || null,
@@ -149,6 +152,7 @@ export function AdminPanel() {
       username: '',
       email: '',
       accountType: 'individual' as 'individual' | 'enterprise' | 'developer',
+      referralCode: '', // ✅ Add referral code
       freeCredits: 0,
       paidCredits: 0,
       expiresAt: null,
@@ -468,6 +472,54 @@ export function AdminPanel() {
                 </select>
               </div>
 
+              {/* ✅ Referral Code & Link Section */}
+              <div className="border-t border-white/10 pt-4 mt-4">
+                <h3 className="text-lg font-semibold text-white mb-4">Referral System</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-neutral-400 mb-2">
+                    Referral Code
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.referralCode}
+                    onChange={(e) => setEditForm({ ...editForm, referralCode: e.target.value.toUpperCase() })}
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white font-mono placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 uppercase"
+                    placeholder="ABC123"
+                    maxLength={10}
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">
+                    This code can be shared with others to refer new users
+                  </p>
+                </div>
+
+                {/* Display Referral Link */}
+                {editingUser && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">
+                      Referral Link
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={`${window.location.origin}/?ref=${editForm.referralCode}`}
+                        readOnly
+                        className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-neutral-400 font-mono text-sm focus:outline-none select-all"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/?ref=${editForm.referralCode}`);
+                          toast.success('Referral link copied!');
+                        }}
+                        className="px-4 py-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm transition-colors whitespace-nowrap"
+                      >
+                        Copy Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               {/* Credits Management */}
               <div className="border-t border-white/10 pt-4 mt-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Credits Management</h3>

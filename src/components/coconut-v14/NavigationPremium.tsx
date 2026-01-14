@@ -120,15 +120,15 @@ export function NavigationPremium({
               <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl blur-md opacity-30 animate-pulse" />
               <div className="relative w-12 h-12 bg-white/90 rounded-xl flex items-center justify-center shadow-lg overflow-hidden border border-white/40">
                 {/* ✅ Company Logo Display */}
-                {user.companyLogo === 'mock-logo-url' ? (
-                  // Mock logo placeholder
-                  <Building2 className="w-6 h-6 text-[var(--coconut-shell)]" />
-                ) : (
+                {user.companyLogo ? (
                   <img 
                     src={user.companyLogo} 
                     alt="Company Logo" 
                     className="w-full h-full object-contain p-1"
                   />
+                ) : (
+                  // No logo - show fallback icon
+                  <Building2 className="w-6 h-6 text-[var(--coconut-shell)]" />
                 )}
               </div>
             </div>

@@ -29,19 +29,28 @@ export function LoginEnterprise({ onSuccess, onSwitchToSignup, onBack }: LoginEn
       const result = await signIn(formData.email, formData.password);
       
       if (!result.success || !result.user) {
-        throw new Error(result.error || 'Login failed');
+        // ✅ Better error message for login failures
+        const errorMessage = result.error || 'Email ou mot de passe incorrect';
+        
+        // ✅ Check if error is about invalid credentials
+        if (errorMessage.includes('Email ou mot de passe incorrect') || 
+            errorMessage.includes('Invalid login credentials')) {
+          throw new Error('Email ou mot de passe incorrect. Vérifiez vos identifiants ou créez un compte Enterprise.');
+        }
+        
+        throw new Error(errorMessage);
       }
       
       // ✅ Verify user type is enterprise
       if (result.user.type !== 'enterprise') {
-        throw new Error(`This account is registered as ${result.user.type}. Please use the correct login page.`);
+        throw new Error(`Ce compte est de type "${result.user.type}". Veuillez utiliser la page de connexion appropriée.`);
       }
       
       console.log('✅ [LoginEnterprise] Login successful:', result.user.id);
       onSuccess(result.user.id, 'mock-token');
     } catch (err: any) {
       console.error('❌ [LoginEnterprise] Login failed:', err);
-      setError(err.message || 'An error occurred during login');
+      setError(err.message || 'Une erreur est survenue lors de la connexion');
     } finally {
       setLoading(false);
     }

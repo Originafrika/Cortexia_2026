@@ -204,27 +204,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const supabaseUser = session.user;
           const metadata = supabaseUser.user_metadata || {};
           
-          // Get user type from sessionStorage or metadata
-          const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
-                                 sessionStorage.getItem('cortexia_pending_user_type') ||
-                                 metadata.user_type || 
-                                 'individual';
+          // ✅ PRODUCTION: Try to load complete profile from sessionStorage first
+          const storedProfileData = sessionStorage.getItem('cortexia_user_data');
+          let userData: User;
           
-          const userData: User = {
-            id: supabaseUser.id,
-            email: supabaseUser.email!,
-            name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
-            type: storedUserType as UserType,
-            onboardingComplete: metadata.onboarding_complete || false,
-            createdAt: supabaseUser.created_at,
-            companyLogo: metadata.company_logo,
-            brandColors: metadata.brand_colors,
-            companyName: metadata.company_name,
-            provider: 'auth0', // Keep naming for compatibility
-            auth0Id: supabaseUser.id,
-            picture: metadata.picture,
-            referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
-          };
+          if (storedProfileData) {
+            try {
+              const profile = JSON.parse(storedProfileData);
+              console.log('✅ [AuthContext] Loaded profile from sessionStorage:', profile.accountType);
+              
+              userData = {
+                id: supabaseUser.id,
+                email: profile.email || supabaseUser.email!,
+                name: profile.displayName || metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
+                type: profile.accountType as UserType, // ✅ Use backend accountType
+                onboardingComplete: profile.onboardingComplete || metadata.onboarding_complete || false,
+                createdAt: profile.createdAt || supabaseUser.created_at,
+                companyLogo: metadata.company_logo,
+                brandColors: metadata.brand_colors,
+                companyName: profile.companyName || metadata.company_name,
+                provider: 'auth0', // Keep naming for compatibility
+                auth0Id: supabaseUser.id,
+                picture: metadata.picture,
+                referralCode: profile.referralCode || sessionStorage.getItem('cortexia_referral_code') || undefined
+              };
+            } catch (err) {
+              console.warn('⚠️ [AuthContext] Failed to parse stored profile, falling back to defaults');
+              // Fallback to old method
+              const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
+                                     sessionStorage.getItem('cortexia_pending_user_type') ||
+                                     metadata.user_type || 
+                                     'individual';
+              
+              userData = {
+                id: supabaseUser.id,
+                email: supabaseUser.email!,
+                name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
+                type: storedUserType as UserType,
+                onboardingComplete: metadata.onboarding_complete || false,
+                createdAt: supabaseUser.created_at,
+                companyLogo: metadata.company_logo,
+                brandColors: metadata.brand_colors,
+                companyName: metadata.company_name,
+                provider: 'auth0',
+                auth0Id: supabaseUser.id,
+                picture: metadata.picture,
+                referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
+              };
+            }
+          } else {
+            // Get user type from sessionStorage or metadata
+            const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
+                                   sessionStorage.getItem('cortexia_pending_user_type') ||
+                                   metadata.user_type || 
+                                   'individual';
+            
+            userData = {
+              id: supabaseUser.id,
+              email: supabaseUser.email!,
+              name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
+              type: storedUserType as UserType,
+              onboardingComplete: metadata.onboarding_complete || false,
+              createdAt: supabaseUser.created_at,
+              companyLogo: metadata.company_logo,
+              brandColors: metadata.brand_colors,
+              companyName: metadata.company_name,
+              provider: 'auth0',
+              auth0Id: supabaseUser.id,
+              picture: metadata.picture,
+              referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
+            };
+          }
           
           if (mounted) {
             setUser(userData);

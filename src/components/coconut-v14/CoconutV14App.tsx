@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { useCurrentUser } from '../../lib/hooks/useCurrentUser'; // ✅ NEW: Get real user
+import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Get userType
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { toast } from 'sonner@2.0.3';
 // ✅ FIX 1.2: Import CocoBoard store
@@ -396,6 +397,7 @@ const Navigation = ({
 function CoconutV14AppContent() {
   // ✅ Get real authenticated user
   const { userId, userName, displayName, isDemoUser } = useCurrentUser();
+  const { userType } = useAuth();
   
   // ✅ PHASE 1 FIX: Start on Dashboard instead of intent-input
   const [currentScreen, setCurrentScreen] = useState<CoconutV14Screen>('dashboard');
@@ -788,6 +790,7 @@ function CoconutV14AppContent() {
               <DashboardPremium
                 onNavigateToCreate={handleNavigateToCreate}
                 onNavigateToCredits={() => setCurrentScreen('credits')}
+                onNavigateToTypeSelect={() => setCurrentScreen('type-select')} // ✅ NEW: Navigate to type selector
               />
             )}
             
@@ -807,7 +810,10 @@ function CoconutV14AppContent() {
             )}
             
             {currentScreen === 'credits' && (
-              <CreditsManager />
+              <CreditsManager 
+                currentCredits={getCoconutCredits()}
+                isEnterprise={true} // ✅ Coconut V14 is ONLY for Enterprise users
+              />
             )}
             
             {currentScreen === 'settings' && (

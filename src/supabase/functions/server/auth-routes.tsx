@@ -570,17 +570,43 @@ app.get('/profile/:userId', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const userData = await kv.get(`users:${userId}`);
-    if (!userData) {
-      return c.json({ error: 'User not found' }, 404);
+    // ✅ Use modern profile system first
+    const profile = await kv.get(`user:profile:${userId}`);
+    
+    if (!profile) {
+      // ✅ Fallback to legacy system if needed
+      const userData = await kv.get(`users:${userId}`);
+      if (!userData) {
+        return c.json({ error: 'User not found' }, 404);
+      }
+      
+      // Return legacy format
+      return c.json({
+        success: true,
+        userId: userId,
+        email: userData.email,
+        displayName: userData.name,
+        username: userData.email?.split('@')[0],
+        accountType: userData.type,
+        onboardingComplete: userData.onboardingComplete || false,
+        referralCode: null,
+        createdAt: userData.createdAt,
+      });
     }
 
-    const profileKey = `profiles:${userData.type}:${userId}`;
-    const profileData = await kv.get(profileKey);
-
+    // ✅ Return modern profile format
     return c.json({
-      user: userData,
-      profile: profileData,
+      success: true,
+      userId: profile.userId,
+      email: profile.email,
+      displayName: profile.displayName,
+      username: profile.username,
+      accountType: profile.accountType,
+      onboardingComplete: profile.onboardingComplete || false,
+      referralCode: profile.referralCode,
+      createdAt: profile.createdAt,
+      // Include all profile data
+      profile: profile,
     });
   } catch (error: any) {
     console.error('Profile fetch error:', error);

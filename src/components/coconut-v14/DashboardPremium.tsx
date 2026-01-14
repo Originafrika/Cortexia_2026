@@ -1,19 +1,20 @@
 /**
- * COCONUT V14 - DASHBOARD ULTRA-PREMIUM RÉAMÉNAGÉ
- * Architecture-driven design avec disposition asymétrique warm
+ * COCONUT V14 - DASHBOARD ULTRA-PREMIUM V3
+ * Multi-capability orchestration dashboard
  * 
- * Architecture Flow:
- * 1. INTENT INPUT → 2. AI ANALYSIS (Gemini) → 3. COCOBOARD → 4. GENERATION (Flux 2 Pro)
+ * Coconut V14 Capabilities:
+ * 1. 📸 IMAGE GENERATION → Gemini Analysis (100cr) → Flux 2 Pro (1-9cr)
+ * 2. 🎬 VIDEO GENERATION → Kie AI Veo 3.1 (Analyze only)
+ * 3. 🎯 CAMPAIGN MANAGEMENT → Multi-asset workflow orchestration
  * 
  * Premium Features:
- * - Hero section avec tagline inspirante
- * - Credits card héroïque (focus principal)
- * - Timeline workflow visuelle avec connections
- * - Disposition asymétrique premium
- * - Coconut Warm exclusive (shell/husk/cream/milk/palm)
+ * - Hero section with quick action cards
+ * - Credits hero card (enterprise subscription)
+ * - Workflow timeline with 3 capability paths
+ * - Real-time stats (images, videos, campaigns)
+ * - Coconut Warm exclusive palette
  * - BDS 7 Arts compliance
- * - Liquid glass design avec breathing room
- * - Score cible: 98%+ premium feel
+ * - Liquid glass design
  */
 
 import React, { useState } from 'react';
@@ -44,40 +45,19 @@ import {
 interface DashboardPremiumProps {
   onNavigateToCreate?: () => void;
   onNavigateToCredits?: () => void;
+  onNavigateToTypeSelect?: () => void; // ✅ Navigate to type selector
 }
 
-const recentGenerations = [
-  {
-    id: '1',
-    prompt: 'Luxury fashion ad with coconut warm tones',
-    status: 'completed',
-    credits: 115,
-    createdAt: new Date(Date.now() - 3600000),
-  },
-  {
-    id: '2',
-    prompt: 'Product photography for tropical theme',
-    status: 'completed',
-    credits: 115,
-    createdAt: new Date(Date.now() - 7200000),
-  },
-  {
-    id: '3',
-    prompt: 'Social media campaign visual',
-    status: 'pending',
-    credits: 115,
-    createdAt: new Date(Date.now() - 10800000),
-  },
-];
+const recentGenerations: any[] = []; // ✅ Empty - no mock data
 
 const mockStats = {
-  totalGenerations: 142,
-  successRate: 94.5,
-  imagesGenerated: 98,
-  videosGenerated: 44,
+  totalGenerations: 0,
+  successRate: 0,
+  imagesGenerated: 0,
+  videosGenerated: 0,
 };
 
-export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: DashboardPremiumProps) {
+export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits, onNavigateToTypeSelect }: DashboardPremiumProps) {
   const { getCoconutCredits } = useCredits();
   const { playClick, playWhoosh } = useSoundContext();
   const notify = useNotify();
@@ -132,7 +112,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
             onClick={() => {
               playClick();
               playWhoosh();
-              onNavigateToCreate?.();
+              onNavigateToTypeSelect?.(); // ✅ Navigate to type selector
             }}
             className="group relative inline-flex items-center gap-3 px-8 py-3.5 rounded-2xl overflow-hidden shadow-2xl shadow-[var(--coconut-shell)]/30 transition-shadow hover:shadow-[var(--coconut-shell)]/50"
           >
@@ -256,10 +236,10 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
         >
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-palm)] to-[var(--coconut-husk)] bg-clip-text text-transparent">
-              Production Workflow
+              Standard Creation Workflow
             </h2>
             <p className="text-sm text-[var(--coconut-husk)] mt-1.5">
-              Intent → AI Analysis → CocoBoard → Generation • <span className="font-semibold text-[var(--coconut-shell)]">~115 credits</span> per project
+              Universal 4-phase process • Adapts to images, videos & campaigns
             </p>
           </div>
 
@@ -269,7 +249,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
             <div className="absolute top-12 left-[12%] right-[12%] h-1 bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-palm)] to-[var(--coconut-husk)] rounded-full hidden lg:block opacity-30" />
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {/* Phase 1 - WARM */}
+              {/* Phase 1 - Intent Input */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -291,7 +271,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
                 
                 <h3 className="font-bold text-[var(--coconut-shell)] mb-2">Intent Input</h3>
                 <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
-                  Describe • Upload • Specify
+                  Describe your vision • Upload references • Set objectives
                 </p>
                 
                 <div className="flex items-center gap-1.5 text-[10px] text-[var(--coconut-palm)] bg-[var(--coconut-cream)] px-2.5 py-1.5 rounded-lg font-medium">
@@ -300,7 +280,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
                 </div>
               </motion.div>
 
-              {/* Phase 2 - WARM */}
+              {/* Phase 2 - AI Analysis */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -320,16 +300,16 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
                 
                 <h3 className="font-bold text-[var(--coconut-shell)] mb-2">AI Analysis</h3>
                 <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
-                  Gemini 2.5 • Vision brief
+                  Gemini vision • Strategy brief • Asset plan
                 </p>
                 
                 <div className="flex items-center gap-1.5 text-[10px] text-[var(--coconut-shell)] bg-[var(--coconut-cream)] px-2.5 py-1.5 rounded-lg font-medium">
                   <Zap className="w-3 h-3" />
-                  100 credits
+                  ~100 credits
                 </div>
               </motion.div>
 
-              {/* Phase 3 - WARM */}
+              {/* Phase 3 - CocoBoard */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -349,7 +329,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
                 
                 <h3 className="font-bold text-[var(--coconut-shell)] mb-2">CocoBoard</h3>
                 <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
-                  Edit • Adjust • Refine
+                  Review • Edit • Adjust • Approve final specs
                 </p>
                 
                 <div className="flex items-center gap-1.5 text-[10px] text-[var(--coconut-palm)] bg-[var(--coconut-cream)] px-2.5 py-1.5 rounded-lg font-medium">
@@ -358,7 +338,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
                 </div>
               </motion.div>
 
-              {/* Phase 4 - WARM */}
+              {/* Phase 4 - Generation */}
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -378,15 +358,204 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
                 
                 <h3 className="font-bold text-[var(--coconut-shell)] mb-2">Generation</h3>
                 <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
-                  Flux 2 Pro • High quality
+                  AI-powered creation • High quality output
                 </p>
                 
                 <div className="flex items-center gap-1.5 text-[10px] text-[var(--coconut-shell)] bg-[var(--coconut-cream)] px-2.5 py-1.5 rounded-lg font-medium">
                   <Zap className="w-3 h-3" />
-                  1-9 credits
+                  Variable
                 </div>
               </motion.div>
             </div>
+          </div>
+        </motion.div>
+
+        {/* ========== WHAT YOU CAN CREATE (3 CAPABILITIES) ========== */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+        >
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-palm)] to-[var(--coconut-husk)] bg-clip-text text-transparent">
+              What You Can Create
+            </h2>
+            <p className="text-sm text-[var(--coconut-husk)] mt-1.5">
+              Choose from 3 AI-powered creation workflows
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* IMAGE GENERATION */}
+            <motion.button
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.9 }}
+              whileHover={{ scale: 1.03, y: -4 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                playClick();
+                playWhoosh();
+                onNavigateToTypeSelect?.();
+              }}
+              className="relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 border-2 border-[var(--coconut-shell)]/40 shadow-xl hover:border-[var(--coconut-shell)] hover:shadow-2xl transition-all group text-left"
+            >
+              {/* Glow on hover */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-shell)]/0 to-[var(--coconut-palm)]/0 group-hover:from-[var(--coconut-shell)]/20 group-hover:to-[var(--coconut-palm)]/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10" />
+              
+              {/* Icon */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                <div className="relative w-14 h-14 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <ImageIcon className="w-7 h-7 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-lg font-bold text-[var(--coconut-shell)] mb-2 flex items-center gap-2">
+                Image Generation
+                <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </h3>
+              <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
+                Professional images with Gemini 2.5 Flash analysis and Flux 2 Pro generation
+              </p>
+
+              {/* Specs */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--coconut-husk)]">Analysis</span>
+                  <span className="font-semibold text-[var(--coconut-shell)]">100 cr</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--coconut-husk)]">Generation</span>
+                  <span className="font-semibold text-[var(--coconut-shell)]">1-9 cr</span>
+                </div>
+                <div className="h-px bg-gradient-to-r from-transparent via-[var(--coconut-husk)]/20 to-transparent my-2" />
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-[var(--coconut-husk)]">Total</span>
+                  <span className="text-[var(--coconut-shell)]">~115 cr</span>
+                </div>
+              </div>
+
+              {/* Badge */}
+              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white text-[10px] font-bold shadow-lg">
+                POPULAR
+              </div>
+            </motion.button>
+
+            {/* VIDEO GENERATION */}
+            <motion.button
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 1.0 }}
+              whileHover={{ scale: 1.03, y: -4 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                playClick();
+                playWhoosh();
+                onNavigateToTypeSelect?.();
+              }}
+              className="relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 border-2 border-[var(--coconut-palm)]/40 shadow-xl hover:border-[var(--coconut-palm)] hover:shadow-2xl transition-all group text-left"
+            >
+              {/* Glow on hover */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-palm)]/0 to-[var(--coconut-husk)]/0 group-hover:from-[var(--coconut-palm)]/20 group-hover:to-[var(--coconut-husk)]/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10" />
+              
+              {/* Icon */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-palm)] to-[var(--coconut-husk)] rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                <div className="relative w-14 h-14 bg-gradient-to-br from-[var(--coconut-palm)] to-[var(--coconut-husk)] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Video className="w-7 h-7 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-lg font-bold text-[var(--coconut-shell)] mb-2 flex items-center gap-2">
+                Video Generation
+                <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </h3>
+              <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
+                AI-powered video creation with Kie AI Veo 3.1 analysis workflow
+              </p>
+
+              {/* Specs */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--coconut-husk)]">Analysis</span>
+                  <span className="font-semibold text-[var(--coconut-palm)]">Veo 3.1</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--coconut-husk)]">Duration</span>
+                  <span className="font-semibold text-[var(--coconut-palm)]">5-10s</span>
+                </div>
+                <div className="h-px bg-gradient-to-r from-transparent via-[var(--coconut-husk)]/20 to-transparent my-2" />
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-[var(--coconut-husk)]">Status</span>
+                  <span className="text-[var(--coconut-palm)]">Analyze only</span>
+                </div>
+              </div>
+
+              {/* Badge */}
+              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[var(--coconut-palm)] to-[var(--coconut-husk)] text-white text-[10px] font-bold shadow-lg">
+                NEW
+              </div>
+            </motion.button>
+
+            {/* CAMPAIGN MANAGEMENT */}
+            <motion.button
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 1.1 }}
+              whileHover={{ scale: 1.03, y: -4 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                playClick();
+                playWhoosh();
+                onNavigateToTypeSelect?.();
+              }}
+              className="relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 border-2 border-[var(--coconut-husk)]/40 shadow-xl hover:border-[var(--coconut-husk)] hover:shadow-2xl transition-all group text-left"
+            >
+              {/* Glow on hover */}
+              <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-husk)]/0 to-[var(--coconut-shell)]/0 group-hover:from-[var(--coconut-husk)]/20 group-hover:to-[var(--coconut-shell)]/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 -z-10" />
+              
+              {/* Icon */}
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-husk)] to-[var(--coconut-shell)] rounded-xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                <div className="relative w-14 h-14 bg-gradient-to-br from-[var(--coconut-husk)] to-[var(--coconut-shell)] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Target className="w-7 h-7 text-white" />
+                </div>
+              </div>
+
+              {/* Content */}
+              <h3 className="text-lg font-bold text-[var(--coconut-shell)] mb-2 flex items-center gap-2">
+                Campaign Management
+                <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </h3>
+              <p className="text-xs text-[var(--coconut-husk)] mb-4 leading-relaxed">
+                Multi-asset orchestration for complete marketing campaigns
+              </p>
+
+              {/* Specs */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--coconut-husk)]">Multi-format</span>
+                  <span className="font-semibold text-[var(--coconut-husk)]">✓</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--coconut-husk)]">Platforms</span>
+                  <span className="font-semibold text-[var(--coconut-husk)]">All</span>
+                </div>
+                <div className="h-px bg-gradient-to-r from-transparent via-[var(--coconut-husk)]/20 to-transparent my-2" />
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-[var(--coconut-husk)]">Credits</span>
+                  <span className="text-[var(--coconut-husk)]">Variable</span>
+                </div>
+              </div>
+
+              {/* Badge */}
+              <div className="absolute top-4 right-4 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[var(--coconut-husk)] to-[var(--coconut-shell)] text-white text-[10px] font-bold shadow-lg">
+                PRO
+              </div>
+            </motion.button>
           </div>
         </motion.div>
 
@@ -489,65 +658,85 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits }: Da
             </div>
 
             <div className="space-y-3">
-              {recentGenerations.map((gen, index) => (
+              {recentGenerations.length === 0 ? (
+                // ✅ Empty state - no mock data
                 <motion.div
-                  key={gen.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 1.2 + (0.1 * index) }}
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  onClick={() => {
-                    playClick();
-                    notify.info('Generation', `Opening ${gen.id}...`);
-                  }}
-                  className="group relative bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-white/60 hover:border-[var(--coconut-shell)]/40 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="bg-white/70 backdrop-blur-xl rounded-2xl p-8 border border-white/60 text-center"
                 >
-                  <div className="flex items-center gap-4">
-                    {/* Thumbnail */}
-                    <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-cream)] to-[var(--coconut-milk)] rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                      <ImageIcon className="w-5 h-5 text-[var(--coconut-shell)]/50" />
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[var(--coconut-shell)] truncate mb-1">
-                        {gen.prompt}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-[var(--coconut-husk)]">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(gen.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-[var(--coconut-shell)]" />
-                          {gen.credits} cr
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 ${
-                      gen.status === 'completed' 
-                        ? 'bg-[var(--coconut-cream)] text-[var(--coconut-palm)]' 
-                        : 'bg-[var(--coconut-milk)] text-[var(--coconut-husk)]'
-                    }`}>
-                      {gen.status === 'completed' ? (
-                        <>
-                          <CheckCircle className="w-3 h-3" />
-                          <span>Done</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="w-3 h-3" />
-                          <span>Pending</span>
-                        </>
-                      )}
-                    </div>
-
-                    <ChevronRight className="w-5 h-5 text-[var(--coconut-husk)]/30 group-hover:text-[var(--coconut-shell)] group-hover:translate-x-1 transition-all" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-[var(--coconut-cream)] to-[var(--coconut-milk)] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="w-8 h-8 text-[var(--coconut-shell)]/40" />
                   </div>
+                  <h3 className="text-lg font-semibold text-[var(--coconut-shell)] mb-2">
+                    Start Your First Project
+                  </h3>
+                  <p className="text-sm text-[var(--coconut-husk)] max-w-sm mx-auto">
+                    Click "Start New Project" above to begin creating with Coconut V14's AI-powered workflow
+                  </p>
                 </motion.div>
-              ))}
+              ) : (
+                recentGenerations.map((gen, index) => (
+                  <motion.div
+                    key={gen.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 1.2 + (0.1 * index) }}
+                    whileHover={{ scale: 1.01, x: 4 }}
+                    onClick={() => {
+                      playClick();
+                      notify.info('Generation', `Opening ${gen.id}...`);
+                    }}
+                    className="group relative bg-white/70 backdrop-blur-xl rounded-xl p-4 border border-white/60 hover:border-[var(--coconut-shell)]/40 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Thumbnail */}
+                      <div className="w-12 h-12 bg-gradient-to-br from-[var(--coconut-cream)] to-[var(--coconut-milk)] rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                        <ImageIcon className="w-5 h-5 text-[var(--coconut-shell)]/50" />
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[var(--coconut-shell)] truncate mb-1">
+                          {gen.prompt}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-[var(--coconut-husk)]">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(gen.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-[var(--coconut-shell)]" />
+                            {gen.credits} cr
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 ${
+                        gen.status === 'completed' 
+                          ? 'bg-[var(--coconut-cream)] text-[var(--coconut-palm)]' 
+                          : 'bg-[var(--coconut-milk)] text-[var(--coconut-husk)]'
+                      }`}>
+                        {gen.status === 'completed' ? (
+                          <>
+                            <CheckCircle className="w-3 h-3" />
+                            <span>Done</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3 h-3" />
+                            <span>Pending</span>
+                          </>
+                        )}
+                      </div>
+
+                      <ChevronRight className="w-5 h-5 text-[var(--coconut-husk)]/30 group-hover:text-[var(--coconut-shell)] group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </motion.div>
         </div>

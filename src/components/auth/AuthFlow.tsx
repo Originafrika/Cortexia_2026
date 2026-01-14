@@ -39,7 +39,16 @@ export function AuthFlow({ signupType, onNavigate, onSignupComplete, onBack }: A
   };
 
   const handleSwitchToLogin = () => {
-    onNavigate('login-individual'); // Default to individual login
+    // Switch to login of the same type
+    if (signupType === 'signup-individual') {
+      onNavigate('login-individual');
+    } else if (signupType === 'signup-enterprise') {
+      onNavigate('login-enterprise');
+    } else if (signupType === 'signup-developer') {
+      onNavigate('login-developer');
+    } else {
+      onNavigate('login-individual'); // Default
+    }
   };
   
   const handleSwitchToSignup = () => {

@@ -53,44 +53,11 @@ interface DashboardProps {
 }
 
 // ============================================
-// MOCK DATA
+// PRODUCTION DATA - NO MOCKS
 // ============================================
 
-const mockStats = {
-  totalGenerations: 142,
-  totalCreditsUsed: 18450,
-  successRate: 94.5,
-  imagesGenerated: 98,
-  videosGenerated: 44,
-  creditsRemaining: 2500,
-};
-
-const recentGenerations = [
-  {
-    id: '1',
-    prompt: 'Luxury fashion ad with coconut warm tones',
-    thumbnail: null,
-    status: 'completed',
-    credits: 115,
-    createdAt: new Date(Date.now() - 3600000),
-  },
-  {
-    id: '2',
-    prompt: 'Product photography for tropical theme',
-    thumbnail: null,
-    status: 'completed',
-    credits: 115,
-    createdAt: new Date(Date.now() - 7200000),
-  },
-  {
-    id: '3',
-    prompt: 'Social media campaign visual',
-    thumbnail: null,
-    status: 'pending',
-    credits: 115,
-    createdAt: new Date(Date.now() - 10800000),
-  },
-];
+// ✅ Empty state - all data comes from real backend or starts at zero
+const recentGenerations: any[] = [];
 
 // ============================================
 // COMPONENT
@@ -229,7 +196,7 @@ export function Dashboard({ onNavigateToCreate, onNavigateToCredits }: Dashboard
                 </div>
               </div>
               <div className="text-3xl md:text-4xl text-[var(--coconut-shell)] mb-1">
-                {mockStats.successRate}%
+                0%
               </div>
               <div className="text-sm text-[var(--coconut-husk)]">Success Rate</div>
             </div>
@@ -253,7 +220,7 @@ export function Dashboard({ onNavigateToCreate, onNavigateToCredits }: Dashboard
                 </div>
               </div>
               <div className="text-3xl md:text-4xl text-[var(--coconut-shell)] mb-1">
-                {mockStats.totalGenerations}
+                0
               </div>
               <div className="text-sm text-[var(--coconut-husk)]">Total Generations</div>
             </div>
@@ -541,7 +508,7 @@ export function Dashboard({ onNavigateToCreate, onNavigateToCredits }: Dashboard
               <span>Images</span>
             </div>
             <div className="text-2xl text-[var(--coconut-shell)]">
-              {mockStats.imagesGenerated}
+              0
             </div>
           </div>
 
@@ -551,7 +518,7 @@ export function Dashboard({ onNavigateToCreate, onNavigateToCredits }: Dashboard
               <span>Videos</span>
             </div>
             <div className="text-2xl text-[var(--coconut-shell)]">
-              {mockStats.videosGenerated}
+              0
             </div>
           </div>
 
@@ -561,7 +528,7 @@ export function Dashboard({ onNavigateToCreate, onNavigateToCredits }: Dashboard
               <span>Credits Used</span>
             </div>
             <div className="text-2xl text-[var(--coconut-shell)]">
-              {(mockStats.totalCreditsUsed / 1000).toFixed(1)}k
+              0
             </div>
           </div>
 
@@ -571,7 +538,7 @@ export function Dashboard({ onNavigateToCreate, onNavigateToCredits }: Dashboard
               <span>Avg Quality</span>
             </div>
             <div className="text-2xl text-[var(--coconut-shell)]">
-              {mockStats.successRate}%
+              0%
             </div>
           </div>
         </motion.div>

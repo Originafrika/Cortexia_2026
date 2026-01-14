@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star, Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
 
@@ -539,6 +539,23 @@ function APIKeyStep() {
 
 // Completion Step Component
 function CompletionStep({ userType, creatorOptIn }: { userType: 'individual' | 'enterprise' | 'developer'; creatorOptIn?: boolean }) {
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  
+  // ✅ Get referral code from sessionStorage
+  useState(() => {
+    const code = sessionStorage.getItem('cortexia_referral_code');
+    if (code) {
+      setReferralCode(code);
+    }
+  });
+
+  const handleCopyReferralCode = () => {
+    if (referralCode) {
+      navigator.clipboard.writeText(referralCode);
+      toast.success('Referral code copied to clipboard!');
+    }
+  };
+
   const content = {
     individual: {
       credits: '25 free credits',
@@ -706,6 +723,43 @@ function CompletionStep({ userType, creatorOptIn }: { userType: 'individual' | '
               <Sparkles size={16} />
               <span>Code Examples</span>
             </a>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ✅ Referral Code Section - Show for all user types */}
+      {referralCode && userType === 'individual' && (
+        <motion.div
+          className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <h4 className="text-lg mb-4 flex items-center gap-2">
+            <Gift className="text-purple-400" size={20} />
+            <span>Your Referral Code</span>
+          </h4>
+          <p className="text-sm text-white/60 mb-4">
+            Share this code with friends! They'll get bonus credits, and you'll earn rewards when they sign up.
+          </p>
+          
+          <div className="flex gap-3">
+            <div className="flex-1 p-4 rounded-xl bg-black/40 border border-purple-500/30 flex items-center justify-center">
+              <code className="text-2xl font-bold text-purple-400 tracking-wider">{referralCode}</code>
+            </div>
+            <button
+              onClick={handleCopyReferralCode}
+              className="px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 transition-all flex items-center gap-2 text-purple-400"
+            >
+              <Copy size={18} />
+              <span className="hidden sm:inline">Copy</span>
+            </button>
+          </div>
+
+          <div className="mt-4 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <p className="text-xs text-white/70">
+              💡 <strong>How it works:</strong> When someone signs up with your code, they get 5 bonus credits and you earn 2 credits per successful referral!
+            </p>
           </div>
         </motion.div>
       )}

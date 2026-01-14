@@ -2,14 +2,16 @@
  * COCONUT V14 - CREDITS MANAGER ULTRA-PREMIUM
  * Flexible credit purchase system
  * 
+ * IMPORTANT: In Coconut V14, this is ONLY used for Enterprise accounts.
+ * Personal users access CreateHub, NOT Coconut V14.
+ * 
  * Pricing Model:
- * - Pay-as-you-go (no subscriptions)
- * - $0.10 per credit ($1.00 per 10 credits)
+ * - Enterprise subscription: 10,000 credits/month (resets on 1st of each month)
+ * - Enterprise additional credits: $0.10 per credit (never expire)
  * 
  * Minimums:
- * - Normal users: 10 credits minimum ($1.00)
- * - Enterprise: 10,000 credits minimum ($1,000.00)
- * - Enterprise recharge: 1,000 credits minimum ($100.00)
+ * - Enterprise additional credits: 1,000 credits minimum ($100.00)
+ * - No quick buy options for Enterprise (custom amounts only)
  * 
  * Usage:
  * - Gemini Analysis: 100 credits
@@ -71,60 +73,21 @@ interface CreditsManagerProps {
 }
 
 // ============================================
-// MOCK DATA
+// PRODUCTION DATA - NO MOCKS
 // ============================================
 
-const mockTransactions: Transaction[] = [
-  {
-    id: 1,
-    type: 'purchase',
-    description: 'Credits purchase - 500 credits',
-    credits: 500,
-    date: '2024-12-25T10:00:00',
-    status: 'completed',
-  },
-  {
-    id: 2,
-    type: 'usage',
-    description: 'Image generation - Flux 2 Pro',
-    credits: -115,
-    date: '2024-12-25T09:30:00',
-    status: 'completed',
-  },
-  {
-    id: 3,
-    type: 'usage',
-    description: 'Video generation - Veo 3.1 Fast',
-    credits: -280,
-    date: '2024-12-25T08:15:00',
-    status: 'completed',
-  },
-  {
-    id: 4,
-    type: 'purchase',
-    description: 'Credits purchase - 100 credits',
-    credits: 100,
-    date: '2024-12-24T14:20:00',
-    status: 'completed',
-  },
-  {
-    id: 5,
-    type: 'usage',
-    description: 'AI Analysis - Gemini 2.5 Flash',
-    credits: -100,
-    date: '2024-12-24T13:45:00',
-    status: 'completed',
-  },
-];
+// ✅ Empty transactions - all data comes from real backend
+const mockTransactions: Transaction[] = [];
 
+// ✅ Default empty stats - will be replaced by real data from API
 const usageStats = {
-  totalPurchased: 12500,
-  totalUsed: 10000,
-  remaining: 2500,
-  avgPerDay: 520,
-  mostUsedModel: 'Flux 2 Pro',
-  imagesGenerated: 68,
-  videosGenerated: 22,
+  totalPurchased: 0,
+  totalUsed: 0,
+  remaining: 0,
+  avgPerDay: 0,
+  mostUsedModel: 'N/A',
+  imagesGenerated: 0,
+  videosGenerated: 0,
 };
 
 // Quick buy presets for normal users
@@ -146,13 +109,13 @@ export function CreditsManager({
 }: CreditsManagerProps) {
   const notify = useNotify();
   const { playClick, playSuccess, playPop } = useSoundContext();
-  const [purchaseAmount, setPurchaseAmount] = useState(isEnterprise ? 10000 : 100);
+  const [purchaseAmount, setPurchaseAmount] = useState(isEnterprise ? 1000 : 100);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [analytics, setAnalytics] = useState<UsageAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
 
-  const minimumPurchase = isEnterprise ? 10000 : 10;
+  const minimumPurchase = isEnterprise ? 1000 : 10;
   const pricePerCredit = 0.10;
   const totalPrice = purchaseAmount * pricePerCredit;
 
@@ -370,7 +333,9 @@ export function CreditsManager({
                       <Clock className="w-3 h-3" />
                       <span>Days Left</span>
                     </div>
-                    <div className="text-2xl text-[var(--coconut-shell)] font-bold">~{Math.floor(currentCredits / stats.avgPerDay)}</div>
+                    <div className="text-2xl text-[var(--coconut-shell)] font-bold">
+                      ~{stats.avgPerDay > 0 ? Math.floor(currentCredits / stats.avgPerDay) : '∞'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -396,7 +361,13 @@ export function CreditsManager({
                       fill="none"
                       strokeLinecap="round"
                       initial={{ strokeDasharray: "0 628" }}
-                      animate={{ strokeDasharray: `${(currentCredits / stats.totalPurchased) * 628} 628` }}
+                      animate={{ 
+                        strokeDasharray: `${
+                          stats.totalPurchased > 0 
+                            ? (currentCredits / stats.totalPurchased) * 628 
+                            : 0
+                        } 628` 
+                      }}
                       transition={{ duration: 1.5, ease: "easeOut" }}
                     />
                     <defs>
@@ -410,7 +381,9 @@ export function CreditsManager({
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <div className="text-4xl md:text-5xl text-[var(--coconut-shell)] font-bold">
-                      {Math.round((currentCredits / stats.totalPurchased) * 100)}%
+                      {stats.totalPurchased > 0 
+                        ? Math.round((currentCredits / stats.totalPurchased) * 100) 
+                        : 0}%
                     </div>
                     <div className="text-sm text-[var(--coconut-husk)] mt-1 font-medium">Remaining</div>
                     <div className="text-xs text-[var(--coconut-husk)] mt-2">
@@ -438,7 +411,9 @@ export function CreditsManager({
               
               {/* Account Type Badge */}
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl text-[var(--coconut-shell)]">Purchase Credits</h2>
+                <h2 className="text-2xl text-[var(--coconut-shell)]">
+                  {isEnterprise ? 'Purchase Additional Credits' : 'Purchase Credits'}
+                </h2>
                 <div className={`px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 ${
                   isEnterprise 
                     ? 'bg-[var(--coconut-palm)]/20 border border-[var(--coconut-palm)]/30 text-[var(--coconut-palm)]'
@@ -448,6 +423,23 @@ export function CreditsManager({
                   {isEnterprise ? 'Enterprise Account' : 'Personal Account'}
                 </div>
               </div>
+
+              {/* Enterprise Subscription Info */}
+              {isEnterprise && (
+                <div className="mb-6 p-4 bg-[var(--coconut-cream)]/30 backdrop-blur-xl rounded-xl border border-[var(--coconut-palm)]/30">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-[var(--coconut-palm)] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <div className="text-sm text-[var(--coconut-shell)] mb-1">
+                        Active Subscription: 10,000 credits/month
+                      </div>
+                      <div className="text-xs text-[var(--coconut-husk)]">
+                        Your monthly credits reset on the 1st of each month. Purchase additional credits below for extra capacity - these never expire.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Quick Buy Presets (Normal users only) */}
               {!isEnterprise && (
@@ -692,7 +684,13 @@ export function CreditsManager({
                 <motion.div
                   className="h-full bg-gradient-to-r from-amber-500 to-amber-600"
                   initial={{ width: 0 }}
-                  animate={{ width: `${(stats.totalUsed / stats.totalPurchased) * 100}%` }}
+                  animate={{ 
+                    width: `${
+                      stats.totalPurchased > 0 
+                        ? (stats.totalUsed / stats.totalPurchased) * 100 
+                        : 0
+                    }%` 
+                  }}
                   transition={{ duration: 1, ease: "easeOut" }}
                 />
               </div>

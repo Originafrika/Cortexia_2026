@@ -1,20 +1,21 @@
 /**
- * FEED STORAGE - Community Feed Storage Bucket
- * Initialize and manage community-feed bucket
+ * Community Feed Storage Management
+ * Handles bucket initialization and asset uploads for the feed system
  */
 
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+// ✅ Create Supabase client with service role key for storage operations
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
 /**
- * Sanitize userId for storage paths (remove invalid characters like | from OAuth providers)
+ * Sanitize userId to remove invalid characters for storage paths
  */
 function sanitizeUserId(userId: string): string {
-  return userId.replace(/[|:*?"<>]/g, '_');
+  return userId.replace(/[|:*?\"<>]/g, '_');
 }
 
 /**
@@ -25,7 +26,13 @@ export async function initializeFeedBucket() {
     const bucketName = 'make-e55aa214-community-feed';
     
     // Check if bucket exists
-    const { data: buckets } = await supabase.storage.listBuckets();
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error(`❌ Failed to list buckets:`, listError);
+      return false;
+    }
+    
     const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     
     if (!bucketExists) {
@@ -37,6 +44,12 @@ export async function initializeFeedBucket() {
       });
       
       if (error) {
+        // ✅ If bucket already exists (409), that's OK - just log it
+        if (error.statusCode === '409' || error.message?.includes('already exists')) {
+          console.log(`✅ Bucket ${bucketName} already exists (detected via error)`);
+          return true;
+        }
+        
         console.error(`❌ Failed to create bucket ${bucketName}:`, error);
         return false;
       }
