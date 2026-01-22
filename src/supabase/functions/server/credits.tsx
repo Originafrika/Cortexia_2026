@@ -1,11 +1,17 @@
-// credits.tsx - Credit management system with user choice (free vs paid)
-
 import * as kv from "./kv_store.tsx";
+import * as enterprise from "./enterprise-subscription.ts";
 
 export interface UserCredits {
   free: number;
   paid: number;
   lastReset: string; // ISO date
+  
+  // ✅ NEW: Enterprise subscription credits
+  isEnterprise?: boolean;
+  monthlyCredits?: number; // Enterprise: Monthly subscription credits (10,000)
+  monthlyCreditsRemaining?: number; // Enterprise: How many monthly credits left
+  addOnCredits?: number; // Enterprise: Add-on credits (never expire)
+  nextResetDate?: string; // Enterprise: When monthly credits reset
 }
 
 export interface CreditDeductionResult {
@@ -21,14 +27,42 @@ export interface CreditDeductionResult {
 
 /**
  * Get user credits (free + paid)
+ * ✅ NEW: Also checks for Enterprise subscription credits
  */
 export async function getUserCredits(userId: string): Promise<UserCredits> {
   try {
+    // ✅ STEP 1: Check if user has Enterprise subscription
+    const enterpriseSub = await enterprise.getEnterpriseSubscription(userId);
+    
+    if (enterpriseSub && enterpriseSub.subscriptionStatus === 'active') {
+      // User is Enterprise - return subscription credits
+      console.log(`[Credits] Enterprise user ${userId}:`, {
+        monthlyCredits: enterpriseSub.monthlyCredits,
+        monthlyRemaining: enterpriseSub.subscriptionCreditsRemaining,
+        addOnCredits: enterpriseSub.addOnCredits,
+        totalCredits: enterpriseSub.totalCredits
+      });
+      
+      return {
+        free: 0, // Enterprise users don't use free credits
+        paid: enterpriseSub.addOnCredits, // ✅ IMPORTANT: Add-on credits map to "paid" for UI compatibility
+        lastReset: enterpriseSub.nextResetDate,
+        
+        // ✅ Enterprise-specific fields
+        isEnterprise: true,
+        monthlyCredits: enterpriseSub.monthlyCredits,
+        monthlyCreditsRemaining: enterpriseSub.subscriptionCreditsRemaining,
+        addOnCredits: enterpriseSub.addOnCredits,
+        nextResetDate: enterpriseSub.nextResetDate
+      };
+    }
+    
+    // ✅ STEP 2: Fallback to regular credits (Individual/Creator users)
     const freeCredits = await kv.get(`credits:${userId}:free`);
     const paidCredits = await kv.get(`credits:${userId}:paid`);
     const lastReset = await kv.get(`credits:${userId}:lastReset`);
     
-    console.log(`[Credits] Raw KV data for ${userId}:`, {
+    console.log(`[Credits] Regular user ${userId}:`, {
       freeCredits,
       paidCredits,
       lastReset
@@ -37,7 +71,8 @@ export async function getUserCredits(userId: string): Promise<UserCredits> {
     return {
       free: Number(freeCredits || 0),
       paid: Number(paidCredits || 0),
-      lastReset: String(lastReset || new Date().toISOString())
+      lastReset: String(lastReset || new Date().toISOString()),
+      isEnterprise: false
     };
   } catch (error) {
     console.error(`[Credits] Error getting credits for ${userId}:`, error);
@@ -45,7 +80,8 @@ export async function getUserCredits(userId: string): Promise<UserCredits> {
     return {
       free: 0,
       paid: 0,
-      lastReset: new Date().toISOString()
+      lastReset: new Date().toISOString(),
+      isEnterprise: false
     };
   }
 }
@@ -89,13 +125,71 @@ export async function checkAndResetFreeCredits(userId: string): Promise<boolean>
 
 /**
  * Deduct credits based on user choice
- * User can choose to use 'free' or 'paid' credits
+ * ✅ NEW: For Enterprise users, deducts from monthly credits first, then add-on credits
+ * For regular users, deducts from free or paid credits
  */
 export async function deductCredits(
   userId: string,
   cost: number,
   creditType: 'free' | 'paid'
 ): Promise<CreditDeductionResult> {
+  // ✅ STEP 1: Check if user is Enterprise
+  const enterpriseSub = await enterprise.getEnterpriseSubscription(userId);
+  
+  if (enterpriseSub && enterpriseSub.subscriptionStatus === 'active') {
+    // ✅ ENTERPRISE LOGIC: Deduct from monthly credits first, then add-on credits
+    const monthlyRemaining = enterpriseSub.subscriptionCreditsRemaining;
+    const addOnRemaining = enterpriseSub.addOnCredits;
+    const totalAvailable = monthlyRemaining + addOnRemaining;
+    
+    console.log(`[Credits] Enterprise deduction for ${userId}: need ${cost}, have ${totalAvailable} (monthly: ${monthlyRemaining}, add-on: ${addOnRemaining})`);
+    
+    if (totalAvailable < cost) {
+      return {
+        success: false,
+        remaining: {
+          free: 0,
+          paid: addOnRemaining
+        },
+        used: 0,
+        type: 'paid',
+        error: `Insufficient credits. Need ${cost}, have ${totalAvailable} (monthly: ${monthlyRemaining}, add-on: ${addOnRemaining})`
+      };
+    }
+    
+    // ✅ Deduct from monthly credits first
+    let remainingCost = cost;
+    let newMonthlyRemaining = monthlyRemaining;
+    let newAddOnRemaining = addOnRemaining;
+    
+    if (monthlyRemaining >= remainingCost) {
+      // Can deduct entirely from monthly credits
+      newMonthlyRemaining -= remainingCost;
+      remainingCost = 0;
+    } else {
+      // Deduct all monthly credits, then from add-on
+      remainingCost -= monthlyRemaining;
+      newMonthlyRemaining = 0;
+      newAddOnRemaining -= remainingCost;
+    }
+    
+    // ✅ Update Enterprise credits via dedicated function
+    await enterprise.deductEnterpriseCredits(userId, cost);
+    
+    console.log(`💎 [Enterprise] Deducted ${cost} credits from ${userId}: monthly ${monthlyRemaining}→${newMonthlyRemaining}, add-on ${addOnRemaining}→${newAddOnRemaining}`);
+    
+    return {
+      success: true,
+      remaining: {
+        free: 0,
+        paid: newAddOnRemaining
+      },
+      used: cost,
+      type: 'paid'
+    };
+  }
+  
+  // ✅ STEP 2: Regular user logic (free/paid credits)
   // Check if reset needed
   await checkAndResetFreeCredits(userId);
   

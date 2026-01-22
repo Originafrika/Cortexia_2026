@@ -5,12 +5,20 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { toast } from 'sonner@2.0.3';
 import { getUserCredits, addPaidCredits as addPaidCreditsAPI } from '../api/credits';
+import { projectId } from '../../utils/supabase/info';
 
 // ✅ Backend-compatible UserCredits type
 export interface UserCredits {
   free: number;
   paid: number;
   lastReset?: string;
+  
+  // ✅ NEW: Enterprise subscription credits
+  isEnterprise?: boolean;
+  monthlyCredits?: number; // Enterprise: Monthly subscription credits (10,000)
+  monthlyCreditsRemaining?: number; // Enterprise: How many monthly credits left
+  addOnCredits?: number; // Enterprise: Add-on credits (never expire)
+  nextResetDate?: string; // Enterprise: When monthly credits reset
 }
 
 interface CreditsContextType {
@@ -24,7 +32,7 @@ interface CreditsContextType {
   updateCredits: (newCredits: UserCredits) => void;
   refetchCredits: () => Promise<void>;
   getTotalCredits: () => number;
-  getCoconutCredits: () => number; // ✅ NEW: Returns only paid credits for Coconut V14
+  getCoconutCredits: () => number; // ✅ NEW: Returns total credits for Coconut V14 (including Enterprise monthly + add-on)
   daysUntilReset: number;
 }
 
@@ -55,7 +63,11 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
     try {
       console.log(`🔄 Fetching credits for user: ${userId}`);
+      console.log(`📍 API will call: https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/${encodeURIComponent(userId)}`);
+      
       const response = await getUserCredits(userId);
+      
+      console.log('📦 getUserCredits response:', response);
 
       if (!response.success || !response.credits) {
         throw new Error(response.error || 'Failed to fetch credits');
@@ -72,10 +84,11 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('❌ Failed to fetch credits from backend:', errorMessage);
+      console.error('❌ Full error object:', err);
       setError(errorMessage);
       setIsLoading(false);
       
-      // ❌ NO FALLBACK to localStorage - credits MUST come from database
+      // ❌ Show error toast
       toast.error('Unable to load credits. Please refresh the page.', {
         description: errorMessage
       });
@@ -224,13 +237,24 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
   }, []);
 
   const getTotalCredits = useCallback((): number => {
+    // ✅ NEW: For Enterprise users, total = monthly remaining + add-on
+    if (credits.isEnterprise) {
+      return (credits.monthlyCreditsRemaining || 0) + (credits.addOnCredits || 0);
+    }
+    
+    // ✅ For regular users: free + paid
     return credits.free + credits.paid;
   }, [credits]);
 
-  // ✅ NEW: Returns only paid credits for Coconut V14
+  // ✅ NEW: Returns total credits for Coconut V14 (including Enterprise monthly + add-on)
   const getCoconutCredits = useCallback((): number => {
+    // ✅ For Enterprise: return total (monthly + add-on)
+    if (credits.isEnterprise) {
+      return getTotalCredits();
+    }
+    // ✅ For regular users: only paid credits
     return credits.paid;
-  }, [credits]);
+  }, [credits, getTotalCredits]);
 
   // ✅ DEMO USER AUTO-CREDIT - Give 10,000 paid credits on first launch (DISABLED for now)
   // This will be handled by onboarding flow instead
@@ -266,7 +290,7 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
       updateCredits,
       refetchCredits,
       getTotalCredits,
-      getCoconutCredits, // ✅ NEW: Returns only paid credits for Coconut V14
+      getCoconutCredits, // ✅ NEW: Returns total credits for Coconut V14 (including Enterprise monthly + add-on)
       daysUntilReset
     }}>
       {children}

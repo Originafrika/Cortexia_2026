@@ -4,9 +4,13 @@
  */
 
 import { Hono } from 'npm:hono';
+import { cors } from 'npm:hono/cors';
+import { logger } from 'npm:hono/logger';
 import * as kv from './kv_store.tsx';
+import type { VideoShot, VideoAnalysisResponse } from './coconut-v14-video-analyzer.ts';
 import { handleAnalyzeVideoIntent } from './coconut-v14-video-analyzer.ts';
-import type { VideoAnalysisResponse, VideoShot } from './coconut-v14-video-analyzer.ts';
+import { getUserCredits, deductCredits } from './credits-manager.ts'; // ✅ Import credits manager
+import { sanitizePrompt, detectProblematicPatterns } from './coconut-v14-prompt-sanitizer.ts'; // ✅ Import sanitizer
 
 const app = new Hono().basePath('/coconut-v14/video'); // ✅ FIX: Add basePath
 
@@ -181,6 +185,114 @@ app.get('/cocoboard/:id', async (c) => {
 });
 
 // ============================================================================
+// GENERATE SINGLE SHOT (INTERNAL WORKER ENDPOINT)
+// ============================================================================
+
+/**
+ * POST /coconut-v14/video/generate-single-shot
+ * Generate a single video shot (called by orchestration worker)
+ * This endpoint has a shorter execution time to avoid timeouts
+ */
+app.post('/generate-single-shot', async (c) => {
+  try {
+    const { jobId, shotIndex, shot, cocoBoardId } = await c.req.json();
+
+    if (!jobId || shotIndex === undefined || !shot || !cocoBoardId) {
+      return c.json({ error: 'Missing required parameters' }, 400);
+    }
+
+    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`🎥 SINGLE SHOT GENERATION: ${shot.id} (Shot ${shotIndex + 1})`);
+    console.log(`   Job: ${jobId}`);
+    console.log(`   Prompt: ${shot.veoPrompt.substring(0, 100)}...`);
+    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+
+    // Get job and cocoboard
+    const job = await kv.get(`coconut:video:job:${jobId}`) as VideoGenerationJob;
+    const cocoBoard = await kv.get(`coconut:video:cocoboard:${cocoBoardId}`) as VideoCocoBoardData;
+    
+    if (!job || !cocoBoard) {
+      return c.json({ error: 'Job or CocoBoard not found' }, 404);
+    }
+
+    // Update job status
+    job.shots[shotIndex].status = 'generating';
+    job.currentShot = shotIndex + 1;
+    job.progress = 5 + Math.floor((shotIndex / job.totalShots) * 85);
+    await kv.set(`coconut:video:job:${jobId}`, job);
+
+    // ✅ NEW: Check if we should use FIRST_AND_LAST_FRAMES for inter-shot consistency
+    let shotToGenerate = shot;
+    if (shotIndex > 0 && shot.generationType === 'TEXT_2_VIDEO') {
+      const previousShotJob = job.shots[shotIndex - 1];
+      if (previousShotJob && previousShotJob.status === 'completed' && previousShotJob.videoUrl) {
+        console.log(`   🔗 INTER-SHOT CONSISTENCY: Using previous shot's last frame`);
+        console.log(`   📹 Previous shot URL: ${previousShotJob.videoUrl.substring(0, 60)}...`);
+        
+        shotToGenerate = {
+          ...shot,
+          generationType: 'FIRST_AND_LAST_FRAMES_2_VIDEO',
+          sourceVideoUrl: previousShotJob.videoUrl
+        };
+      }
+    }
+
+    // Generate the shot
+    const videoResult = await generateShotWithKieAI(shotToGenerate, cocoBoard);
+
+    if (!videoResult.success || !videoResult.url) {
+      const errorMsg = videoResult.error || 'Video generation failed';
+      console.error(`   ❌ Shot ${shotIndex + 1} failed: ${errorMsg}`);
+      
+      // Mark shot as failed
+      job.shots[shotIndex].status = 'failed';
+      job.shots[shotIndex].error = errorMsg;
+      await kv.set(`coconut:video:job:${jobId}`, job);
+      
+      // ⚠️ CRITICAL: Continue to next shot even if this one failed
+      console.log(`   ⚠️ Continuing to next shot despite failure...`);
+      await triggerNextShot(jobId, shotIndex + 1, cocoBoard);
+      
+      return c.json({
+        success: false,
+        error: errorMsg
+      }, 500);
+    }
+
+    // Update job with success
+    job.shots[shotIndex].status = 'completed';
+    job.shots[shotIndex].videoUrl = videoResult.url;
+    await kv.set(`coconut:video:job:${jobId}`, job);
+
+    console.log(`   ✅ Shot ${shotIndex + 1} completed successfully`);
+    console.log(`   📹 Video URL: ${videoResult.url.substring(0, 60)}...\n`);
+
+    // ✅ CHAIN OF RESPONSIBILITY: Trigger next shot automatically
+    const hasMoreShots = shotIndex + 1 < job.totalShots;
+    
+    if (hasMoreShots) {
+      console.log(`   🔗 Triggering next shot (${shotIndex + 2}/${job.totalShots})...`);
+      await triggerNextShot(jobId, shotIndex + 1, cocoBoard);
+    } else {
+      console.log(`   🎉 All shots completed! Finalizing job...`);
+      await finalizeJob(jobId, cocoBoard);
+    }
+
+    return c.json({
+      success: true,
+      videoUrl: videoResult.url
+    });
+
+  } catch (error) {
+    console.error('❌ Single shot generation error:', error);
+    return c.json({
+      error: 'Failed to generate shot',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// ============================================================================
 // GENERATE VIDEO (ORCHESTRATION)
 // ============================================================================
 
@@ -211,31 +323,39 @@ app.post('/generate', async (c) => {
     
     console.log(`💰 Total cost for video generation: ${totalCost} credits`);
     
-    // ✅ DEDUCT CREDITS BEFORE GENERATION
-    const creditsKey = `user:${userId}:credits`;
-    const creditsData = await kv.get(creditsKey);
+    // ✅ USE CREDITS MANAGER instead of direct KV access
+    console.log(`💳 Getting user credits for userId: ${userId}...`);
+    const userCredits = await getUserCredits(userId);
     
-    if (!creditsData) {
-      return c.json({ error: 'User credits not found' }, 404);
-    }
+    console.log(`💳 User credits retrieved:`, userCredits);
+    const availableBalance = userCredits.free + userCredits.paid;
+    console.log(`💰 Total available: ${availableBalance} credits (free: ${userCredits.free}, paid: ${userCredits.paid})`);
+    console.log(`💰 Required: ${totalCost} credits`);
     
-    const credits = typeof creditsData === 'string' ? JSON.parse(creditsData) : creditsData;
-    
-    // Check if user has enough paid credits
-    if (credits.paid < totalCost) {
+    // Check if user has enough credits (prioritize paid for Coconut)
+    if (userCredits.paid < totalCost) {
+      console.error(`❌ Insufficient credits: ${userCredits.paid} paid credits < ${totalCost} required`);
       return c.json({ 
         error: 'Insufficient credits',
         required: totalCost,
-        available: credits.paid
+        available: userCredits.paid,
+        message: `Coconut V14 requires ${totalCost} paid credits. You have ${userCredits.paid} paid credits available.`
       }, 400);
     }
     
-    // Deduct credits
-    credits.paid -= totalCost;
-    await kv.set(creditsKey, credits);
+    // ✅ DEDUCT CREDITS using credits manager
+    const deductResult = await deductCredits(userId, totalCost);
+    
+    if (!deductResult.success) {
+      console.error(`❌ Failed to deduct credits:`, deductResult.error);
+      return c.json({ 
+        error: 'Failed to deduct credits',
+        message: deductResult.error || 'Unknown error'
+      }, 500);
+    }
     
     console.log(`✅ Deducted ${totalCost} credits from user ${userId}`);
-    console.log(`   Remaining: ${credits.paid} paid credits`);
+    console.log(`   Remaining: ${deductResult.remaining?.paid || 0} paid credits`);
 
     // Create generation job
     const jobId = `video-gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -260,17 +380,22 @@ app.post('/generate', async (c) => {
     await kv.set(`coconut:video:job:${jobId}`, job);
 
     console.log(`✅ Video generation job created: ${jobId} (${shots.length} shots)`);
-
+    console.log(`🚀🚀🚀 ABOUT TO START ORCHESTRATION - job ${jobId} 🚀🚀🚀`);
+    
     // Start orchestration (non-blocking)
     orchestrateVideoGeneration(jobId, cocoBoard, shots).catch(err => {
       console.error(`❌ Video orchestration failed for job ${jobId}:`, err);
+      console.error(`❌ Stack:`, err.stack);
     });
 
+    console.log(`🔄 Orchestration promise created for job ${jobId}`);
+    
     return c.json({
       success: true,
       jobId,
-      estimatedCost: job.estimatedCost,
-      totalShots: shots.length
+      status: 'queued',
+      totalShots: shots.length,
+      estimatedCost: totalCost
     });
 
   } catch (error) {
@@ -291,6 +416,30 @@ app.post('/generate', async (c) => {
  * ✅ FIXED: Actually calls Kie AI instead of using mock
  */
 async function generateShotWithKieAI(shot: VideoShot, cocoBoard: VideoCocoBoardData): Promise<{ success: boolean; url?: string; error?: string }> {
+  // ✅ CHECK MOCK MODE - Skip actual generation if in mock mode
+  const USE_MOCK_GENERATION = Deno.env.get('USE_MOCK_VIDEO_GENERATION') !== 'false'; // Default true
+  
+  if (USE_MOCK_GENERATION) {
+    console.log(`📦 MOCK MODE - Simulating video generation (no API calls)`);
+    console.log(`   Shot: ${shot.id}`);
+    console.log(`   Type: ${shot.generationType}`);
+    console.log(`   Duration: ${shot.duration}s`);
+    
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Return mock video URL (placeholder)
+    const mockVideoUrl = `https://mock-video-storage.example.com/videos/mock-shot-${shot.id}-${Date.now()}.mp4`;
+    
+    console.log(`   ✅ Mock video generated: ${mockVideoUrl}`);
+    
+    return {
+      success: true,
+      url: mockVideoUrl
+    };
+  }
+  
+  // Original real generation code continues below
   const KIE_AI_API_KEY = Deno.env.get('KIE_AI_API_KEY');
   const KIE_AI_BASE_URL = 'https://api.kie.ai';
   
@@ -299,13 +448,35 @@ async function generateShotWithKieAI(shot: VideoShot, cocoBoard: VideoCocoBoardD
   }
   
   try {
+    // ✅ SANITIZE PROMPT to avoid content policy violations
+    const sanitizationResult = sanitizePrompt(shot.veoPrompt);
+    const promptToUse = sanitizationResult.sanitized;
+    
+    if (sanitizationResult.modified) {
+      console.log(`   🛡️ Prompt sanitized (${sanitizationResult.appliedRules.length} rules applied):`);
+      sanitizationResult.appliedRules.forEach(rule => {
+        console.log(`      - ${rule}`);
+      });
+      console.log(`   📝 Original: ${shot.veoPrompt.substring(0, 80)}...`);
+      console.log(`   ✅ Sanitized: ${promptToUse.substring(0, 80)}...`);
+    }
+    
+    // ✅ Detect remaining problematic patterns
+    const issues = detectProblematicPatterns(promptToUse);
+    if (issues.length > 0) {
+      console.log(`   ⚠️ Potential content policy issues detected:`);
+      issues.forEach(issue => {
+        console.log(`      - ${issue}`);
+      });
+    }
+    
     // ✅ SENIOR-LEVEL: Support both models and resolutions
     const videoModel = (shot as any).videoModel || 'veo3_fast'; // veo3_fast (10cr) or veo3 (40cr)
     const videoResolution = (shot as any).videoResolution || '1080p'; // 720p or 1080p
     
     // Prepare request
     const requestBody: any = {
-      prompt: shot.veoPrompt,
+      prompt: promptToUse, // ✅ Use sanitized prompt
       model: videoModel, // ✅ Dynamic model selection
       generationType: shot.generationType,
       aspectRatio: shot.aspectRatio,
@@ -316,6 +487,20 @@ async function generateShotWithKieAI(shot: VideoShot, cocoBoard: VideoCocoBoardD
     // Add images if present
     if (shot.imageUrls && shot.imageUrls.length > 0) {
       requestBody.imageUrls = shot.imageUrls;
+    }
+    
+    // ✅ NEW: Support EXTEND_VIDEO (prolonger une vidéo existante)
+    if (shot.generationType === 'EXTEND_VIDEO' && shot.extendFromVideoUrl) {
+      requestBody.videoUrl = shot.extendFromVideoUrl;
+      requestBody.generationType = 'EXTEND_VIDEO';
+      console.log(`   🎬 EXTEND VIDEO mode: extending from ${shot.extendFromVideoUrl.substring(0, 60)}...`);
+    }
+    
+    // ✅ NEW: Support VIDEO_2_VIDEO (transformer une vidéo)
+    if (shot.generationType === 'VIDEO_2_VIDEO' && shot.sourceVideoUrl) {
+      requestBody.videoUrl = shot.sourceVideoUrl;
+      requestBody.generationType = 'VIDEO_2_VIDEO';
+      console.log(`   🎬 VIDEO-TO-VIDEO mode: transforming ${shot.sourceVideoUrl.substring(0, 60)}...`);
     }
     
     // ✅ Add seeds for deterministic reproduction if provided
@@ -354,9 +539,11 @@ async function generateShotWithKieAI(shot: VideoShot, cocoBoard: VideoCocoBoardD
     console.log(`   ⏳ Task created: ${taskId}`);
     console.log(`   ⏳ Polling for completion...`);
     
-    // Poll for result (max 5 minutes)
-    const maxAttempts = 60; // 60 × 5s = 5 minutes
+    // Poll for result (max 10 minutes for image-to-video)
+    const maxAttempts = 120; // 120 × 5s = 10 minutes
     const pollInterval = 5000; // 5 seconds
+    
+    console.log(`   ⏳ Starting polling (max ${maxAttempts} attempts = ${(maxAttempts * pollInterval) / 60000} minutes, ${pollInterval}ms interval)...`);
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));
@@ -406,7 +593,7 @@ async function generateShotWithKieAI(shot: VideoShot, cocoBoard: VideoCocoBoardD
       }
     }
     
-    throw new Error('Generation timeout (5 minutes)');
+    throw new Error('Generation timeout (10 minutes)');
     
   } catch (error) {
     console.error(`   ❌ Kie AI error:`, error);
@@ -422,10 +609,12 @@ async function orchestrateVideoGeneration(
   cocoBoard: VideoCocoBoardData,
   shots: VideoShot[]
 ) {
+  console.log(`🔥🔥🔥 ORCHESTRATION STARTED - job ${jobId} 🔥🔥🔥`);
+  console.log(`   📊 Total shots: ${shots.length}`);
+  console.log(`   📋 CocoBoard ID: ${cocoBoard.id}`);
+  console.log(`   🏗️ Using CHAIN OF RESPONSIBILITY pattern (each shot triggers the next)`);
+  
   try {
-    console.log(`🎬 Starting video orchestration for job: ${jobId}`);
-    console.log(`📊 Total shots to generate: ${shots.length}`);
-    
     const job = await kv.get(`coconut:video:job:${jobId}`) as VideoGenerationJob;
     if (!job) {
       throw new Error('Job not found');
@@ -435,126 +624,18 @@ async function orchestrateVideoGeneration(
     job.progress = 5;
     await kv.set(`coconut:video:job:${jobId}`, job);
 
-    const generatedShots: { shotId: string; videoUrl: string }[] = [];
-    let totalCost = 100; // Analysis cost
-
-    // Generate each shot sequentially
-    for (let i = 0; i < shots.length; i++) {
-      const shot = shots[i];
-      
-      console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-      console.log(`🎥 Shot ${i + 1}/${shots.length}: ${shot.id}`);
-      console.log(`   Prompt: ${shot.veoPrompt.substring(0, 100)}...`);
-      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
-      
-      // Update job progress
-      job.currentShot = i + 1;
-      job.progress = 5 + Math.floor((i / shots.length) * 85);
-      job.shots[i].status = 'generating';
-      await kv.set(`coconut:video:job:${jobId}`, job);
-
-      try {
-        console.log(`   🔄 Calling Kie AI for shot ${i + 1}...`);
-        const videoResult = await generateShotWithKieAI(shot, cocoBoard);
-
-        // Check if generation succeeded
-        if (!videoResult.success || !videoResult.url) {
-          const errorMsg = videoResult.error || 'Video generation failed';
-          console.error(`   ❌ Shot ${i + 1} failed: ${errorMsg}`);
-          throw new Error(errorMsg);
-        }
-
-        // Save result
-        generatedShots.push({
-          shotId: shot.id,
-          videoUrl: videoResult.url
-        });
-
-        job.shots[i].status = 'completed';
-        job.shots[i].videoUrl = videoResult.url;
-        
-        totalCost += shot.estimatedCost;
-
-        console.log(`   ✅ Shot ${i + 1}/${shots.length} completed successfully`);
-        console.log(`   📹 Video URL: ${videoResult.url.substring(0, 60)}...`);
-        console.log(`   📊 Progress: ${generatedShots.length}/${shots.length} shots done\n`);
-
-      } catch (error) {
-        console.error(`\n❌❌❌ CRITICAL ERROR on shot ${i + 1}/${shots.length} ❌❌❌`);
-        console.error(`Shot ID: ${shot.id}`);
-        console.error(`Error:`, error);
-        console.error(`Stack:`, error instanceof Error ? error.stack : 'No stack');
-        console.error(`❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌❌\n`);
-        
-        job.shots[i].status = 'failed';
-        job.shots[i].error = error instanceof Error ? error.message : 'Unknown error';
-        
-        // ✅ CONTINUE generating remaining shots even if one fails
-        console.log(`⚠️ Continuing with remaining ${shots.length - i - 1} shots...\n`);
-      }
-
-      await kv.set(`coconut:video:job:${jobId}`, job);
-    }
-
-    // All shots complete
-    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`🎉 VIDEO ORCHESTRATION COMPLETE`);
-    console.log(`   Total shots: ${shots.length}`);
-    console.log(`   Successful: ${generatedShots.length}`);
-    console.log(`   Failed: ${shots.length - generatedShots.length}`);
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    // ✅ PRODUCTION SOLUTION: Only trigger the FIRST shot
+    // Each shot will auto-trigger the next one when it completes
+    // This avoids timeout issues and scales infinitely
+    console.log(`🚀 Triggering first shot (1/${shots.length})...`);
+    await triggerNextShot(jobId, 0, cocoBoard);
     
-    job.status = 'completed';
-    job.progress = 100;
-    job.actualCost = totalCost;
-    job.completedAt = new Date().toISOString();
-
-    // Note: For MVP, we return individual shots
-    // In production, you could use ffmpeg to assemble into final video
-    // For now, frontend will display shots individually
-
-    await kv.set(`coconut:video:job:${jobId}`, job);
-
-    // ✅ NEW: Add video to user's generation history
-    const generationRecord = {
-      id: jobId,
-      userId: job.userId,
-      type: 'video' as const,
-      cocoBoardId: job.cocoBoardId,
-      status: 'completed' as const,
-      resultUrl: generatedShots[0]?.videoUrl, // First shot as thumbnail/preview
-      thumbnail: generatedShots[0]?.videoUrl,
-      shots: generatedShots,
-      totalShots: shots.length,
-      successfulShots: generatedShots.length,
-      credits: totalCost,
-      cost: totalCost,
-      prompt: {
-        description: cocoBoard.analysis.storyboard || 'Video generation',
-        videoType: cocoBoard.analysis.videoType || 'commercial',
-        duration: cocoBoard.analysis.videoLength || 30
-      },
-      createdAt: job.createdAt,
-      completedAt: job.completedAt,
-      isFavorite: false
-    };
-
-    // Store generation
-    await kv.set(`generation:${jobId}`, generationRecord);
-
-    // Add to user's generations list
-    const userGens = await kv.get(`user:${job.userId}:generations`) || [];
-    userGens.unshift(jobId);
-    await kv.set(`user:${job.userId}:generations`, userGens);
-
-    console.log(`✅ Video added to user history: ${jobId}`);
-
-    console.log(`✅ Video orchestration complete: ${jobId}`);
-    console.log(`   Shots: ${generatedShots.length}/${shots.length} successful`);
-    console.log(`   Cost: ${totalCost} credits`);
+    console.log(`✅ Orchestration complete! Chain started.`);
+    console.log(`   Shots will process sequentially in background.`);
+    console.log(`   Monitor via GET /generate/${jobId}/status`);
 
   } catch (error) {
-    console.error(`❌ Video orchestration error:`, error);
+    console.error(`❌ WORKER: Video orchestration error:`, error);
     
     const job = await kv.get(`coconut:video:job:${jobId}`) as VideoGenerationJob;
     if (job) {
@@ -595,5 +676,126 @@ app.get('/generate/:jobId/status', async (c) => {
     }, 500);
   }
 });
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Trigger the next shot in the job
+ */
+async function triggerNextShot(jobId: string, nextShotIndex: number, cocoBoard: VideoCocoBoardData) {
+  const job = await kv.get(`coconut:video:job:${jobId}`) as VideoGenerationJob;
+  
+  if (!job) {
+    console.error(`❌ Job not found: ${jobId}`);
+    return;
+  }
+  
+  // ✅ Get the actual shot data from cocoBoard
+  const shots = cocoBoard.editedShots || cocoBoard.analysis.shots;
+  const nextShot = shots[nextShotIndex];
+  
+  if (!nextShot) {
+    console.error(`❌ Next shot not found: ${nextShotIndex}`);
+    return;
+  }
+  
+  console.log(`   🔗 Triggering next shot (${nextShotIndex + 1}/${job.totalShots})...`);
+  
+  // ✅ Get Supabase URL from environment
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+  
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('❌ Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+    return;
+  }
+  
+  // ✅ NON-BLOCKING: Fire and forget (don't wait for completion)
+  // The shot will auto-trigger the next one when it's done
+  fetch(`${SUPABASE_URL}/functions/v1/make-server-e55aa214/coconut-v14/video/generate-single-shot`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({
+      jobId,
+      shotIndex: nextShotIndex,
+      shot: nextShot,
+      cocoBoardId: cocoBoard.id
+    })
+  }).catch(err => {
+    console.error(`❌ Failed to trigger shot ${nextShotIndex + 1}:`, err);
+  });
+  
+  console.log(`   ✅ Shot ${nextShotIndex + 1} dispatched (processing in background)`);
+}
+
+/**
+ * Finalize the job when all shots are completed
+ */
+async function finalizeJob(jobId: string, cocoBoard: VideoCocoBoardData) {
+  const job = await kv.get(`coconut:video:job:${jobId}`) as VideoGenerationJob;
+  
+  if (!job) {
+    console.error(`❌ Job not found: ${jobId}`);
+    return;
+  }
+  
+  console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  console.log(`🎉 WORKER: VIDEO ORCHESTRATION COMPLETE`);
+  console.log(`   Total shots: ${job.totalShots}`);
+  console.log(`   Successful: ${job.shots.filter(s => s.status === 'completed').length}`);
+  console.log(`   Failed: ${job.shots.filter(s => s.status === 'failed').length}`);
+  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+  
+  job.status = 'completed';
+  job.progress = 100;
+  job.actualCost = job.estimatedCost;
+  job.completedAt = new Date().toISOString();
+
+  await kv.set(`coconut:video:job:${jobId}`, job);
+
+  // ✅ Add video to user's generation history
+  const successfulShots = job.shots.filter(s => s.status === 'completed' && s.videoUrl);
+  
+  const generationRecord = {
+    id: jobId,
+    userId: job.userId,
+    type: 'video' as const,
+    cocoBoardId: job.cocoBoardId,
+    status: 'completed' as const,
+    resultUrl: successfulShots[0]?.videoUrl, // First shot as thumbnail/preview
+    thumbnail: successfulShots[0]?.videoUrl,
+    shots: successfulShots.map(s => ({ shotId: s.shotId, videoUrl: s.videoUrl! })),
+    totalShots: job.totalShots,
+    successfulShots: successfulShots.length,
+    credits: job.estimatedCost,
+    cost: job.estimatedCost,
+    prompt: {
+      description: cocoBoard.analysis.storyboard || 'Video generation',
+      videoType: cocoBoard.analysis.videoType || 'commercial',
+      duration: cocoBoard.analysis.videoLength || 30
+    },
+    createdAt: job.createdAt,
+    completedAt: job.completedAt,
+    isFavorite: false
+  };
+
+  // Store generation
+  await kv.set(`generation:${jobId}`, generationRecord);
+
+  // Add to user's generations list
+  const userGens = await kv.get(`user:${job.userId}:generations`) || [];
+  userGens.unshift(jobId);
+  await kv.set(`user:${job.userId}:generations`, userGens);
+
+  console.log(`✅ Video added to user history: ${jobId}`);
+  console.log(`✅ WORKER: Video orchestration complete: ${jobId}`);
+  console.log(`   Shots: ${successfulShots.length}/${job.totalShots} successful`);
+  console.log(`   Cost: ${job.estimatedCost} credits`);
+}
 
 export default app;

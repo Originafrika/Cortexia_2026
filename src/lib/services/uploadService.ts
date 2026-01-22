@@ -1,6 +1,6 @@
 // Upload Service - Handle image uploads with validation and compression
 
-import { projectId, publicAnonKey } from '../../utils/supabase/info.tsx';
+import { projectId, publicAnonKey } from '../../utils/supabase/info'; // ✅ FIX: Remove .tsx extension
 
 export interface UploadOptions {
   maxSize?: number; // in MB

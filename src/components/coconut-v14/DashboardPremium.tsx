@@ -58,11 +58,14 @@ const mockStats = {
 };
 
 export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits, onNavigateToTypeSelect }: DashboardPremiumProps) {
-  const { getCoconutCredits } = useCredits();
+  const { credits, getCoconutCredits } = useCredits(); // ✅ ADD: Get full credits object
   const { playClick, playWhoosh } = useSoundContext();
   const notify = useNotify();
   
-  const creditsRemaining = getCoconutCredits(); // ✅ Coconut V14 uses ONLY paid credits
+  // ✅ FIXED: Calculate total differently for Enterprise vs Regular users
+  const creditsRemaining = credits.isEnterprise 
+    ? (credits.monthlyCreditsRemaining || 0) + (credits.addOnCredits || 0)
+    : getCoconutCredits(); // Regular users: paid credits only
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] relative overflow-hidden">
@@ -159,7 +162,7 @@ export function DashboardPremium({ onNavigateToCreate, onNavigateToCredits, onNa
                   </div>
                   <div>
                     <div className="text-sm font-bold text-[var(--coconut-husk)] uppercase tracking-wider">Total Credits</div>
-                    <div className="text-xs text-[var(--coconut-husk)]/60 mt-0.5">Pay-as-you-go • $0.10/credit</div>
+                    <div className="text-xs text-[var(--coconut-husk)]/60 mt-0.5">Pay-as-you-go • $0.09/credit</div>
                   </div>
                 </div>
                 

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ArrowRight, Check, Heart, MessageCircle, Share2, Download, TrendingUp, Award, DollarSign, Star, Sparkles, Video, User as UserIcon, Link as LinkIcon } from 'lucide-react';
+import { ArrowRight, Check, Heart, Sparkles, Zap, Star, Award, TrendingUp } from 'lucide-react';
 
 interface LandingIndividualProps {
   onJoinCommunity: () => void;
@@ -10,47 +10,95 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       {/* Hero Section */}
-      <section className="relative py-32 px-6 overflow-hidden">
+      <section className="relative py-24 sm:py-32 px-6 overflow-hidden">
         {/* Background Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-purple-500/10 rounded-full blur-[150px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-violet-500/10 rounded-full blur-[150px]" />
+          <motion.div 
+            className="absolute top-1/4 left-1/4 w-[800px] h-[800px] rounded-full blur-[150px]"
+            style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)' }}
+            animate={{
+              x: [0, 80, 0],
+              y: [0, -60, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 22,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full blur-[150px]"
+            style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)' }}
+            animate={{
+              x: [0, -60, 0],
+              y: [0, 80, 0],
+              scale: [1, 1.15, 1],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1
+            }}
+          />
         </div>
 
-        <div className="max-w-6xl mx-auto text-center relative">
+        <div className="max-w-5xl mx-auto text-center relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-8">
+            {/* Badge */}
+            <div 
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(139,92,246,0.08) 100%)',
+                border: '1px solid rgba(168,85,247,0.25)',
+              }}
+            >
               <Heart size={16} className="text-purple-400" />
               <span className="text-sm text-purple-400">Join 10,000+ Creators</span>
             </div>
 
-            <h1 className="text-6xl md:text-7xl mb-6">
-              Create. Share. Earn.
+            {/* Headline */}
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 leading-tight">
+              <span className="text-white">That idea you had?</span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
-                The AI Creative Community
+                Make it real. Today.
               </span>
             </h1>
 
-            <p className="text-2xl text-white/70 mb-4 max-w-3xl mx-auto">
-              Generate images, videos, avatars with AI.
+            {/* Subheadline */}
+            <p className="text-xl sm:text-2xl text-white/70 mb-4 max-w-3xl mx-auto">
+              No design skills. No experience. Just your imagination.
             </p>
-            <p className="text-xl text-white/60 mb-12 max-w-2xl mx-auto">
-              Become a creator, unlock pro tools, earn rewards.
+            <p className="text-lg sm:text-xl text-white/60 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Turn "I wish I could..." into "Look what I made."
+              <br className="hidden sm:block" />
+              Then share it, get discovered, and earn rewards.
             </p>
 
+            {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <button
+              <motion.button
                 onClick={onJoinCommunity}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-500 text-white transition-all hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 inline-flex items-center gap-3 text-lg"
+                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(168,85,247,0.9) 0%, rgba(139,92,246,0.85) 100%)',
+                  boxShadow: '0 20px 60px rgba(168,85,247,0.35)',
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: '0 25px 80px rgba(168,85,247,0.45)'
+                }}
+                whileTap={{ scale: 0.98 }}
               >
-                <span>Join Community</span>
+                <span>Start Creating Free</span>
                 <ArrowRight size={20} />
-              </button>
+              </motion.button>
 
               <button
                 onClick={onExploreFeed}
@@ -60,139 +108,191 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               </button>
             </div>
 
-            <p className="text-sm text-white/50">
-              25 free credits every month • No credit card required
+            <p className="text-sm text-white/40">
+              25 free credits every month • No credit card • No experience needed
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Create with AI */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl mb-4">Create with AI</h2>
-            <p className="text-xl text-white/60">Simple tools, powerful results</p>
+      {/* The Journey Section */}
+      <section className="py-16 sm:py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <motion.h2 
+              className="text-4xl sm:text-5xl font-bold mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              Your creative journey starts here
+            </motion.h2>
+            <p className="text-lg sm:text-xl text-white/60">
+              Three simple steps. Infinite possibilities.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          {/* Journey Steps */}
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               {
+                number: '01',
+                title: 'Imagine',
+                description: 'Type what you see in your mind. A sunset over mountains. A fantasy character. Anything.',
                 icon: Sparkles,
-                title: 'Image Generation',
-                description: 'Multiple models: Flux Pro/Dev/Schnell, SeeDream, Imagen 4',
-                features: ['Text-to-image', 'Image-to-image', 'Style presets', 'Up to 8 references'],
-                credits: '2-15 credits',
                 color: 'purple',
               },
               {
-                icon: Video,
-                title: 'Video Creation',
-                description: 'Veo 3.1, Minimax, RunwayML, Kling for 4-8s videos',
-                features: ['Text-to-video', 'Multiple durations', 'Format options', 'High quality'],
-                credits: '25-40 credits',
-                color: 'blue',
+                number: '02',
+                title: 'Create',
+                description: 'AI brings it to life in seconds. Images, videos, avatars—all professional quality.',
+                icon: Zap,
+                color: 'violet',
               },
               {
-                icon: UserIcon,
-                title: 'Avatar Mode',
-                description: 'InfiniteTalk for talking avatars',
-                features: ['Upload portrait', 'Text-to-speech', 'Natural expressions', 'Quick generation'],
-                credits: '30 credits',
-                color: 'green',
+                number: '03',
+                title: 'Share & Earn',
+                description: 'Post to the community. Get likes. Become a Top Creator. Unlock premium tools.',
+                icon: Star,
+                color: 'pink',
               },
-            ].map((mode, idx) => {
-              const Icon = mode.icon;
-              const colors = {
-                purple: { bg: 'from-purple-500/10 to-violet-500/10', border: 'border-purple-500/20', text: 'text-purple-400' },
-                blue: { bg: 'from-blue-500/10 to-cyan-500/10', border: 'border-blue-500/20', text: 'text-blue-400' },
-                green: { bg: 'from-green-500/10 to-emerald-500/10', border: 'border-green-500/20', text: 'text-green-400' },
-              };
-              const colorSet = colors[mode.color as keyof typeof colors];
-
-              return (
-                <motion.div
-                  key={idx}
-                  className={`p-8 rounded-3xl bg-gradient-to-br ${colorSet.bg} backdrop-blur-sm border ${colorSet.border}`}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: idx * 0.1 }}
-                >
-                  <div className={`w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-6`}>
-                    <Icon className={colorSet.text} size={32} />
+            ].map((step, idx) => (
+              <motion.div
+                key={idx}
+                className="p-6 sm:p-8 rounded-3xl relative overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(139,92,246,0.06) 100%)',
+                  border: '1px solid rgba(168,85,247,0.15)',
+                }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <div className="text-5xl font-bold text-white/10 mb-4">
+                  {step.number}
+                </div>
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                    <step.icon className="text-purple-400" size={24} />
                   </div>
-
-                  <h3 className="text-2xl mb-3">{mode.title}</h3>
-                  <p className="text-white/60 mb-6">{mode.description}</p>
-
-                  <ul className="space-y-3 mb-6">
-                    {mode.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="flex items-center gap-3 text-sm text-white/80">
-                        <Check size={16} className={colorSet.text} />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className={`text-sm ${colorSet.text}`}>
-                    {mode.credits}
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">{step.description}</p>
                   </div>
-                </motion.div>
-              );
-            })}
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Community Feed */}
-      <section className="py-20 px-6 bg-gradient-to-b from-purple-500/5 to-transparent">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      {/* What You Can Create */}
+      <section className="py-16 sm:py-20 px-6 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <motion.h2 
+              className="text-4xl sm:text-5xl font-bold mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              What will you create?
+            </motion.h2>
+            <p className="text-lg sm:text-xl text-white/60">
+              Real examples from our community
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                type: 'Images',
+                example: 'Posters, portraits, social media art',
+                cost: 'From 1 credit',
+                result: 'Professional quality in 30 seconds',
+              },
+              {
+                type: 'Videos',
+                example: 'Short films, animations, clips',
+                cost: '25-40 credits',
+                result: '4-8 second videos, cinema quality',
+              },
+              {
+                type: 'Avatars',
+                example: 'Talking portraits, animated selfies',
+                cost: '30 credits',
+                result: 'Your photo speaks with AI voice',
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                className="p-6 rounded-2xl bg-white/5 border border-white/10"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+              >
+                <div className="text-xl font-semibold text-white mb-2">{item.type}</div>
+                <p className="text-sm text-white/60 mb-4">{item.example}</p>
+                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                  <span className="text-sm text-purple-400">{item.cost}</span>
+                  <span className="text-xs text-white/50">{item.result}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Community Section */}
+      <section className="py-16 sm:py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
             >
-              <h2 className="text-5xl mb-6">
-                Discover Amazing
+              <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+                <span className="text-white">You're not creating alone.</span>
                 <br />
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Community Creations
+                  Join the community.
                 </span>
               </h2>
 
-              <p className="text-xl text-white/60 mb-8">
-                TikTok-style feed of AI-generated content. Like, comment, remix, and share your favorites.
+              <p className="text-lg sm:text-xl text-white/60 mb-8">
+                A TikTok-style feed of incredible AI art. Get inspired. Get discovered. Get rewarded.
               </p>
 
               <div className="space-y-4 mb-8">
                 {[
-                  { icon: Heart, text: 'Like and save your favorites' },
-                  { icon: MessageCircle, text: 'Comment and engage with creators' },
-                  { icon: Share2, text: 'Remix creations with your own twist' },
-                  { icon: Download, text: 'Download for your projects' },
+                  { emoji: '❤️', text: 'Like amazing creations, save your favorites' },
+                  { emoji: '💬', text: 'Comment, connect with other creators' },
+                  { emoji: '✨', text: 'Remix others\' work with your own twist' },
+                  { emoji: '🏆', text: 'Top posts get featured, creators get rewards' },
                 ].map((item, idx) => (
                   <motion.div
                     key={idx}
-                    className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10"
+                    className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10"
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                    transition={{ delay: idx * 0.1 }}
                   >
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="text-purple-400" size={20} />
-                    </div>
-                    <span className="text-white/80">{item.text}</span>
+                    <span className="text-2xl">{item.emoji}</span>
+                    <span className="text-white/80 mt-1">{item.text}</span>
                   </motion.div>
                 ))}
               </div>
 
               <button
                 onClick={onExploreFeed}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white transition-all hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 inline-flex items-center gap-3"
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 transition-all hover:scale-105 inline-flex items-center gap-3"
+                style={{
+                  boxShadow: '0 20px 60px rgba(168,85,247,0.3)'
+                }}
               >
                 <span>Explore Feed</span>
                 <ArrowRight size={20} />
@@ -203,23 +303,31 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
               className="relative"
             >
               <div className="p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10">
                 <div className="text-center mb-6">
                   <div className="text-4xl mb-2">🎨</div>
-                  <h3 className="text-2xl mb-2">Trending Now</h3>
-                  <p className="text-sm text-white/60">Most popular this week</p>
+                  <h3 className="text-2xl mb-2">Trending This Week</h3>
+                  <p className="text-sm text-white/60">Most loved by the community</p>
                 </div>
 
                 <div className="space-y-4">
-                  {['Cyberpunk cityscape', 'Fantasy portrait', 'Abstract art'].map((item, idx) => (
-                    <div key={idx} className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
-                      <span className="text-white/80">{item}</span>
-                      <div className="flex items-center gap-2 text-sm text-white/60">
-                        <Heart size={14} className="text-pink-400" />
-                        <span>{(idx + 1) * 1247}</span>
+                  {[
+                    { title: 'Cyberpunk cityscape', likes: 1247, author: '@nova' },
+                    { title: 'Fantasy portrait', likes: 892, author: '@stellar' },
+                    { title: 'Abstract dreamscape', likes: 756, author: '@pixel' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="text-white/90 mb-1">{item.title}</div>
+                          <div className="text-xs text-white/50">{item.author}</div>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-sm text-pink-400">
+                          <Heart size={14} fill="currentColor" />
+                          <span>{item.likes}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -231,253 +339,227 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
       </section>
 
       {/* Creator Economy */}
-      <section className="py-20 px-6 bg-gradient-to-b from-green-500/5 to-transparent">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 mb-6">
+      <section className="py-16 sm:py-20 px-6 bg-gradient-to-b from-transparent via-green-500/5 to-transparent">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div 
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
+              style={{
+                background: 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(16,185,129,0.08) 100%)',
+                border: '1px solid rgba(34,197,94,0.25)',
+              }}
+            >
               <TrendingUp size={16} className="text-green-400" />
               <span className="text-sm text-green-400">Creator Economy</span>
             </div>
 
-            <h2 className="text-5xl mb-6">
-              Become a Top Creator,
+            <motion.h2 
+              className="text-4xl sm:text-5xl font-bold mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="text-white">Create great work.</span>
               <br />
               <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                Unlock Premium Rewards
+                Get rewarded for it.
               </span>
-            </h2>
+            </motion.h2>
 
-            <p className="text-xl text-white/60 max-w-3xl mx-auto">
-              Achieve monthly Top Creator status (60 creations + 5 posts with 5+ likes each) to unlock Coconut AI and earn rewards
+            <p className="text-lg sm:text-xl text-white/60 max-w-3xl mx-auto">
+              Become a Top Creator: unlock premium tools & earn commissions
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 mb-16">
-            {/* Requirements */}
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* How to Become Top Creator */}
             <motion.div
-              className="p-8 rounded-3xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm border border-purple-500/20"
+              className="p-8 rounded-3xl relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(139,92,246,0.06) 100%)',
+                border: '1px solid rgba(168,85,247,0.15)',
+              }}
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
             >
-              <h3 className="text-2xl mb-6 flex items-center gap-3">
+              <h3 className="text-2xl font-semibold mb-6 flex items-center gap-3">
                 <Star className="text-purple-400" size={28} />
-                <span>Top Creator Requirements (Monthly)</span>
+                <span>Become a Top Creator</span>
               </h3>
 
-              <div className="space-y-6">
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-white/80">Generate creations</span>
-                    <span className="text-2xl">60</span>
+              <div className="space-y-4">
+                {[
+                  { label: 'Create 60 pieces', desc: 'Images, videos, or avatars per month' },
+                  { label: 'Post 5 to the feed', desc: 'Share your best work with the community' },
+                  { label: 'Get 5+ likes each', desc: 'Each post needs at least 5 likes' },
+                ].map((req, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Check className="text-purple-400" size={18} />
+                      <span className="font-semibold text-white">{req.label}</span>
+                    </div>
+                    <p className="text-sm text-white/60 pl-7">{req.desc}</p>
                   </div>
-                  <p className="text-sm text-white/60">Create images, videos, or avatars using Simple mode</p>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-white/80">Publish posts</span>
-                    <span className="text-2xl">5</span>
-                  </div>
-                  <p className="text-sm text-white/60">Share your best work to the community feed</p>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-white/80">Likes per post</span>
-                    <span className="text-2xl">5+</span>
-                  </div>
-                  <p className="text-sm text-white/60">Each post must get at least 5 likes</p>
-                </div>
+                ))}
               </div>
             </motion.div>
 
             {/* Rewards */}
             <motion.div
-              className="p-8 rounded-3xl bg-gradient-to-br from-[#F5EBE0]/10 to-[#E3D5CA]/10 backdrop-blur-sm border border-[#F5EBE0]/20"
+              className="p-8 rounded-3xl relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,235,224,0.08) 0%, rgba(227,213,202,0.06) 100%)',
+                border: '1px solid rgba(245,235,224,0.15)',
+              }}
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
             >
-              <h3 className="text-2xl mb-6 flex items-center gap-3">
+              <h3 className="text-2xl font-semibold mb-6 flex items-center gap-3">
                 <Award className="text-[#F5EBE0]" size={28} />
-                <span>Creator Rewards</span>
+                <span>Your Rewards</span>
               </h3>
 
               <div className="space-y-4">
-                {[
-                  { icon: Sparkles, title: 'Unlock Coconut Access', desc: 'Premium AI orchestration when Top Creator status active' },
-                  { icon: LinkIcon, title: 'Referral Commissions', desc: '10% lifetime commission on credits purchased by your referrals' },
-                ].map((reward, idx) => (
-                  <motion.div
-                    key={idx}
-                    className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: idx * 0.05 }}
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0">
-                      <reward.icon className="text-[#F5EBE0]" size={20} />
-                    </div>
+                <div className="p-5 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-start gap-3 mb-2">
+                    <Sparkles className="text-[#F5EBE0] mt-1" size={20} />
                     <div>
-                      <h4 className="text-white mb-1">{reward.title}</h4>
-                      <p className="text-sm text-white/60">{reward.desc}</p>
+                      <div className="font-semibold text-white mb-1">Creator Benefits Package</div>
+                      <p className="text-sm text-white/70">
+                        3 Coconut generations/month • Image & Video only • No watermark downloads
+                      </p>
                     </div>
-                  </motion.div>
-                ))}
+                  </div>
+                </div>
+
+                <div className="p-5 rounded-xl bg-white/5 border border-white/10">
+                  <div className="flex items-start gap-3 mb-2">
+                    <TrendingUp className="text-green-400 mt-1" size={20} />
+                    <div>
+                      <div className="font-semibold text-white mb-1">10-15% Monthly Commission</div>
+                      <p className="text-sm text-white/70">
+                        On all referral purchases made this month
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
-
-          {/* Creator Dashboard Preview */}
-          <motion.div
-            className="p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h3 className="text-2xl mb-8 text-center">Creator Dashboard Preview</h3>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
-                <div className="text-sm text-white/60 mb-2">Progress This Month</div>
-                <div className="text-3xl mb-4">62%</div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white/60">Creations</span>
-                    <span>37 / 60</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/60">Posts</span>
-                    <span>3 / 5</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
-                <div className="text-sm text-white/60 mb-2">Total Earnings</div>
-                <div className="text-3xl mb-1">2,450 <span className="text-lg text-white/40">cr</span></div>
-                <div className="text-sm text-green-400">+385 this month</div>
-                <div className="mt-4 pt-4 border-t border-white/10 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white/60">Downloads</span>
-                    <span>1,247</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/60">Referrals</span>
-                    <span>8 active</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20">
-                <div className="text-sm text-white/60 mb-2">Current Rank</div>
-                <div className="text-3xl mb-1">#7</div>
-                <div className="text-sm text-white/60 mb-4">Top Creator</div>
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-sm">
-                  <div className="text-white/60 mb-1">To Top 10</div>
-                  <div className="text-[#F5EBE0]">750 credits</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-20 px-6">
+      {/* Simple Pricing */}
+      <section className="py-16 sm:py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl mb-4">Simple Pricing</h2>
-          <p className="text-xl text-white/60 mb-12">Pay only for what you create</p>
+          <motion.h2 
+            className="text-4xl sm:text-5xl font-bold mb-4"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            Pay only for what you create
+          </motion.h2>
+          <p className="text-lg sm:text-xl text-white/60 mb-10">
+            No subscriptions. No hidden fees. Just creation.
+          </p>
 
           <motion.div
-            className="p-12 rounded-3xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 backdrop-blur-sm border border-purple-500/20 mb-12"
+            className="p-8 sm:p-10 rounded-3xl relative overflow-hidden mb-8"
+            style={{
+              background: 'linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(139,92,246,0.08) 100%)',
+              border: '1px solid rgba(168,85,247,0.2)',
+            }}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
           >
-            <div className="text-6xl mb-4">
-              $0.10<span className="text-3xl text-white/40">/credit</span>
+            <div className="text-5xl sm:text-6xl font-bold mb-2">
+              <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
+                $0.10
+              </span>
+              <span className="text-2xl text-white/40">/credit</span>
             </div>
-            <p className="text-xl text-white/60 mb-8">Pay-as-you-go • No subscription required</p>
+            <p className="text-white/60 mb-8">Pay as you go</p>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <div className="text-2xl mb-2">25 free credits</div>
-                <div className="text-sm text-white/60">Every month</div>
+            <div className="grid sm:grid-cols-2 gap-4 mb-8">
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-2xl font-semibold mb-1">25 free credits</div>
+                <div className="text-sm text-white/60">Every single month</div>
               </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                <div className="text-2xl mb-2">Creator Program</div>
-                <div className="text-sm text-white/60">Unlock Coconut</div>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="text-2xl font-semibold mb-1">Unlock Coconut</div>
+                <div className="text-sm text-white/60">Become a Top Creator</div>
               </div>
             </div>
 
-            <ul className="space-y-3 text-left max-w-md mx-auto">
-              {[
-                'Image: 5-15 credits',
-                'Video: 25-40 credits',
-                'Avatar: 30 credits',
-                'No hidden fees',
-              ].map((item, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-white/80">
-                  <Check className="text-purple-400" size={18} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="text-left max-w-sm mx-auto space-y-2 text-sm text-white/70">
+              <div className="flex justify-between">
+                <span>Image:</span>
+                <span className="text-purple-400">From 1 credit</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Video:</span>
+                <span className="text-purple-400">25-40 credits</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Avatar:</span>
+                <span className="text-purple-400">30 credits</span>
+              </div>
+            </div>
           </motion.div>
 
           <button
             onClick={onJoinCommunity}
-            className="px-12 py-5 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-500 text-white text-lg transition-all hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 inline-flex items-center gap-3"
+            className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+            style={{
+              background: 'linear-gradient(135deg, rgba(168,85,247,0.9) 0%, rgba(139,92,246,0.85) 100%)',
+              boxShadow: '0 30px 80px rgba(168,85,247,0.4)',
+            }}
           >
-            <span>Join Free</span>
+            <span>Start Creating Free</span>
             <ArrowRight size={24} />
           </button>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 px-6 bg-gradient-to-b from-purple-500/5 to-transparent">
+      <section className="py-16 sm:py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
           >
-            <h2 className="text-5xl mb-6">
-              Start creating today
+            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+              <span className="text-white">That idea?</span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
-                Join the community
+                Make it real right now.
               </span>
             </h2>
-            <p className="text-xl text-white/60 mb-12">
-              10 free credits. No credit card required. Start in seconds.
+            <p className="text-lg sm:text-xl text-white/60 mb-10">
+              25 free credits waiting. No credit card. Join in 30 seconds.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={onJoinCommunity}
-                className="px-12 py-5 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-500 text-white text-lg transition-all hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 inline-flex items-center gap-3"
-              >
-                <span>Get Started</span>
-                <ArrowRight size={24} />
-              </button>
-
-              <button
-                onClick={onExploreFeed}
-                className="px-12 py-5 rounded-2xl bg-white/5 border border-white/10 text-lg transition-all hover:bg-white/10 inline-flex items-center gap-3"
-              >
-                <span>Explore Feed First</span>
-              </button>
-            </div>
+            <motion.button
+              onClick={onJoinCommunity}
+              className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.9) 0%, rgba(139,92,246,0.85) 100%)',
+                boxShadow: '0 30px 80px rgba(168,85,247,0.4)',
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: '0 40px 100px rgba(168,85,247,0.5)'
+              }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span>Enter the Fluid State</span>
+              <ArrowRight size={24} />
+            </motion.button>
           </motion.div>
         </div>
       </section>

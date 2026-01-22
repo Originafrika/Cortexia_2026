@@ -21,6 +21,7 @@ import * as kv from './kv_store.tsx';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import * as kieAIImage from './kie-ai-image.ts';
 import { buildJSONPromptForFlux, buildTextPromptForFlux } from './prompt-utils.ts';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ Use unified credits system
 
 // ✅ CRITICAL FIX: Don't use basePath here - parent app already has it
 // When mounted with app.route('/', cocoBoardRoutes), the basePath is inherited
@@ -408,9 +409,9 @@ app.post('/coconut/generate', async (c) => {
     
     console.log(`💰 Generation cost: ${credits} credits (${model} ${resolution} + ${referenceUrls.length} refs)`);
 
-    // Check user credits
-    const userCredits = await kv.get(`user:${userId}:credits`) || { free: 0, paid: 0 };
-    const totalCredits = userCredits.free + userCredits.paid;
+    // Check user credits - USE CREDITS MANAGER
+    const userCreditsData = await CreditsSystem.getUserCredits(userId);
+    const totalCredits = userCreditsData.free + userCreditsData.paid;
 
     if (totalCredits < credits) {
       return c.json({
@@ -445,15 +446,23 @@ app.post('/coconut/generate', async (c) => {
     userGens.unshift(generation.id);
     await kv.set(`user:${userId}:generations`, userGens);
 
-    // Deduct credits immediately
-    if (userCredits.free >= credits) {
-      userCredits.free -= credits;
-    } else {
-      const remaining = credits - userCredits.free;
-      userCredits.free = 0;
-      userCredits.paid -= remaining;
+    // Deduct credits immediately using credits-manager
+    const deductResult = await CreditsSystem.deductCredits(userId, credits, 'Coconut CocoBoard generation', {
+      generationId: generation.id,
+      cocoBoardId,
+      model,
+      resolution
+    });
+    
+    if (!deductResult.success) {
+      console.error('❌ Failed to deduct credits:', deductResult.error);
+      // Delete generation since we couldn't deduct credits
+      await kv.del(`generation:${generation.id}`);
+      return c.json({
+        success: false,
+        error: deductResult.error || 'Failed to deduct credits'
+      }, 402);
     }
-    await kv.set(`user:${userId}:credits`, userCredits);
 
     console.log(`✅ Generation started: ${generation.id}`);
     
@@ -540,10 +549,11 @@ app.post('/coconut/generate', async (c) => {
           gen.updatedAt = new Date().toISOString();
           await kv.set(`generation:${generation.id}`, gen);
           
-          // Refund credits on failure
-          const refundCredits = await kv.get(`user:${userId}:credits`) || { free: 0, paid: 0 };
-          refundCredits.free += credits;
-          await kv.set(`user:${userId}:credits`, refundCredits);
+          // Refund credits on failure using unified system
+          await CreditsSystem.refundCredits(userId, credits, 'Generation failed', {
+            generationId: generation.id,
+            error: gen.error
+          });
           console.log(`💰 Refunded ${credits} credits to user ${userId}`);
         }
       }

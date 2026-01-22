@@ -117,7 +117,8 @@ export async function analyzeIntentRoute(c: Context) {
  */
 export async function analyzeWithRetry(
   request: GeminiAnalysisRequest,
-  maxRetries: number = 3
+  maxRetries: number = 3,
+  userProfile?: any // ✅ NEW: User profile with brand guidelines
 ): Promise<GeminiAnalysisResponse> {
   let lastError: Error | null = null;
   
@@ -125,7 +126,7 @@ export async function analyzeWithRetry(
     try {
       console.log(`🧠 Gemini analysis attempt ${attempt}/${maxRetries}`);
       
-      const analysis = await analyzeIntent(request);
+      const analysis = await analyzeIntent(request, userProfile); // ✅ PASS USER PROFILE
       
       console.log(`✅ Gemini analysis succeeded on attempt ${attempt}`);
       return analysis;
@@ -149,10 +150,10 @@ export async function analyzeWithRetry(
 // MAIN ANALYZER FUNCTION
 // ============================================
 
-async function analyzeIntent(request: GeminiAnalysisRequest): Promise<GeminiAnalysisResponse> {
+async function analyzeIntent(request: GeminiAnalysisRequest, userProfile?: any): Promise<GeminiAnalysisResponse> {
   console.log('🧠 Starting Gemini creative analysis...');
   
-  const systemPrompt = buildGeminiSystemPrompt();
+  const systemPrompt = buildGeminiSystemPrompt(userProfile); // ✅ PASS USER PROFILE
   const userPrompt = buildGeminiUserPrompt(request);
   
   console.log(`📝 System prompt: ${systemPrompt.length} chars`);
@@ -222,8 +223,30 @@ async function analyzeIntent(request: GeminiAnalysisRequest): Promise<GeminiAnal
 // PROMPT BUILDERS
 // ============================================
 
-function buildGeminiSystemPrompt(): string {
-  return `
+function buildGeminiSystemPrompt(userProfile?: any): string {
+  // ✅ NEW: Build brand guidelines section if available
+  let brandGuidelinesSection = '';
+  
+  if (userProfile?.autoBrandGuidelines && (userProfile?.companyName || userProfile?.brandColors || userProfile?.companyLogo)) {
+    console.log('🎨 Injecting brand guidelines into prompt...');
+    
+    brandGuidelinesSection = `
+  **🎨 BRAND GUIDELINES (MANDATORY TO FOLLOW):**
+  
+  The user has configured their brand guidelines. You MUST integrate these elements into your creative direction:
+  
+  ${userProfile.companyName ? `- **Company Name:** "${userProfile.companyName}" - Include this name in text elements when relevant` : ''}
+  ${userProfile.brandColors && userProfile.brandColors.length > 0 ? `- **Brand Colors:** ${userProfile.brandColors.join(', ')} - Prioritize these colors in your palette` : ''}
+  ${userProfile.companyLogo ? `- **Company Logo:** Available - Mention logo placement in composition zones (e.g., "Logo top-right corner")` : ''}
+  ${userProfile.industry ? `- **Industry Context:** ${userProfile.industry}` : ''}
+  
+  These brand guidelines are CRITICAL for consistency. Integrate them naturally into your creative vision.
+  
+  ---
+  `;
+  }
+  
+  return `${brandGuidelinesSection}
   You are a **WORLD-CLASS ART DIRECTOR** (15+ years at Nike, Apple, Gucci creative studios) who creates **AWARD-WINNING ADVERTISING** that puts junior designers out of work.
 
   Your role: Transform ANY user request (simple or technical) into **FLUX 2 PRO OPTIMIZED PROMPTS** that generate visuals **indistinguishable from real professional campaigns**.

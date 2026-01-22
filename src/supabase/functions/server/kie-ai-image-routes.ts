@@ -8,6 +8,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import * as kieAIImage from './kie-ai-image.ts';
 import * as nanoBanana from './kie-ai-nanobanana.ts';
 import * as credits from './credits.tsx';
+import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking generations
 
 const app = new Hono();
 
@@ -110,6 +111,38 @@ app.post('/generate', async (c) => {
       });
 
       console.log('✅ Kie AI image generated:', result.url);
+
+      // ✅ FIX: Track generation for Creator Dashboard stats
+      const generationId = `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const generation = {
+        id: generationId,
+        userId,
+        type: 'image',
+        model,
+        prompt,
+        resolution,
+        aspectRatio,
+        status: 'complete',
+        result: {
+          url: result.url,
+          taskId: result.taskId
+        },
+        cost,
+        createdAt: new Date().toISOString(),
+        startTime: Date.now(),
+        endTime: Date.now()
+      };
+
+      // Save generation record
+      await kv.set(`generation:${generationId}`, generation);
+
+      // Add to user's generation index
+      const userGenKey = `user:${userId}:generations`;
+      const userGenerations = await kv.get(userGenKey) || [];
+      userGenerations.unshift(generationId); // Add to beginning (newest first)
+      await kv.set(userGenKey, userGenerations);
+
+      console.log(`✅ Tracked generation ${generationId} for user ${userId}`);
 
       // Store in Supabase Storage (optional - for persistence)
       // TODO: Implement if needed
@@ -277,6 +310,38 @@ app.post('/nano-banana', async (c) => {
       });
 
       console.log('✅ Nano Banana Pro image generated:', imageUrl);
+
+      // ✅ FIX: Track generation for Creator Dashboard stats
+      const generationId = `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const generation = {
+        id: generationId,
+        userId,
+        type: 'image',
+        model: 'nano-banana-pro',
+        prompt,
+        resolution,
+        aspectRatio,
+        outputFormat,
+        status: 'complete',
+        result: {
+          url: imageUrl
+        },
+        cost,
+        createdAt: new Date().toISOString(),
+        startTime: Date.now(),
+        endTime: Date.now()
+      };
+
+      // Save generation record
+      await kv.set(`generation:${generationId}`, generation);
+
+      // Add to user's generation index
+      const userGenKey = `user:${userId}:generations`;
+      const userGenerations = await kv.get(userGenKey) || [];
+      userGenerations.unshift(generationId); // Add to beginning (newest first)
+      await kv.set(userGenKey, userGenerations);
+
+      console.log(`✅ Tracked generation ${generationId} for user ${userId}`);
 
       return c.json({
         success: true,

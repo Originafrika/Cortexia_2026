@@ -212,6 +212,22 @@ export async function createTextToImageTask(
   prompt: FluxPrompt,
   specs: TechnicalSpecs
 ): Promise<string> {
+  // ✅ CHECK MOCK MODE - Skip actual generation if in mock mode
+  const USE_MOCK_GENERATION = Deno.env.get('USE_MOCK_IMAGE_GENERATION') !== 'false'; // Default true
+  
+  if (USE_MOCK_GENERATION) {
+    console.log('📦 MOCK MODE - Simulating Flux Text-to-Image generation (no API calls)');
+    console.log(`   Prompt: ${prompt.description?.substring(0, 80)}...`);
+    console.log(`   Specs: ${specs.width}x${specs.height}`);
+    
+    // Return mock task ID
+    const mockTaskId = `mock-flux-t2i-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`   ✅ Mock task created: ${mockTaskId}`);
+    
+    return mockTaskId;
+  }
+  
+  // Original code continues below
   console.log('🎨 Creating Flux Text-to-Image task...');
   
   if (!KIE_AI_API_KEY) {
@@ -316,6 +332,23 @@ export async function createImageToImageTask(
   references: string[],
   specs: TechnicalSpecs
 ): Promise<string> {
+  // ✅ CHECK MOCK MODE - Skip actual generation if in mock mode
+  const USE_MOCK_GENERATION = Deno.env.get('USE_MOCK_IMAGE_GENERATION') !== 'false'; // Default true
+  
+  if (USE_MOCK_GENERATION) {
+    console.log('📦 MOCK MODE - Simulating Flux Image-to-Image generation (no API calls)');
+    console.log(`   Prompt: ${prompt.description?.substring(0, 80)}...`);
+    console.log(`   References: ${references.length} images`);
+    console.log(`   Specs: ${specs.width}x${specs.height}`);
+    
+    // Return mock task ID
+    const mockTaskId = `mock-flux-i2i-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`   ✅ Mock task created: ${mockTaskId}`);
+    
+    return mockTaskId;
+  }
+  
+  // Original code continues below
   console.log('🎨 Creating Flux Image-to-Image task...');
   console.log(`References: ${references.length} images`);
   
@@ -450,6 +483,23 @@ export async function pollFluxTask(
   taskId: string,
   onProgress?: (progress: number, status: string) => void
 ): Promise<string> {
+  // ✅ CHECK MOCK MODE - Return mock image instantly
+  const USE_MOCK_GENERATION = Deno.env.get('USE_MOCK_IMAGE_GENERATION') !== 'false'; // Default true
+  
+  if (USE_MOCK_GENERATION) {
+    console.log(`📦 MOCK MODE - Simulating Flux task completion (task: ${taskId})`);
+    
+    // Simulate brief processing
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Return mock image URL
+    const mockImageUrl = `https://mock-image-storage.example.com/images/${taskId}.jpg`;
+    console.log(`   ✅ Mock image ready: ${mockImageUrl}`);
+    
+    return mockImageUrl;
+  }
+  
+  // Original code continues below
   console.log(`⏳ Polling Flux task: ${taskId}`);
   
   let attempts = 0;

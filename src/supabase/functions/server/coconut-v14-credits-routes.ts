@@ -8,6 +8,7 @@ import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import * as kv from './kv_store.tsx';
 import { getUserCredits } from './credits-manager.ts'; // ✅ Import credits manager
+import { getEnterpriseSubscription } from './enterprise-subscription.ts'; // ✅ FIXED: Import from correct file
 
 const app = new Hono();
 
@@ -77,6 +78,76 @@ app.get('/credits/debug/:userId', async (c) => {
   }
 });
 
+/**
+ * POST /credits/migrate
+ * Migrate paid credits from one userId to another
+ * ⚠️ ADMIN ONLY - Used to fix userId mismatches
+ */
+app.post('/credits/migrate', async (c) => {
+  try {
+    const { fromUserId, toUserId } = await c.req.json();
+    
+    if (!fromUserId || !toUserId) {
+      return c.json({
+        success: false,
+        error: 'Missing fromUserId or toUserId'
+      }, 400);
+    }
+    
+    console.log(`🔄 [MIGRATION] Starting credit migration: ${fromUserId} → ${toUserId}`);
+    
+    // Get source credits
+    const sourceKey = `credits:${fromUserId}:paid`;
+    const sourcePaidCredits = await kv.get(sourceKey) || 0;
+    
+    console.log(`📦 [MIGRATION] Source (${fromUserId}): ${sourcePaidCredits} paid credits`);
+    
+    if (Number(sourcePaidCredits) === 0) {
+      return c.json({
+        success: false,
+        error: `No paid credits found for user ${fromUserId}`,
+        sourceCredits: sourcePaidCredits
+      }, 400);
+    }
+    
+    // Get destination credits
+    const destKey = `credits:${toUserId}:paid`;
+    const destPaidCredits = await kv.get(destKey) || 0;
+    
+    console.log(`📦 [MIGRATION] Destination (${toUserId}): ${destPaidCredits} paid credits (before migration)`);
+    
+    // Add source credits to destination
+    const newDestCredits = Number(destPaidCredits) + Number(sourcePaidCredits);
+    await kv.set(destKey, newDestCredits);
+    
+    // Clear source credits
+    await kv.set(sourceKey, 0);
+    
+    console.log(`✅ [MIGRATION] Migrated ${sourcePaidCredits} credits: ${fromUserId} → ${toUserId}`);
+    console.log(`✅ [MIGRATION] New balance for ${toUserId}: ${newDestCredits} paid credits`);
+    
+    return c.json({
+      success: true,
+      migration: {
+        from: fromUserId,
+        to: toUserId,
+        creditsMigrated: Number(sourcePaidCredits),
+        oldBalance: Number(destPaidCredits),
+        newBalance: newDestCredits
+      },
+      message: `Successfully migrated ${sourcePaidCredits} credits from ${fromUserId} to ${toUserId}`
+    });
+    
+  } catch (error: any) {
+    console.error('❌ [MIGRATION] Error:', error);
+    return c.json({
+      success: false,
+      error: 'Migration failed',
+      message: error.message
+    }, 500);
+  }
+});
+
 // ============================================
 // ROUTES
 // ============================================
@@ -95,10 +166,42 @@ app.get('/credits/:userId', async (c) => {
     console.log(`📊 [Credits Route] Raw userId param: "${rawUserId}"`);
     console.log(`📊 [Credits Route] Decoded userId: "${userId}"`);
     
-    // ✅ Use getUserCredits() which handles priority logic
+    // ✅ CHECK: Is this user Enterprise?
+    const enterpriseSub = await getEnterpriseSubscription(userId);
+    
+    if (enterpriseSub) {
+      // ✅ ENTERPRISE USER: Return monthly + add-on credits
+      console.log(`💼 [Credits Route] Enterprise user detected`);
+      console.log(`📊 [Credits Route] Monthly: ${enterpriseSub.subscriptionCreditsRemaining}, Add-on: ${enterpriseSub.addOnCredits}, Total: ${enterpriseSub.totalCredits}`);
+      
+      const result = {
+        success: true,
+        credits: {
+          free: 0,
+          paid: enterpriseSub.addOnCredits, // ✅ Keep compatibility: paid = add-on for Enterprise
+          
+          // ✅ NEW: Enterprise-specific fields
+          isEnterprise: true,
+          monthlyCredits: enterpriseSub.monthlyCredits,
+          monthlyCreditsRemaining: enterpriseSub.subscriptionCreditsRemaining,
+          addOnCredits: enterpriseSub.addOnCredits,
+          nextResetDate: enterpriseSub.currentPeriodEnd,
+        },
+        balance: enterpriseSub.totalCredits,
+        daysUntilReset: Math.ceil((new Date(enterpriseSub.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        formatted: `${enterpriseSub.totalCredits.toLocaleString()} crédits`
+      };
+      
+      console.log(`📊 [Credits Route] Returning Enterprise result:`, JSON.stringify(result));
+      console.log(`📊 [Credits Route] ====== END GET CREDITS ======`);
+      
+      return c.json(result);
+    }
+    
+    // ✅ REGULAR USER: Use getUserCredits() which handles priority logic
     const userCredits = await getUserCredits(userId);
     
-    console.log(`📊 [Credits Route] getUserCredits returned:`, JSON.stringify(userCredits, null, 2));
+    console.log(`📊 [Credits Route] Regular user - getUserCredits returned:`, JSON.stringify(userCredits, null, 2));
     
     const balance = userCredits.free + userCredits.paid;
     

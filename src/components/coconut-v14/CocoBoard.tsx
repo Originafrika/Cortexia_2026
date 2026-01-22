@@ -43,8 +43,8 @@ import { CostWidget } from './CostWidget';
 import { ModeSelector, type GenerationMode } from './ModeSelector'; // 🆕 PHASE 3C
 import { GenerationPreviewModal } from './GenerationPreviewModal'; // 🆕 PHASE 3D
 import { AdvancedModeIndicator } from './AdvancedModeIndicator'; // 🆕 PHASE 3D
-import { ErrorBoundary } from '../ui-premium/ErrorBoundary';
-import { SkeletonCard } from '../ui-premium/SkeletonLoader';
+import { AdvancedErrorBoundary as ErrorBoundary } from './AdvancedErrorBoundary'; // ✅ FIXED: Use AdvancedErrorBoundary instead of ui-premium
+import { Skeleton } from '../ui/skeleton'; // ✅ FIXED: Use shadcn skeleton instead of ui-premium
 import { Loader2, AlertCircle, Sparkles, Zap, Palette, Settings2, Image as ImageIcon } from 'lucide-react';
 import { api } from '../../lib/api/client';
 import { toast } from 'sonner@2.0.3';
@@ -753,6 +753,35 @@ function CocoBoardContent({ projectId, userId, cocoBoardId, analysis, uploadedRe
     }
   };
 
+  // ✅ NEW: Toggle brand guidelines for this project
+  const handleToggleBrandGuidelines = async (enabled: boolean) => {
+    if (!currentBoard) return;
+    
+    try {
+      playClick();
+      
+      // Update local state
+      setCurrentBoard({ ...currentBoard, useBrandGuidelines: enabled });
+      setIsDirty(true);
+      
+      // Show toast
+      toast.success(
+        enabled ? 'Brand guidelines activées' : 'Brand guidelines désactivées',
+        { 
+          description: enabled 
+            ? 'Votre identité de marque sera appliquée aux générations' 
+            : 'Les générations utiliseront uniquement le prompt'
+        }
+      );
+      
+      console.log(`✅ Brand guidelines ${enabled ? 'enabled' : 'disabled'} for project`);
+    } catch (error) {
+      console.error('❌ Error toggling brand guidelines:', error);
+      playError();
+      toast.error('Erreur', { description: 'Impossible de modifier les paramètres de marque' });
+    }
+  };
+
   // ✅ NEW: Handle generation click (PHASE 3D: Mode-aware)
   const handleGenerateNow = async () => {
     console.log('🎯 handleGenerateNow called');
@@ -977,7 +1006,7 @@ function CocoBoardContent({ projectId, userId, cocoBoardId, analysis, uploadedRe
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <SkeletonCard className="h-24" />
+            <Skeleton className="h-24 w-full rounded-lg" />
           </motion.div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -986,14 +1015,14 @@ function CocoBoardContent({ projectId, userId, cocoBoardId, analysis, uploadedRe
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
             >
-              <SkeletonCard className="h-96" />
+              <Skeleton className="h-96 w-full rounded-lg" />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
             >
-              <SkeletonCard className="h-96" />
+              <Skeleton className="h-96 w-full rounded-lg" />
             </motion.div>
           </div>
           
@@ -1002,7 +1031,7 @@ function CocoBoardContent({ projectId, userId, cocoBoardId, analysis, uploadedRe
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
           >
-            <SkeletonCard className="h-64" />
+            <Skeleton className="h-64 w-full rounded-lg" />
           </motion.div>
         </div>
       </div>
@@ -1356,6 +1385,7 @@ function CocoBoardContent({ projectId, userId, cocoBoardId, analysis, uploadedRe
                 onSave={handleManualSave}
                 onGenerate={handleGenerateNow}
                 isGenerating={isGenerating}
+                onToggleBrandGuidelines={handleToggleBrandGuidelines}
               />
             </motion.div>
           </div>

@@ -4,7 +4,7 @@
 // ✅ SMART MODEL SELECTION: Automatically chooses best model for face quality
 
 import type { MediaType, GenerationOptions } from "./types";
-import { projectId, publicAnonKey } from '../utils/supabase/info.tsx';
+import { projectId, publicAnonKey } from '../utils/supabase/info'; // ✅ FIX: Remove .tsx extension
 import { selectBestModel } from './modelSelector'; // ✅ Smart model selection
 
 const BACKEND_URL = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;

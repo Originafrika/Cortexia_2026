@@ -13,6 +13,7 @@ import type { Context } from 'npm:hono';
 import { generateTextNative, analyzeImagesNative } from './gemini-native-service.ts';
 import { generateTextKieAI, analyzeImagesKieAI } from './gemini-kie-service.ts';
 import { parseJSONFromMarkdown } from './json-parser.ts';
+import { isMockModeEnabled, getMockConcept } from './coconut-v14-video-mock-data.ts';
 
 // ============================================================================
 // TYPES
@@ -51,7 +52,7 @@ export interface VideoShot {
   type: 'establishing' | 'medium' | 'close-up' | 'product-hero' | 'action' | 'transition';
   description: string;
   veoPrompt: string;
-  generationType: 'TEXT_2_VIDEO' | 'REFERENCE_2_VIDEO' | 'FIRST_AND_LAST_FRAMES_2_VIDEO';
+  generationType: 'TEXT_2_VIDEO' | 'REFERENCE_2_VIDEO' | 'FIRST_AND_LAST_FRAMES_2_VIDEO' | 'EXTEND_VIDEO' | 'VIDEO_2_VIDEO';
   imageUrls?: string[];
   aspectRatio: '9:16' | '16:9' | '1:1';
   sfx: string;
@@ -64,6 +65,10 @@ export interface VideoShot {
   videoResolution?: '720p' | '1080p'; // 1080p = +2 credits per shot
   videoSeeds?: number; // Deterministic reproduction
   videoWatermark?: string; // Custom watermark
+  // ✅ NEW: Extend video & Video-to-Video
+  extendFromVideoUrl?: string; // For EXTEND_VIDEO: URL of video to extend
+  sourceVideoUrl?: string; // For VIDEO_2_VIDEO: URL of source video to transform
+  referenceShotIds?: string[]; // For inter-shot consistency (use previous shots as refs)
 }
 
 export interface VideoAnalysisResponse {
@@ -148,6 +153,33 @@ export async function handleAnalyzeVideoIntent(c: Context): Promise<Response> {
 // ============================================================================
 
 async function analyzeVideoWithGemini(request: VideoAnalysisRequest): Promise<VideoAnalysisResponse> {
+  // ✅ CHECK MOCK MODE FIRST - Skip API calls if enabled
+  if (isMockModeEnabled()) {
+    console.log('📦 MOCK MODE ENABLED - Using pre-generated creative concepts (9/10 level)');
+    console.log('💡 This avoids consuming AI credits while testing');
+    
+    const mockConcept = getMockConcept(request.description);
+    
+    // Update format to match request
+    const updatedConcept = {
+      ...mockConcept,
+      timeline: {
+        ...mockConcept.timeline,
+        totalDuration: request.targetDuration
+      },
+      shots: mockConcept.shots.map(shot => ({
+        ...shot,
+        aspectRatio: request.format
+      }))
+    };
+    
+    console.log(`✅ Mock concept loaded: "${updatedConcept.projectTitle}"`);
+    console.log(`📊 ${updatedConcept.shots.length} shots, ${updatedConcept.estimatedCost.total} credits estimated`);
+    
+    return updatedConcept;
+  }
+  
+  // Original code continues below for real API calls
   const maxRetries = 3;
   let lastError: Error | null = null;
   let useKieAI = Deno.env.get('USE_KIE_AI_GEMINI') === 'true'; // Manual override
@@ -167,6 +199,7 @@ async function analyzeVideoWithGemini(request: VideoAnalysisRequest): Promise<Vi
       if (images.length > 0) {
         const imageUrls = images.map(img => img.url).filter(Boolean);
         console.log(`📸 Analyzing with ${imageUrls.length} reference images`);
+        console.log(`📸 Image URLs:`, imageUrls);
         
         try {
           if (useKieAI) {
@@ -291,6 +324,16 @@ async function analyzeVideoWithGemini(request: VideoAnalysisRequest): Promise<Vi
         return sum + (shot.estimatedCost || 30);
       }, 0);
 
+      // ✅ CREATE MAPPING: filename → full URL
+      const filenameToUrlMap = new Map<string, string>();
+      images.forEach(img => {
+        // Extract filename from URL or use provided filename
+        const filename = img.filename || img.url.split('/').pop() || '';
+        filenameToUrlMap.set(filename, img.url);
+      });
+      
+      console.log(`📸 Created filename→URL mapping for ${filenameToUrlMap.size} images`);
+      
       const result: VideoAnalysisResponse = {
         projectTitle: parsed.projectTitle || 'Untitled Video Project',
         concept: parsed.concept || {
@@ -313,7 +356,22 @@ async function analyzeVideoWithGemini(request: VideoAnalysisRequest): Promise<Vi
           description: shot.description || '',
           veoPrompt: shot.veoPrompt || shot.prompt || '',
           generationType: shot.generationType || 'TEXT_2_VIDEO',
-          imageUrls: shot.imageUrls || [],
+          // ✅ FIX: Map filenames to full URLs
+          imageUrls: (shot.imageUrls || []).map((filename: string) => {
+            // Try to find full URL from map
+            const fullUrl = filenameToUrlMap.get(filename);
+            if (fullUrl) {
+              console.log(`  ✅ Mapped "${filename}" → URL`);
+              return fullUrl;
+            }
+            // Fallback: if filename is already a URL, use it
+            if (filename.startsWith('http')) {
+              return filename;
+            }
+            // If no match found, return filename as-is (shouldn't happen)
+            console.warn(`  ⚠️ No URL found for filename: "${filename}"`);
+            return filename;
+          }),
           aspectRatio: request.format,
           sfx: shot.sfx || '',
           mood: shot.mood || '',
@@ -367,6 +425,140 @@ function buildVideoSystemPrompt(): string {
 Your role is to create SENIOR-LEVEL video production plans that exploit 100% of Veo 3.1's capabilities.
 
 ===============================================
+⚡ CREATIVE EXCELLENCE MANDATORY (9/10 MINIMUM)
+===============================================
+
+**YOUR PRIMARY MISSION: UNIQUE VISUAL METAPHORS, NOT CLICHÉS**
+
+You are NOT creating generic advertising — you're creating visual poetry that rivals Nike, Apple, Chanel campaigns.
+
+**CREATIVITY SCALE:**
+
+📉 4/10 - GENERIC CLICHÉS (FORBIDDEN):
+❌ Golden velvet fabric with product rotating 360°
+❌ Elegant hand spraying perfume in slow motion
+❌ Sunset/golden hour with lens flare
+❌ Product floating in space with particles
+❌ Luxury close-ups with bokeh background
+❌ Silk fabric flowing in wind
+❌ Mirror reflections and symmetry
+❌ "Elegant", "luxurious", "sophisticated" without substance
+
+⚠️ 6/10 - COMPETENT BUT FORGETTABLE:
+- Technical execution is good but concept is safe
+- Uses industry-standard tropes
+- Beautiful but predictable
+
+✅ 9/10 - VISUAL METAPHOR MASTERY (MANDATORY):
+✨ Nike "Dream Crazy" level: Abstract concepts made visceral
+✨ Apple "Think Different" level: Emotion through unexpected juxtaposition
+✨ Chanel N°5 "The Film" level: Cinematic storytelling that transcends product
+✨ Hermès level: Artisanal craft narratives
+✨ BMW "The Hire" level: High-concept mini-films
+
+**EXAMPLES OF 9/10 VISUAL METAPHORS:**
+
+🌟 PERFUME CAMPAIGN - Instead of "elegant hand spraying perfume":
+CONCEPT: "Memory Extraction"
+- Shot 1: Extreme macro of a single water droplet suspended mid-air in pitch black void
+- Shot 2: POV diving INTO the droplet, entering a fragmented memory (prism effect)
+- Shot 3: Abstract shapes of childhood garden flowers dissolving into vapor trails
+- Shot 4: The perfume bottle materializes from the vapor, as if memory becomes tangible
+- METAPHOR: Scent as captured memory, not luxury accessory
+
+🌟 WATCH CAMPAIGN - Instead of "product rotating on velvet":
+CONCEPT: "Time as Living Entity"
+- Shot 1: Hyper-lapse of city skyline, but buildings age backwards (construction → ruins)
+- Shot 2: Close-up of clockwork gears, but they're made of growing vines and roots
+- Shot 3: The watch appears frozen in a block of ice that's melting in reverse
+- Shot 4: Ice reforms around wrist of explorer reaching summit at dawn
+- METAPHOR: Mastery over time vs. submission to it
+
+🌟 CAR CAMPAIGN - Instead of "car driving through scenic landscape":
+CONCEPT: "Machine Consciousness"
+- Shot 1: Extreme close-up of headlight "blinking" awake like an eye
+- Shot 2: Dashboard lights illuminate in sequence like synapses firing
+- Shot 3: First-person POV accelerating, but the road is a neural pathway
+- Shot 4: Car emerges from abstract void into real mountain pass (birth metaphor)
+- METAPHOR: Car as sentient partner, not tool
+
+🌟 TECH PRODUCT - Instead of "floating in space with particles":
+CONCEPT: "Digital Archaeology"
+- Shot 1: Hands excavating sand to reveal ancient clay tablet with circuit patterns
+- Shot 2: Brushing away dust, the circuits glow and lift off the surface
+- Shot 3: Holographic circuits assemble mid-air into the product
+- Shot 4: Product in modern office, but with ghostly overlay of ancient artifact
+- METAPHOR: Technology as evolution of ancient human innovation
+
+**HOW TO GENERATE 9/10 CONCEPTS:**
+
+1. **START WITH EMOTION/IDEA, NOT PRODUCT:**
+   - What FEELING does this product evoke? (not "luxury" — go deeper)
+   - What TRANSFORMATION does it enable?
+   - What STORY does it tell about human experience?
+
+2. **FIND THE UNEXPECTED METAPHOR:**
+   - If product = perfume, don't think "elegance"
+   - Think: bottled memories, olfactory time travel, invisible architecture
+   - Ask: "What if this product was a force of nature? A memory? A living thing?"
+
+3. **JUXTAPOSE OPPOSITES:**
+   - Ancient vs. Future (clay tablets + holograms)
+   - Organic vs. Mechanical (vines + gears)
+   - Macro vs. Cosmic (droplet contains universe)
+   - Real vs. Abstract (physical object dissolves into concept)
+
+4. **USE CINEMATIC STORYTELLING:**
+   - Every shot must advance a NARRATIVE, not just show product
+   - Create visual tension and release
+   - Use symbolism that rewards repeated viewing
+
+5. **AVOID LITERAL REPRESENTATION:**
+   - Don't show product being used normally
+   - Show the ESSENCE, EFFECT, or TRANSFORMATION it creates
+   - Make the product the RESULT of the story, not the subject
+
+**MANDATORY CREATIVE FILTERS:**
+
+Before generating ANY concept, ask:
+1. ❓ "Have I seen this exact visual in 5+ other ads?" → If YES, reject it
+2. ❓ "Does this concept work without the product logo?" → If NO, it's weak
+3. ❓ "Would this make someone STOP SCROLLING?" → If NO, go deeper
+4. ❓ "Can I explain this concept in one surprising sentence?" → If NO, unclear vision
+5. ❓ "Does this concept have symbolic layers?" → If NO, too literal
+
+**EXECUTION RULES:**
+
+✅ EVERY shot must serve the central metaphor
+✅ NO generic luxury aesthetics (velvet, gold, bokeh backgrounds)
+✅ USE unexpected camera angles and movements
+✅ CREATE visual sequences that tell micro-stories
+✅ INTEGRATE product as narrative climax, not hero shot
+✅ MAKE viewers ask "What am I watching?" then understand with emotional impact
+
+**REFERENCE TIER CAMPAIGNS (STUDY THESE APPROACHES):**
+
+🏆 Tier 1 (Conceptual Mastery):
+- Chanel N°5 "The Film" (Baz Luhrmann) - Product as MacGuffin in romance epic
+- Apple "1984" - Product as rebellion symbol
+- Hermès "Metamorphosis" - Abstract transformation narratives
+- Nike "Write the Future" - Hyperreal sports mythology
+
+🏆 Tier 2 (Visual Poetry):
+- Audi "Birth" - Car assembly as biological birth
+- Levi's "Go Forth" - Product absent, philosophy present
+- Guinness "Surfer" - 90s of anticipation for 1s product reveal
+- Honda "Paper" - Stop-motion engineering history
+
+**FINAL MANDATE:**
+
+If your concept can be described with words like "elegant," "luxurious," "sophisticated," "premium" without deeper metaphor, you have FAILED.
+
+Create concepts that make people feel something UNEXPECTED.
+Create visuals that linger in memory long after viewing.
+Create stories where the product is the answer to a question viewers didn't know they had.
+
+===============================================
 VEO 3.1 COMPLETE SPECIFICATIONS (OFFICIAL GUIDE)
 ===============================================
 
@@ -380,6 +572,108 @@ CORE CAPABILITIES:
   • TEXT_2_VIDEO: Pure text prompt
   • REFERENCE_2_VIDEO (Ingredients to Video): 1-3 reference images for consistency
   • FIRST_AND_LAST_FRAMES_2_VIDEO: Seamless transitions between frames
+  • VIDEO_2_VIDEO: Transform existing video with style/effects
+  • EXTEND_VIDEO: Extend duration of existing video
+
+===============================================
+GENERATION TYPES - WHEN TO USE WHICH
+===============================================
+
+1. **TEXT_2_VIDEO** - Pure Creative Generation
+   USE FOR:
+   - Opening establishing shots with no visual references
+   - Abstract concepts, environments, atmospheres
+   - Generic actions that don't require specific visual consistency
+   - Shots where brand identity isn't critical
+   
+   EXAMPLE: "Slow dolly through a misty forest at dawn..."
+
+2. **REFERENCE_2_VIDEO** - Brand Consistency
+   USE FOR:
+   - Product shots requiring exact brand identity (bottles, packaging, logos)
+   - Character consistency across multiple shots
+   - Specific locations or props that must match reference
+   - Any shot where visual accuracy is critical
+   
+   EXAMPLE: "360-degree orbit around the [Brand] perfume bottle [attach reference image]"
+   
+   **HOW TO USE:**
+   - Set generationType: "REFERENCE_2_VIDEO"
+   - Add imageUrls: ["filename1.jpg", "filename2.jpg"]
+   - Reference the images in veoPrompt: "identical to the reference image"
+
+3. **FIRST_AND_LAST_FRAMES_2_VIDEO** - Precision Transitions
+   USE FOR:
+   - Product reveals with specific start/end poses
+   - Precise transitions between states (closed → open, dark → light)
+   - Movement that must start and end at exact positions
+   - Creating perfectly loopable sequences
+   
+   EXAMPLE: 
+   - First frame: Perfume bottle vertical on table
+   - Last frame: Bottle tilted 45° with mist spray
+   
+   **HOW TO USE:**
+   - Set generationType: "FIRST_AND_LAST_FRAMES_2_VIDEO"
+   - Describe BOTH frames explicitly in veoPrompt
+   - Format: "[FIRST FRAME] ... [LAST FRAME] ..."
+   
+   **REAL EXAMPLE FOR PERFUME COMMERCIAL:**
+   {
+     "generationType": "FIRST_AND_LAST_FRAMES_2_VIDEO",
+     "veoPrompt": "[FIRST FRAME] Close-up shot, the Orée perfume bottle rests vertically on luxurious golden velvet fabric. The bottle is perfectly centered, cap gleaming under soft three-point lighting. Background: dark, opulent velvet drapes. The scene is still, elegant, anticipatory. [LAST FRAME] The same bottle is now tilted 45° to the right, with a fine mist spray suspended in mid-air, caught by the light. The graceful gesture of application is frozen at its peak moment. Same luxurious setting, same lighting, but dynamic energy has been added. Transition shows the elegant motion from stillness to spray. SFX: Soft click of atomizer, then crisp 'psssht' of perfume mist. Music: Orchestral score swells gently."
+   }
+
+4. **VIDEO_2_VIDEO** - Style Transfer & Enhancement
+   USE FOR:
+   - Applying cinematic color grading to existing footage
+   - Adding effects (rain, fog, light leaks) to reference video
+   - Changing time of day while keeping movement
+   - Style transformation (documentary → cinematic)
+   
+   EXAMPLE: "Transform reference video to golden hour with warm glow..."
+   
+   **HOW TO USE:**
+   - Set generationType: "VIDEO_2_VIDEO"
+   - Set sourceVideoUrl: "url-of-source.mp4"
+   - Describe style/effect changes in veoPrompt
+
+5. **EXTEND_VIDEO** - Duration Extension
+   USE FOR:
+   - Extending establishing shots for more impact
+   - Creating longer product showcases
+   - Looping ambient sequences
+   - When a 4s shot needs to become 6s or 8s
+   
+   EXAMPLE: "Continue the slow camera orbit for 4 more seconds..."
+   
+   **HOW TO USE:**
+   - Set generationType: "EXTEND_VIDEO"
+   - Set extendFromVideoUrl: "url-of-video-to-extend.mp4"
+   - Describe how to continue the action
+
+===============================================
+STRATEGIC TYPE SELECTION GUIDELINES
+===============================================
+
+**For a typical 30s commercial:**
+- Shot 1 (Establishing): TEXT_2_VIDEO (no refs needed)
+- Shot 2 (Approach): TEXT_2_VIDEO or REFERENCE_2_VIDEO if location-specific
+- Shot 3 (Product Hero): REFERENCE_2_VIDEO (brand accuracy critical) ⭐
+- Shot 4 (Product Interaction): FIRST_AND_LAST_FRAMES_2_VIDEO (precise gesture) ⭐
+- Shot 5 (CTA/Outro): REFERENCE_2_VIDEO (brand consistency) ⭐
+
+**Cost Optimization:**
+- TEXT_2_VIDEO: Cheapest, use for generic shots
+- REFERENCE_2_VIDEO: +10cr per image, use strategically
+- FIRST_AND_LAST_FRAMES_2_VIDEO: +20cr, use for critical transitions
+- VIDEO_2_VIDEO: +15cr, use for enhancement only
+- EXTEND_VIDEO: +cost of base shot, use sparingly
+
+**Quality Maximization:**
+- Use REFERENCE_2_VIDEO for ANY shot with branding
+- Use FIRST_AND_LAST_FRAMES_2_VIDEO for product reveals
+- Combine types in sequence for best results
 
 ===============================================
 THE 5-PART FORMULA FOR OPTIMAL PROMPTS
@@ -490,6 +784,55 @@ Use descriptive exclusions:
 - Instead of "no people," say "an empty street with abandoned storefronts"
 
 ===============================================
+CONTENT POLICY COMPLIANCE (CRITICAL)
+===============================================
+
+**MANDATORY RULES - Kie AI will REJECT prompts that violate these:**
+
+1. **NO detailed body part descriptions:**
+   ❌ FORBIDDEN: "woman's wrist", "her cheekbones", "slender hand", "smooth skin"
+   ✅ ALLOWED: "elegant gesture", "graceful movement", "composed posture"
+
+2. **NO closed eyes + expressions (flagged as sensual):**
+   ❌ FORBIDDEN: "eyes closed with a smile", "eyes softly closed, contented smile"
+   ✅ ALLOWED: "serene expression", "confident look", "peaceful gaze"
+
+3. **NO body movements that suggest sensuality:**
+   ❌ FORBIDDEN: "head tilts back", "leans back sensually", "body arches"
+   ✅ ALLOWED: "composed posture", "elegant stance", "confident bearing"
+
+4. **NO overly intimate or sensual scenarios:**
+   ❌ FORBIDDEN: "over-the-shoulder shot focusing on woman's wrist", "rim light catching her skin"
+   ✅ ALLOWED: "medium shot showing elegant action", "soft lighting on the scene"
+
+5. **NO problematic combinations:**
+   ❌ FORBIDDEN: "closed eyes" + "smile on lips" + "tilted head"
+   ✅ ALLOWED: Use ONE neutral descriptor: "serene expression" OR "confident demeanor"
+
+6. **ABSTRACT over SPECIFIC for human subjects:**
+   - Replace "woman's [body part]" with "elegant silhouette" or "graceful figure"
+   - Replace "her face/eyes/lips" with "her expression" or "her demeanor"
+   - Replace skin/texture descriptions with "elegant appearance"
+
+7. **GENERAL MOVEMENTS over SPECIFIC:**
+   - Replace "presses atomizer" with "applies perfume"
+   - Replace "tilts/leans/arches" with "moves gracefully" or "elegant gesture"
+
+**EXAMPLES OF COMPLIANT PROMPTS:**
+
+❌ BAD (will be rejected):
+"Medium close-up, over-the-shoulder shot, focusing on a woman's elegant wrist. Her skin is smooth, illuminated by soft light. Her slender, manicured hand brings the perfume bottle into frame and presses the atomizer. Rack focus to her face - her eyes are softly closed, a subtle smile playing on her lips. Her head tilts back slightly."
+
+✅ GOOD (compliant):
+"Medium shot showing an elegant figure applying perfume in a luxurious setting. Soft natural light filters through sheer curtains. Graceful gesture brings the perfume bottle into frame. Smooth rack focus reveals a serene, confident expression. Composed posture conveys elegance and sophistication."
+
+**IF describing human subjects, ALWAYS:**
+- Use abstract terms (silhouette, figure, presence)
+- Focus on actions and environment, NOT body details
+- Describe mood/atmosphere, NOT physical features
+- Use "composed", "elegant", "serene" instead of body movements
+
+===============================================
 QUALITY STANDARDS
 ===============================================
 
@@ -499,6 +842,15 @@ QUALITY STANDARDS
 - Cinematic vocabulary: Use professional terminology
 - Consistency: Reference images when character/style continuity needed
 - Resolution: Default to 1080p for maximum quality
+
+**INTER-SHOT CONSISTENCY (AUTOMATIC):**
+- Coconut V14 AUTOMATICALLY connects shots using FIRST_AND_LAST_FRAMES_2_VIDEO
+- Shot 2 will seamlessly continue from Shot 1's last frame
+- Shot 3 will seamlessly continue from Shot 2's last frame, etc.
+- You ONLY need to specify TEXT_2_VIDEO for all shots
+- The system handles frame-to-frame transitions automatically
+- Focus on creating narrative continuity in your prompts
+- Describe how each shot FLOWS from the previous one
 
 ALWAYS provide complete JSON with all fields filled.`;
 }
@@ -526,6 +878,14 @@ function buildVideoUserPrompt(request: VideoAnalysisRequest): string {
   }
 
   return `Create a complete video production plan for Veo 3.1 Fast generation.
+
+⚠️ CRITICAL CREATIVE MANDATE:
+Your concepts MUST achieve 9/10 creativity minimum. Reject ALL generic tropes:
+- NO "elegant hands", "golden velvet", "360° rotations", "bokeh backgrounds"
+- NO sunset lens flares, floating products, silk fabrics
+- THINK Nike/Chanel/Apple level: Visual metaphors that transcend the product
+- START with emotion/transformation, NOT literal product showcase
+- ASK: "What if this was a memory? A force of nature? A living entity?"
 
 VIDEO BRIEF:
 """
@@ -565,10 +925,15 @@ Create a shot-by-shot production plan with:
      • Subject actions and movements
      • SFX and ambient sounds
      • Style: "Shot on [camera] with [lens], [color grading]"
-   - Generation type (TEXT_2_VIDEO or REFERENCE_2_VIDEO if using refs)
-   - Image URLs (if using references)
+   - Generation type:
+     • TEXT_2_VIDEO: For generic/creative shots
+     • REFERENCE_2_VIDEO: When using product/brand images (add imageUrls)
+     • FIRST_AND_LAST_FRAMES_2_VIDEO: For precise start→end transitions
+     • VIDEO_2_VIDEO: For style transfer (add sourceVideoUrl)
+     • EXTEND_VIDEO: To extend previous shot (add extendFromVideoUrl)
+   - Image URLs (array of filenames if REFERENCE_2_VIDEO)
    - Transition to next shot (cut, fade, cross-dissolve, match-cut)
-   - Estimated cost (20cr for 4s, 30cr for 6s, 40cr for 8s)
+   - Estimated cost (20cr for 4s, 30cr for 6s, 40cr for 8s + type premium)
 
 4. **AUDIO SPECIFICATIONS**
    - Music style and tempo

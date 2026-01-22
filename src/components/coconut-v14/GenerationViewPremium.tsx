@@ -22,11 +22,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider';
 import { Lightbox } from './Lightbox';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { useCredits } from '../../lib/contexts/CreditsContext'; // ✅ NEW: For refetchCredits
 import { 
   Loader2, Check, X, Download, ArrowLeft, Share2, Heart,
   Zap, Clock, Sparkles, Image as ImageIcon, ZoomIn,
   CheckCircle2, Palette, Wand2, Eye, Copy, Maximize2,
-  Grid3x3, LayoutGrid, ChevronRight, RotateCcw
+  Grid3x3, LayoutGrid, ChevronRight, RotateCcw, Settings2
 } from 'lucide-react';
 import { handleError, showSuccess, showWarning } from '../../lib/utils/errorHandler';
 import { toast } from 'sonner@2.0.3';
@@ -158,6 +159,8 @@ export function GenerationViewPremium({
 }: GenerationViewPremiumProps) {
   // 🔊 Sound context
   const { playSuccess, playError, playClick, playWhoosh, playPop, playHover } = useSoundContext();
+  // ✅ NEW: Credits refetch
+  const { refetchCredits } = useCredits();
   
   const [generation, setGeneration] = useState<GenerationStatus | null>(null);
   const [polling, setPolling] = useState(true);
@@ -234,6 +237,14 @@ export function GenerationViewPremium({
               toast.success('Génération terminée !', {
                 description: 'Votre image est prête'
               });
+              
+              // ✅ Refetch credits after generation (credits were deducted)
+              try {
+                await refetchCredits();
+                console.log('💎 Credits refreshed after generation');
+              } catch (error) {
+                console.error('❌ Failed to refetch credits:', error);
+              }
             } else {
               playError();
               toast.error('Génération échouée', {
@@ -256,7 +267,7 @@ export function GenerationViewPremium({
       shouldContinuePolling = false;
       clearInterval(interval);
     };
-  }, [generationId, onNavigateToCreate, playSuccess, playError]);
+  }, [generationId, onNavigateToCreate, playSuccess, playError, refetchCredits]); // ✅ Added refetchCredits dependency
 
   // ============================================
   // HANDLERS

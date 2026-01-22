@@ -30,9 +30,12 @@ import {
   Save,
   TrendingUp,
   Layers,
-  Box
+  Box,
+  Building2 // ✅ NEW: For brand guidelines icon
 } from 'lucide-react';
 import type { CocoBoard } from '../../lib/stores/cocoboard-store';
+import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: For user profile
+import { BrandGuidelinesPreview } from './BrandGuidelinesPreview'; // ✅ NEW: Brand guidelines preview
 
 interface CocoBoardSidebarPremiumProps {
   board: CocoBoard;
@@ -41,6 +44,7 @@ interface CocoBoardSidebarPremiumProps {
   onSave?: () => void;
   onGenerate?: () => void;
   isGenerating?: boolean;
+  onToggleBrandGuidelines?: (enabled: boolean) => void; // ✅ NEW: Toggle callback
 }
 
 export function CocoBoardSidebarPremium({
@@ -50,6 +54,7 @@ export function CocoBoardSidebarPremium({
   onSave,
   onGenerate,
   isGenerating = false,
+  onToggleBrandGuidelines, // ✅ NEW: Toggle callback
 }: CocoBoardSidebarPremiumProps) {
   const { playClick, playSuccess } = useSoundContext();
 
@@ -137,6 +142,12 @@ export function CocoBoardSidebarPremium({
           </div>
         </div>
       </motion.div>
+
+      {/* ✅ NEW: Brand Guidelines Preview */}
+      <BrandGuidelinesPreview 
+        board={board} 
+        onToggle={onToggleBrandGuidelines} 
+      />
 
       {/* Cost Breakdown */}
       <motion.div

@@ -5,7 +5,7 @@
  */
 
 import { LucideIcon } from 'lucide-react';
-import { ToolCard } from './ToolCard';
+import { ToolCardV3 as ToolCard } from './ToolCardV3'; // ✅ FIXED: Use ToolCardV3 instead of deprecated ToolCard
 
 interface Technology {
   id: string;

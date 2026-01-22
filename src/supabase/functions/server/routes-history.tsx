@@ -11,6 +11,77 @@ const app = new Hono();
 console.log('📜 History routes module loaded - v2 (no manual prefix)');
 
 /**
+ * GET /coconut/history/list
+ * Get all generations for a user (NEW ENDPOINT FOR FRONTEND)
+ */
+app.get('/coconut/history/list', async (c) => {
+  try {
+    const userId = c.req.query('userId');
+    const projectId = c.req.query('projectId');
+
+    console.log('📥 [History API] Request:', { userId, projectId });
+
+    if (!userId) {
+      return c.json({ success: false, error: 'userId is required' }, 400);
+    }
+
+    // ✅ FIX: Get user's generation IDs first
+    const userGenIds = await kv.get(`user:${userId}:generations`) || [];
+    console.log('🔍 [History API] User generation IDs:', userGenIds.length);
+
+    if (userGenIds.length === 0) {
+      console.log('✅ [History API] No generations found for user');
+      return c.json({
+        success: true,
+        data: { generations: [] }
+      });
+    }
+
+    // ✅ FIX: Fetch each generation by ID
+    const generationsPromises = userGenIds.map((genId: string) => kv.get(`generation:${genId}`));
+    const allGenerations = (await Promise.all(generationsPromises)).filter(Boolean);
+    
+    console.log('📊 [History API] Found generations:', allGenerations.length);
+
+    // Filter and sort
+    const generations = allGenerations
+      .filter((gen: any) => gen.status === 'complete' || gen.status === 'completed' || gen.status === 'error')
+      .sort((a: any, b: any) => {
+        const aTime = new Date(a.createdAt || a.startTime || 0).getTime();
+        const bTime = new Date(b.createdAt || b.startTime || 0).getTime();
+        return bTime - aTime;
+      })
+      .map((gen: any) => ({
+        id: gen.id,
+        imageUrl: gen.result?.imageUrl || gen.imageUrl || gen.videoUrl || '',
+        prompt: gen.prompt?.description || gen.prompt?.text || gen.prompt || '',
+        specs: gen.specs,
+        cost: gen.result?.cost || gen.credits || 0,
+        duration: gen.endTime ? gen.endTime - gen.startTime : 0,
+        createdAt: gen.createdAt || gen.startTime,
+        isFavorite: gen.isFavorite || false,
+        status: gen.status,
+        cocoBoardId: gen.cocoBoardId,
+        type: gen.type || 'image' // image or video
+      }));
+
+    console.log('✅ [History API] Returning generations:', generations.length);
+
+    return c.json({
+      success: true,
+      data: { generations }
+    });
+
+  } catch (error) {
+    console.error('❌ [History API] Error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to get history'
+    }, 500);
+  }
+});
+
+/**
  * GET /api/coconut-v14/history
  * Get all generations for a user
  */

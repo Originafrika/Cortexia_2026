@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { projectId, publicAnonKey } from '../../utils/supabase/info';

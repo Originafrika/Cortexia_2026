@@ -118,6 +118,7 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
   const { user } = useAuth(); // ✅ Get user from AuthContext
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'defi60' | 'referrals' | 'posts' | 'wallet'>('overview'); // ✅ Tab navigation
   
   // Origins & Compensation data
   const [originsBalance, setOriginsBalance] = useState(0);
@@ -130,7 +131,8 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
   // Défi 60+ stats
   const [imagesGenerated, setImagesGenerated] = useState(0);
   const [postsPublished, setPostsPublished] = useState(0);
-  const [postsWithLikes, setPostsWithLikes] = useState(0);
+  const [postsWithLikesCount, setPostsWithLikesCount] = useState(0); // ✅ FIX: Rename to avoid conflict
+  const [postsWithLikes, setPostsWithLikes] = useState<any>(null); // Detailed posts data
   
   // Withdrawal
   const [withdrawalLimits, setWithdrawalLimits] = useState({ remaining: 0, max: 2 });
@@ -139,6 +141,10 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
   const [referralCode, setReferralCode] = useState('');
   const [referralLink, setReferralLink] = useState('');
   const [referralCount, setReferralCount] = useState(0);
+  
+  // ✅ NEW: Detailed referrals list
+  const [referralsList, setReferralsList] = useState<any[]>([]);
+  const [referralsSummary, setReferralsSummary] = useState<any>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -191,9 +197,34 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
         setMonthlyEarnings(compensationData.compensation?.monthlyEarnings || 0);
         setImagesGenerated(compensationData.compensation?.monthlyStats?.imagesGenerated || 0);
         setPostsPublished(compensationData.compensation?.monthlyStats?.postsPublished || 0);
-        setPostsWithLikes(compensationData.compensation?.monthlyStats?.postsWithEnoughLikes || 0);
+        setPostsWithLikesCount(compensationData.compensation?.monthlyStats?.postsWithEnoughLikes || 0);
       } else {
         console.error('❌ [CreatorDashboard] Compensation fetch failed:', await compensationRes.text());
+      }
+
+      // ✅ NEW: Load real generation stats
+      console.log('📞 [CreatorDashboard] Fetching Generation stats...');
+      const statsRes = await fetch(`${apiUrl}/user-stats/${userId}/stats`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      console.log('📥 [CreatorDashboard] Stats response status:', statsRes.status);
+      
+      if (statsRes.ok) {
+        const { stats } = await statsRes.json();
+        console.log('✅ [CreatorDashboard] Generation stats:', stats);
+        
+        // ✅ Use MONTHLY stats for Défi 60+ (not total stats)
+        setImagesGenerated(stats.monthlyImages || 0);
+        setPostsPublished(stats.monthlyPosts || 0);
+        setPostsWithLikesCount(stats.monthlyPostsWithEnoughLikes || 0); // ✅ Use monthly posts with 5+ likes
+        
+        console.log('✅ [CreatorDashboard] Updated monthly stats from user-stats:', {
+          monthlyImages: stats.monthlyImages,
+          monthlyPosts: stats.monthlyPosts,
+          monthlyPostsWithEnoughLikes: stats.monthlyPostsWithEnoughLikes
+        });
+      } else {
+        console.error('❌ [CreatorDashboard] Stats fetch failed:', await statsRes.text());
       }
 
       // Load Withdrawal limits
@@ -227,6 +258,37 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
         setReferralCode(referralData.referralCode || '');
         setReferralLink(referralData.referralLink || '');
         setReferralCount(referralData.referralCount || 0);
+        
+        // ✅ NEW: Load detailed referrals list
+        console.log('📞 [CreatorDashboard] Fetching Referrals list...');
+        const referralsListRes = await fetch(`${apiUrl}/referral/${userId}/referrals`, {
+          headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+        });
+        console.log('📥 [CreatorDashboard] Referrals list response status:', referralsListRes.status);
+        
+        if (referralsListRes.ok) {
+          const referralsListData = await referralsListRes.json();
+          console.log('✅ [CreatorDashboard] Referrals list data:', referralsListData);
+          setReferralsList(referralsListData.referrals || []);
+          setReferralsSummary(referralsListData.summary || null);
+        } else {
+          console.error('❌ [CreatorDashboard] Referrals list fetch failed:', await referralsListRes.text());
+        }
+
+        // ✅ NEW: Load posts with likes details
+        console.log('📞 [CreatorDashboard] Fetching Posts with likes...');
+        const postsDetailsRes = await fetch(`${apiUrl}/users/${userId}/posts-with-likes`, {
+          headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+        });
+        console.log('📥 [CreatorDashboard] Posts details response status:', postsDetailsRes.status);
+        
+        if (postsDetailsRes.ok) {
+          const postsDetailsData = await postsDetailsRes.json();
+          console.log('✅ [CreatorDashboard] Posts details data:', postsDetailsData);
+          setPostsWithLikes(postsDetailsData.posts || null);
+        } else {
+          console.error('❌ [CreatorDashboard] Posts details fetch failed:', await postsDetailsRes.text());
+        }
       } else {
         console.error('❌ [CreatorDashboard] Referral fetch failed:', await referralRes.text());
       }
@@ -288,7 +350,7 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
     },
     { 
       label: 'Posts avec 5+ likes', 
-      current: postsWithLikes, 
+      current: postsWithLikesCount, 
       target: 5, 
       description: '5 posts avec 5+ likes chacun'
     },
@@ -511,6 +573,226 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
             <p className="text-white text-xl">{withdrawalLimits.remaining}/{withdrawalLimits.max}</p>
           </div>
         </div>
+
+        {/* ✅ NEW: Mes Filleuls avec achats du mois */}
+        {referralsList && referralsList.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-lg">Mes Filleuls</h3>
+              {referralsSummary && (
+                <span className="text-[#6366f1] text-sm">
+                  {referralsSummary.activeThisMonth}/{referralsSummary.total} actifs ce mois
+                </span>
+              )}
+            </div>
+            
+            {referralsSummary && referralsSummary.totalCommissionThisMonth > 0 && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-4">
+                <p className="text-green-400 text-sm mb-1">Commission totale ce mois</p>
+                <p className="text-white text-2xl">${referralsSummary.totalCommissionThisMonth.toFixed(2)}</p>
+                <p className="text-white/60 text-xs mt-1">
+                  {eligible ? '✅ Commission active' : '⚠️ Non éligible ce mois (compléter Défi 60+)'}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {referralsList.map((referral: any) => (
+                <div 
+                  key={referral.userId}
+                  className={`bg-[#1A1A1A] rounded-lg p-4 border-l-4 ${
+                    referral.isActiveThisMonth 
+                      ? 'border-green-500' 
+                      : 'border-gray-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      {referral.avatar ? (
+                        <img 
+                          src={referral.avatar} 
+                          alt={referral.displayName}
+                          className="w-10 h-10 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#6366f1] flex items-center justify-center">
+                          <span className="text-white text-sm">
+                            {referral.displayName?.charAt(0) || 'U'}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-white font-medium">{referral.displayName}</p>
+                        <p className="text-gray-400 text-xs">@{referral.username}</p>
+                      </div>
+                    </div>
+                    {referral.isActiveThisMonth && (
+                      <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
+                        Actif
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="bg-[#262626] rounded-lg p-2">
+                      <p className="text-gray-400 text-xs mb-1">Achats ce mois</p>
+                      <p className="text-white font-medium">
+                        ${referral.totalSpentThisMonth?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {referral.purchasesThisMonth || 0} achat{referral.purchasesThisMonth > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="bg-[#262626] rounded-lg p-2">
+                      <p className="text-gray-400 text-xs mb-1">
+                        {eligible ? 'Commission' : 'Commission potentielle'}
+                      </p>
+                      <p className={`font-medium ${eligible ? 'text-green-400' : 'text-orange-400'}`}>
+                        ${referral.commissionThisMonth?.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        10% × {multiplier}x
+                      </p>
+                    </div>
+                  </div>
+
+                  {referral.totalLifetimeSpent > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-700">
+                      <p className="text-gray-400 text-xs">
+                        Lifetime: ${referral.totalLifetimeSpent?.toFixed(2)} 
+                        <span className="text-gray-500 ml-2">
+                          ({referral.totalLifetimePurchases} achat{referral.totalLifetimePurchases > 1 ? 's' : ''})
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Posts avec 5+ Likes (Défi 60+) */}
+        {postsWithLikes && postsWithLikes.thisMonth && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-lg">Posts avec 5+ Likes (Défi 60+)</h3>
+              <span className="text-[#6366f1] text-sm">
+                {postsWithLikes.summary?.defi60PostsProgress || 0}/5
+              </span>
+            </div>
+
+            {postsWithLikes.summary?.defi60PostsMet ? (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Check className="text-green-400" size={16} />
+                  <p className="text-green-400 text-sm">
+                    Objectif atteint ! {postsWithLikes.summary.defi60PostsProgress} posts qualifiés
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 mb-4">
+                <p className="text-orange-400 text-sm">
+                  Encore {5 - (postsWithLikes.summary?.defi60PostsProgress || 0)} post{(5 - (postsWithLikes.summary?.defi60PostsProgress || 0)) > 1 ? 's' : ''} à obtenir avec 5+ likes
+                </p>
+              </div>
+            )}
+
+            {postsWithLikes.thisMonth.filter((p: any) => p.meetsDefi60Requirement).length > 0 ? (
+              <div className="space-y-3">
+                {postsWithLikes.thisMonth
+                  .filter((p: any) => p.meetsDefi60Requirement)
+                  .map((post: any) => (
+                    <div 
+                      key={post.id}
+                      className="bg-[#1A1A1A] rounded-lg p-4 border-l-4 border-green-500"
+                    >
+                      <div className="flex items-start gap-3">
+                        {post.imageUrl && (
+                          <img 
+                            src={post.imageUrl} 
+                            alt="Post"
+                            className="w-20 h-20 rounded-lg object-cover"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-white text-sm mb-2 line-clamp-2">
+                            {post.prompt}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs">
+                            <div className="flex items-center gap-1">
+                              <span className="text-red-400">❤️</span>
+                              <span className="text-white font-medium">{post.likes}</span>
+                              <span className="text-gray-500">likes</span>
+                            </div>
+                            {post.remixes > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-blue-400">🔄</span>
+                                <span className="text-white font-medium">{post.remixes}</span>
+                                <span className="text-gray-500">remixes</span>
+                              </div>
+                            )}
+                            <span className="text-green-400 ml-auto">✅ Qualifié</span>
+                          </div>
+                          <p className="text-gray-500 text-xs mt-1">
+                            {new Date(post.createdAt).toLocaleDateString('fr-FR', { 
+                              day: 'numeric', 
+                              month: 'short' 
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="bg-[#1A1A1A] rounded-lg p-6 text-center">
+                <p className="text-gray-400 text-sm mb-2">
+                  Aucun post avec 5+ likes ce mois
+                </p>
+                <p className="text-gray-500 text-xs">
+                  Publiez des posts de qualité pour obtenir des likes
+                </p>
+              </div>
+            )}
+
+            {/* Posts proches (4 likes) */}
+            {postsWithLikes.thisMonth.filter((p: any) => p.likes === 4).length > 0 && (
+              <div className="mt-4">
+                <p className="text-gray-400 text-sm mb-2">Posts proches (4 likes) :</p>
+                <div className="space-y-2">
+                  {postsWithLikes.thisMonth
+                    .filter((p: any) => p.likes === 4)
+                    .map((post: any) => (
+                      <div 
+                        key={post.id}
+                        className="bg-[#1A1A1A] rounded-lg p-3 border-l-4 border-yellow-500"
+                      >
+                        <div className="flex items-center gap-3">
+                          {post.imageUrl && (
+                            <img 
+                              src={post.imageUrl} 
+                              alt="Post"
+                              className="w-12 h-12 rounded object-cover"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-white text-xs line-clamp-1 mb-1">
+                              {post.prompt}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-yellow-400 text-xs">⭐ 4 likes (encore 1!)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

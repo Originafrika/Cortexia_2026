@@ -37,6 +37,7 @@ interface IntentInputProps {
   onBack?: () => void; // 🆕 PHASE 2: Back to type selector
   isLoading?: boolean;
   userCredits?: number;
+  userId?: string; // ✅ NEW: Real userId for storage paths
 }
 
 export interface IntentData {
@@ -54,7 +55,7 @@ export interface IntentData {
 // MAIN COMPONENT
 // ============================================
 
-export function IntentInput({ selectedType, onSubmit, onBack, isLoading = false, userCredits }: IntentInputProps) {
+export function IntentInput({ selectedType, onSubmit, onBack, isLoading = false, userCredits, userId }: IntentInputProps) {
   // 🔊 PHASE 2A: Sound context
   const { playClick, playSuccess, playError } = useSoundContext();
   
@@ -97,7 +98,7 @@ export function IntentInput({ selectedType, onSubmit, onBack, isLoading = false,
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('userId', 'demo-user');
+      formData.append('userId', userId || 'demo-user');
       formData.append('projectId', `project-${Date.now()}`);
       formData.append('category', category);
       

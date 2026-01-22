@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Building2, User, Code, X, ArrowRight } from 'lucide-react';
+import { Building2, Heart, Terminal, X, ArrowRight, Sparkles } from 'lucide-react';
 
 interface UserTypeSelectorProps {
   isOpen: boolean;
@@ -12,38 +12,32 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
     {
       id: 'enterprise' as const,
       icon: Building2,
-      title: 'Enterprise',
-      subtitle: 'Professional production teams',
-      description: 'Coconut AI orchestration, campaigns, priority queue',
-      badge: '$0.90/credit',
-      gradient: 'from-[#F5EBE0]/20 to-[#E3D5CA]/20',
-      borderColor: 'border-[#F5EBE0]/30',
-      iconColor: 'text-[#F5EBE0]',
-      badgeColor: 'bg-[#F5EBE0]/20 text-[#F5EBE0]',
+      label: 'Team or Brand',
+      tag: 'Coconut V14',
+      gradient: 'from-[#F5EBE0]/10 to-[#E3D5CA]/10',
+      borderColor: 'border-[#F5EBE0]/20',
+      accentColor: 'text-[#F5EBE0]',
+      bgAccent: 'bg-[#F5EBE0]/10',
     },
     {
       id: 'individual' as const,
-      icon: User,
-      title: 'Individual',
-      subtitle: 'Creators & community members',
-      description: 'Create, share, earn as creator, unlock Coconut',
-      badge: '25 free credits/month',
-      gradient: 'from-purple-500/20 to-violet-500/20',
-      borderColor: 'border-purple-500/30',
-      iconColor: 'text-purple-400',
-      badgeColor: 'bg-purple-500/20 text-purple-400',
+      icon: Heart,
+      label: 'Solo Creator',
+      tag: '25 free credits/month',
+      gradient: 'from-purple-500/10 to-violet-500/10',
+      borderColor: 'border-purple-500/20',
+      accentColor: 'text-purple-400',
+      bgAccent: 'bg-purple-500/10',
     },
     {
       id: 'developer' as const,
-      icon: Code,
-      title: 'Developer',
-      subtitle: 'Build with our API',
-      description: 'REST API, webhooks, full documentation',
-      badge: '100 free credits',
-      gradient: 'from-blue-500/20 to-cyan-500/20',
-      borderColor: 'border-blue-500/30',
-      iconColor: 'text-blue-400',
-      badgeColor: 'bg-blue-500/20 text-blue-400',
+      icon: Terminal,
+      label: 'Developer',
+      tag: 'API Access',
+      gradient: 'from-blue-500/10 to-cyan-500/10',
+      borderColor: 'border-blue-500/20',
+      accentColor: 'text-blue-400',
+      bgAccent: 'bg-blue-500/10',
     },
   ];
 
@@ -57,45 +51,89 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50"
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="w-full max-w-5xl bg-[#0A0A0A] rounded-3xl border border-white/10 overflow-hidden pointer-events-auto relative"
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-2xl rounded-3xl overflow-hidden pointer-events-auto relative"
+              style={{
+                background: 'linear-gradient(135deg, rgba(10,10,10,0.98) 0%, rgba(20,20,20,0.95) 100%)',
+                backdropFilter: 'blur(40px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                boxShadow: '0 40px 100px rgba(0,0,0,0.6)'
+              }}
             >
+              {/* Animated background glow */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <motion.div
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full blur-[100px]"
+                  style={{
+                    background: 'radial-gradient(circle, rgba(245,235,224,0.08) 0%, transparent 70%)'
+                  }}
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.5, 0.3]
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              </div>
+
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute top-6 right-6 w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center z-10"
+                className="absolute top-4 right-4 w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center z-10"
               >
-                <X size={20} className="text-white/60" />
+                <X size={18} className="text-white/60" />
               </button>
 
               {/* Header */}
-              <div className="p-6 sm:p-12 pb-6 sm:pb-8 text-center">
+              <div className="p-8 pb-6 text-center relative">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  <h2 className="text-3xl sm:text-4xl md:text-5xl mb-4">
-                    What describes you best?
+                  {/* Sparkle badge */}
+                  <motion.div
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(245,235,224,0.08) 0%, rgba(227,213,202,0.06) 100%)',
+                      border: '1px solid rgba(245,235,224,0.15)',
+                    }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Sparkles size={14} className="text-[#F5EBE0]" />
+                    <span className="text-xs font-medium text-[#F5EBE0]">
+                      Choose Your Path
+                    </span>
+                  </motion.div>
+
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-2 leading-tight">
+                    <span className="bg-gradient-to-r from-[#F5EBE0] via-[#E3D5CA] to-[#D6C9BE] bg-clip-text text-transparent">
+                      I am a...
+                    </span>
                   </h2>
-                  <p className="text-lg sm:text-xl text-white/60">
-                    Choose your path to get a personalized experience
+                  <p className="text-sm text-white/50">
+                    Select to continue
                   </p>
                 </motion.div>
               </div>
 
               {/* Cards */}
-              <div className="px-6 sm:px-12 pb-6 sm:pb-12">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+              <div className="px-8 pb-8 relative">
+                <div className="space-y-3">
                   {userTypes.map((type, idx) => {
                     const Icon = type.icon;
                     
@@ -103,43 +141,56 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
                       <motion.button
                         key={type.id}
                         onClick={() => onSelect(type.id)}
-                        className={`group p-4 sm:p-6 lg:p-8 rounded-2xl bg-gradient-to-br ${type.gradient} backdrop-blur-sm border ${type.borderColor} transition-all hover:scale-105 hover:shadow-2xl hover:shadow-${type.iconColor}/20 text-left relative overflow-hidden`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 + idx * 0.1, duration: 0.4 }}
-                        whileHover={{ scale: 1.05 }}
+                        className="group w-full p-5 rounded-2xl text-left relative overflow-hidden flex items-center gap-4"
+                        style={{
+                          background: 'rgba(255,255,255,0.03)',
+                          backdropFilter: 'blur(20px)',
+                          border: '1px solid rgba(255,255,255,0.08)'
+                        }}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + idx * 0.08, duration: 0.4 }}
+                        whileHover={{ 
+                          scale: 1.02,
+                          background: 'rgba(255,255,255,0.05)',
+                        }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        {/* Glow effect on hover */}
-                        <div className={`absolute inset-0 bg-gradient-to-br ${type.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                        {/* Gradient glow on hover */}
+                        <div className={`absolute inset-0 bg-gradient-to-r ${type.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
 
                         {/* Content */}
-                        <div className="relative">
-                          {/* Badge */}
-                          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${type.badgeColor} text-xs mb-3 sm:mb-4 lg:mb-6`}>
-                            {type.badge}
-                          </div>
-
+                        <div className="relative flex items-center gap-4 flex-1">
                           {/* Icon */}
-                          <div className={`w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-3 sm:mb-4 lg:mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                            <Icon className={type.iconColor} size={24} />
+                          <div className={`w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0`}>
+                            <Icon className={type.accentColor} size={24} />
                           </div>
 
-                          {/* Title */}
-                          <h3 className="text-lg sm:text-xl lg:text-2xl mb-1 sm:mb-2">{type.title}</h3>
-                          <p className="text-xs sm:text-sm text-white/60 mb-2 sm:mb-3 lg:mb-4">{type.subtitle}</p>
-
-                          {/* Description */}
-                          <p className="text-xs sm:text-sm text-white/80 mb-3 sm:mb-4 lg:mb-6 leading-relaxed">
-                            {type.description}
-                          </p>
+                          {/* Text */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-white mb-0.5">
+                              {type.label}
+                            </h3>
+                            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${type.bgAccent} border ${type.borderColor}`}>
+                              <span className={`text-xs ${type.accentColor}`}>
+                                {type.tag}
+                              </span>
+                            </div>
+                          </div>
 
                           {/* Arrow */}
-                          <div className="flex items-center gap-2 text-xs sm:text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <span className={type.iconColor}>Continue</span>
-                            <ArrowRight size={16} className={type.iconColor} />
+                          <div className={`${type.accentColor} opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all flex-shrink-0`}>
+                            <ArrowRight size={20} />
                           </div>
                         </div>
+
+                        {/* Shimmer effect on hover */}
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                          initial={{ x: '-100%' }}
+                          whileHover={{ x: '100%' }}
+                          transition={{ duration: 0.6 }}
+                        />
                       </motion.button>
                     );
                   })}
@@ -147,10 +198,15 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
               </div>
 
               {/* Footer */}
-              <div className="px-6 sm:px-12 pb-6 sm:pb-8 text-center">
-                <p className="text-sm text-white/40">
-                  Not sure? You can always explore all features later
-                </p>
+              <div className="px-8 pb-6 text-center relative">
+                <motion.p
+                  className="text-xs text-white/30"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  You can switch anytime
+                </motion.p>
               </div>
             </motion.div>
           </div>

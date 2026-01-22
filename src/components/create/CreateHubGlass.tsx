@@ -41,8 +41,17 @@ import { useCredits } from '../../lib/contexts/CreditsContext'; // ✅ NEW: Use 
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: For username
 import { generateMedia } from '../../lib/generation';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { compressImages } from '../../utils/imageCompression'; // ✅ NEW: Image compression
 import { ResultModal } from './ResultModal';
+
+// ✅ Import singleton Supabase client (prevents multiple instances warning)
+import { supabase as supabaseClient } from '../../lib/services/auth0-service';
+
 import { VideoResultModal } from '../VideoResultModal';
+import { CreatorBenefitsPanel } from '../CreatorBenefitsPanel'; // ✅ NEW: Creator benefits panel
+import { PurchaseCreditsModal } from '../providers/PurchaseCreditsModal'; // ✅ NEW: Purchase credits modal
+import { useCoconutAccess } from '../../lib/hooks/useCoconutAccess'; // ✅ NEW: Coconut access hook
+import { usePurchaseCredits } from '../../lib/hooks/usePurchaseCredits'; // ✅ NEW: Purchase credits hook
 import { GenerationQueue } from '../GenerationQueue';
 import { VoiceInput } from './VoiceInput';
 import { VideoSettingsControls } from './VideoSettingsControls';
@@ -261,7 +270,30 @@ export function CreateHubGlass({
   const paidCredits = credits.paid;
   
   // ✅ AUTH from context (for username/email)
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  
+  // ✅ NEW: Access Control - Block Enterprise & Developers
+  useEffect(() => {
+    if (!user) return; // Not logged in yet
+    
+    // Block Enterprise accounts
+    if (user.accountType === 'enterprise') {
+      console.log('🚫 Create Hub blocked for Enterprise accounts');
+      toast.error('Create Hub is only available for Individual accounts');
+      onNavigate('coconut-v14');
+      return;
+    }
+    
+    // Block Developer accounts
+    if (user.accountType === 'developer') {
+      console.log('🚫 Create Hub blocked for Developer accounts');
+      toast.error('Create Hub is only available for Individual accounts');
+      onNavigate('dashboard-dev');
+      return;
+    }
+    
+    console.log('✅ Create Hub access granted for Individual user');
+  }, [user, onNavigate]);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -273,7 +305,32 @@ export function CreateHubGlass({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const currentImageQueueIdRef = useRef<string | null>(null);
   const currentVideoQueueIdRef = useRef<string | null>(null);
+  
+  // ✅ NEW: Creator Benefits Panel
+  const [showCreatorBenefits, setShowCreatorBenefits] = useState(false);
+  
+  // ✅ NEW: Purchase Credits Modal
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const { purchaseCredits, loading: purchaseLoading } = usePurchaseCredits();
+  
+  // 🔍 DEBUG: Check userId
+  console.log('🎨 [CreateHubGlass] userId for useCoconutAccess:', userId);
+  
+  const { accessData } = useCoconutAccess(userId);
   const currentAvatarQueueIdRef = useRef<string | null>(null);
+  
+  // 🔍 DEBUG: Log access data
+  useEffect(() => {
+    console.log('🎨 [CreateHubGlass] accessData RAW:', accessData);
+    console.log('🎨 [CreateHubGlass] accessData keys:', accessData ? Object.keys(accessData) : 'null');
+    
+    if (accessData) {
+      console.log('🎨 [CreateHubGlass] accessData updated:', accessData);
+      console.log('🎨 [CreateHubGlass] hasAccess:', accessData.hasAccess);
+      console.log('🎨 [CreateHubGlass] isCreator:', accessData.isCreator);
+      console.log('🎨 [CreateHubGlass] Button condition:', accessData.hasAccess && accessData.isCreator);
+    }
+  }, [accessData]);
   
   // ✅ VIDEO GENERATION HOOK
   const {
@@ -437,40 +494,45 @@ export function CreateHubGlass({
 
   // ✅ Calculate cost for current generation
   const calculateGenerationCost = (): number => {
+    let baseCost = 0;
+    
     if (mode === 'video') {
-      return calculateVideoCost(videoModel);
-    }
-    
-    if (mode === 'avatar') {
+      baseCost = calculateVideoCost(videoModel);
+    } else if (mode === 'avatar') {
       // InfiniteTalk avatar costs
-      return avatarResolution === '480p' ? 1 : 2;
+      baseCost = avatarResolution === '480p' ? 1 : 2;
+    } else {
+      // ✅ IMAGE GENERATION COSTS
+      
+      // Free models (Pollinations) - 1 free credit each
+      if (['zimage', 'seedream', 'kontext', 'nanobanana'].includes(selectedModel)) {
+        baseCost = 1; // 1 free credit
+      }
+      // Premium models (Kie AI) - paid credits
+      else if (selectedModel === 'flux-2-pro') {
+        const modelCost = resolution === '1K' ? 1 : 2;
+        baseCost = modelCost + referenceImages.length;
+      }
+      else if (selectedModel === 'flux-2-flex') {
+        const modelCost = resolution === '1K' ? 3 : 6;
+        baseCost = modelCost + referenceImages.length;
+      }
+      else if (selectedModel === 'nano-banana-pro') {
+        const modelCost = resolution === '4K' ? 10 : (resolution === '2K' ? 6 : 3);
+        baseCost = modelCost + referenceImages.length;
+      }
+      // Default fallback
+      else {
+        baseCost = 1;
+      }
+      
+      // ✅ ADD ENHANCE COST: +1 credit if "Enhance with Cortexia" is enabled (image mode only)
+      if (enhancePrompt) {
+        baseCost += 1;
+      }
     }
     
-    // ✅ IMAGE GENERATION COSTS
-    
-    // Free models (Pollinations) - 1 free credit each
-    if (['zimage', 'seedream', 'kontext', 'nanobanana'].includes(selectedModel)) {
-      return 1; // 1 free credit
-    }
-    
-    // Premium models (Kie AI) - paid credits
-    if (selectedModel === 'flux-2-pro') {
-      const baseCost = resolution === '1K' ? 1 : 2;
-      return baseCost + referenceImages.length;
-    }
-    
-    if (selectedModel === 'flux-2-flex') {
-      const baseCost = resolution === '1K' ? 3 : 6;
-      return baseCost + referenceImages.length;
-    }
-    
-    if (selectedModel === 'nano-banana-pro') {
-      const baseCost = resolution === '4K' ? 10 : (resolution === '2K' ? 6 : 3);
-      return baseCost + referenceImages.length;
-    }
-    
-    // Default fallback
-    return 1;
+    return baseCost;
   };
 
   // ✅ Check if user can use selected model
@@ -915,12 +977,41 @@ export function CreateHubGlass({
       playClick();
       medium();
       
+      // ✅ FIX: Fetch user profile to get uploaded avatar
+      let userAvatar = user?.picture || '';
+      let username = user?.name || user?.email?.split('@')[0] || 'user';
+      
+      if (userId) {
+        try {
+          const profileResponse = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/user/profile/${userId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${publicAnonKey}`
+              }
+            }
+          );
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.success && profileData.profile) {
+              // ✅ Use uploaded avatar if exists
+              userAvatar = profileData.profile.avatar || userAvatar;
+              username = profileData.profile.username || profileData.profile.displayName || username;
+            }
+          }
+        } catch (err) {
+          console.warn('⚠️ Could not fetch user profile, using fallback avatar:', err);
+        }
+      }
+      
       console.log('📤 Publishing to feed...', {
         assetUrl: generationResult.url,
         prompt,
         model: selectedModel,
         type: mode,
-        parentCreationId: remixParentId // ✅ NEW: Log parent ID for debugging
+        parentCreationId: remixParentId, // ✅ NEW: Log parent ID for debugging
+        userAvatar // ✅ Log avatar for debugging
       });
 
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/publish`, {
@@ -931,8 +1022,8 @@ export function CreateHubGlass({
         },
         body: JSON.stringify({
           userId: userId || 'anonymous', // ✅ Use real userId
-          username: user?.name || user?.email?.split('@')[0] || 'user',
-          userAvatar: user?.picture || '',
+          username,
+          userAvatar, // ✅ FIX: Use fetched avatar from profile
           type: mode,
           assetUrl: generationResult.url,
           thumbnailUrl: mode === 'video' ? generationResult.url : undefined,
@@ -996,7 +1087,7 @@ export function CreateHubGlass({
 
   };
 
-  // ✅ Handle image upload
+  // ✅ Handle image upload with fallback to direct Supabase
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
@@ -1005,17 +1096,52 @@ export function CreateHubGlass({
     light();
 
     try {
-      // Upload each file to Supabase Storage
-      const uploadPromises = Array.from(files).map(async (file) => {
-        // Convert file to base64
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              const base64 = reader.result as string;
-              
-              // Upload to backend
-              const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`, {
+      // 🗜️ Compress images if needed (> 10MB)
+      console.log(`🗜️ [UPLOAD] Checking ${files.length} files for compression...`);
+      const compressionResults = await compressImages(Array.from(files), {
+        maxSizeMB: 10,
+        maxWidthOrHeight: 2048,
+        quality: 0.85,
+        outputFormat: 'image/webp'
+      });
+      
+      // Show compression results
+      const compressedCount = compressionResults.filter(r => r.wasCompressed).length;
+      if (compressedCount > 0) {
+        const totalSaved = compressionResults.reduce((sum, r) => sum + (r.originalSize - r.compressedSize), 0);
+        const savedMB = (totalSaved / 1024 / 1024).toFixed(1);
+        toast.success(`🗜️ Compressed ${compressedCount} image${compressedCount > 1 ? 's' : ''} (saved ${savedMB}MB)`);
+      }
+
+      // Upload each file (using compressed version if available)
+      const uploadPromises = compressionResults.map(async (result) => {
+        const file = result.file; // Use compressed file if it was compressed
+        
+        try {
+          // Convert file to base64 first
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          // ✅ ATTEMPT 1: Try edge function (with tracking & quota)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // ✅ 30s timeout (was 10s)
+          
+          console.log('🚀 [UPLOAD] Calling edge function...', {
+            url: `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`,
+            userId: userId || 'anonymous',
+            accountType: profile?.accountType || 'individual',
+            filename: file.name,
+            size: `${(file.size / 1024).toFixed(1)}KB`
+          });
+          
+          try {
+            const response = await fetch(
+              `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`,
+              {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1025,35 +1151,110 @@ export function CreateHubGlass({
                   imageData: base64,
                   filename: file.name,
                   contentType: file.type,
-                  userId: userId || 'anonymous' // ✅ Use real userId
-                })
-              });
-              
+                  userId: userId || 'anonymous',
+                  projectId: `createhub-${userId || 'anonymous'}-${Date.now()}`,
+                  accountType: profile?.accountType || 'individual'
+                }),
+                signal: controller.signal
+              }
+            );
+            
+            clearTimeout(timeoutId);
+            
+            console.log('📥 [UPLOAD] Edge function response:', {
+              status: response.status,
+              ok: response.ok,
+              statusText: response.statusText
+            });
+            
+            if (response.ok) {
               const result = await response.json();
+              console.log('📦 [UPLOAD] Response data:', result);
               
               if (result.success && result.url) {
-                console.log('✅ Image uploaded:', result.url);
-                resolve(result.url);
+                console.log('✅ Upload via edge function succeeded:', result.url);
+                if (result.metadata?.quota) {
+                  console.log(`📊 Storage: ${result.metadata.quota.percentage}% used`);
+                }
+                return result.url;
               } else {
-                console.error('❌ Upload failed:', result.error);
-                reject(new Error(result.error || 'Upload failed'));
+                console.warn('⚠️ Edge function returned non-success:', result);
               }
-            } catch (error) {
-              reject(error);
+            } else {
+              const errorText = await response.text();
+              console.error('❌ Edge function HTTP error:', {
+                status: response.status,
+                body: errorText
+              });
             }
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+          } catch (edgeFunctionError) {
+            clearTimeout(timeoutId);
+            console.warn('⚠️ Edge function upload failed:', {
+              error: edgeFunctionError.message,
+              name: edgeFunctionError.name,
+              isAbort: edgeFunctionError.name === 'AbortError'
+            });
+            console.log('🔄 Falling back to direct Supabase upload...');
+          }
+
+          // ✅ ATTEMPT 2: Direct Supabase upload (fallback)
+          console.log('🔄 Attempting direct Supabase upload...');
+
+          const timestamp = Date.now();
+          const sanitizedUserId = (userId || 'anonymous').replace(/[|:*?"<>]/g, '_');
+          const path = `${sanitizedUserId}/createhub-direct/${timestamp}-${file.name}`;
+          
+          console.log('📤 [FALLBACK] Direct upload params:', {
+            bucket: 'make-e55aa214-uploads',
+            path,
+            userId: sanitizedUserId,
+            contentType: file.type
+          });
+
+          const { data, error } = await supabaseClient.storage
+            .from('make-e55aa214-uploads') // ✅ Use existing PUBLIC bucket
+            .upload(path, file, {
+              contentType: file.type,
+              upsert: false
+            });
+
+          if (error) {
+            console.error('❌ [FALLBACK] Direct upload error:', {
+              message: error.message,
+              name: error.name,
+              statusCode: error.statusCode,
+              error
+            });
+            throw new Error(`Direct upload failed: ${error.message}`);
+          }
+          
+          console.log('✅ [FALLBACK] Upload succeeded, getting public URL...');
+
+          // Get public URL
+          const { data: urlData } = supabaseClient.storage
+            .from('make-e55aa214-uploads') // ✅ Use existing PUBLIC bucket
+            .getPublicUrl(data.path);
+
+          console.log('✅ Direct upload succeeded:', urlData.publicUrl);
+          toast.info('Using fallback upload (no quota tracking)');
+          return urlData.publicUrl;
+
+        } catch (error) {
+          console.error('❌ All upload methods failed:', error);
+          throw error;
+        }
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
       setReferenceImages(prev => [...prev, ...uploadedUrls]);
       
       console.log('✅ All images uploaded successfully');
+      toast.success(`${uploadedUrls.length} image${uploadedUrls.length > 1 ? 's' : ''} uploaded successfully`);
     } catch (error) {
       console.error('❌ Image upload error:', error);
-      setGenerationError('Failed to upload images. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload images';
+      setGenerationError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -1075,18 +1276,28 @@ export function CreateHubGlass({
       return;
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setGenerationError('Image too large. Maximum size is 10MB.');
-      return;
-    }
-
-    setAvatarImageFile(file);
     setGenerationError(null);
 
     // Upload to storage
     try {
       setIsUploadingAvatar(true);
+      
+      // 🗜️ Compress image if needed (> 10MB)
+      console.log(`🗜️ [AVATAR] Checking image for compression...`);
+      const [compressionResult] = await compressImages([file], {
+        maxSizeMB: 10,
+        maxWidthOrHeight: 2048,
+        quality: 0.85,
+        outputFormat: 'image/webp'
+      });
+      
+      if (compressionResult.wasCompressed) {
+        const savedMB = ((compressionResult.originalSize - compressionResult.compressedSize) / 1024 / 1024).toFixed(1);
+        toast.success(`🗜️ Image compressed (saved ${savedMB}MB)`);
+      }
+      
+      const processedFile = compressionResult.file;
+      setAvatarImageFile(processedFile);
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = reader.result as string;
@@ -1099,9 +1310,11 @@ export function CreateHubGlass({
           },
           body: JSON.stringify({
             imageData: base64,
-            filename: file.name,
-            contentType: file.type,
-            userId: userId || 'anonymous' // ✅ Use real userId
+            filename: processedFile.name,
+            contentType: processedFile.type,
+            userId: userId || 'anonymous', // ✅ Use real userId
+            projectId: `avatar-${userId || 'anonymous'}-${Date.now()}`, // ✅ NEW: Pass projectId
+            accountType: profile?.accountType || 'individual' // ✅ NEW: Pass accountType
           })
         });
         
@@ -1119,7 +1332,7 @@ export function CreateHubGlass({
         setGenerationError('Failed to read image file');
         setIsUploadingAvatar(false);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processedFile);
     } catch (error) {
       console.error('❌ Avatar image upload error:', error);
       setGenerationError('Failed to upload image. Please try again.');
@@ -1345,17 +1558,51 @@ export function CreateHubGlass({
                   <span className="text-sm font-medium">{freeCredits}</span>
                 </div>
                 
-                {/* Paid Credits - Always visible */}
-                <div 
-                  className="px-3 py-1.5 rounded-full backdrop-blur-3xl flex items-center gap-1.5 border border-white/15"
+                {/* Paid Credits - Always visible, clickable to purchase more */}
+                <button
+                  onClick={() => {
+                    setShowPurchaseModal(true);
+                    playClick();
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className="px-3 py-1.5 rounded-full backdrop-blur-3xl flex items-center gap-1.5 border border-white/15 transition-all hover:scale-105 hover:border-[#8b5cf6]/50 cursor-pointer group"
                   style={{
                     background: 'rgba(139, 92, 246, 0.15)',
                   }}
                 >
-                  <Crown className="w-3.5 h-3.5 text-[#8b5cf6]" />
-                  <span className="text-sm font-medium">{paidCredits}</span>
-                </div>
+                  <Crown className="w-3.5 h-3.5 text-[#8b5cf6] group-hover:text-[#a78bfa] transition-colors" />
+                  <span className="text-sm font-medium group-hover:text-white transition-colors">{paidCredits}</span>
+                  <Plus className="w-3 h-3 text-[#8b5cf6]/60 group-hover:text-[#a78bfa] transition-colors opacity-0 group-hover:opacity-100" />
+                </button>
               </div>
+
+              {/* ✅ NEW: Creator Benefits Button (only for Creators) */}
+              {accessData?.hasAccess && accessData?.isCreator && (
+                <button
+                  onClick={() => {
+                    setShowCreatorBenefits(true);
+                    playClick();
+                  }}
+                  onMouseEnter={() => playHover()}
+                  className="px-3 py-1.5 rounded-full backdrop-blur-3xl flex items-center gap-1.5 border border-[var(--coconut-shell)]/30 transition-all hover:scale-105 hover:border-[var(--coconut-shell)]/50 relative overflow-hidden group"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                  }}
+                >
+                  {/* Animated glow on hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/20" />
+                  </div>
+                  
+                  <Crown className="w-3.5 h-3.5 text-[var(--coconut-shell)] relative z-10" />
+                  <span className="text-xs font-semibold text-[var(--coconut-shell)] relative z-10">
+                    {accessData?.remainingGenerations !== undefined ? `${accessData.remainingGenerations}/3` : '...'}
+                  </span>
+                  {accessData.remainingGenerations > 0 && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--coconut-shell)] animate-pulse relative z-10" />
+                  )}
+                </button>
+              )}
 
               {/* ✅ History button */}
               <button 
@@ -1895,86 +2142,6 @@ export function CreateHubGlass({
               </div>
             ) : null
           )}
-
-          {/* 🥥 Coconut V13 Pro - Professional Creative Intelligence */}
-          <button
-            onClick={() => {
-              playClick();
-              light();
-              onSelectTool('coconut-v13-premium');
-            }}
-            onMouseEnter={() => playHover()}
-            className="w-full p-3 md:p-2.5 rounded-2xl backdrop-blur-3xl border border-purple-500/30 hover:border-purple-500/50 transition-all group relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15))',
-            }}
-          >
-            <div className="flex items-center justify-between relative z-10">
-              <div className="flex items-center gap-2.5 md:gap-2">
-                <div className="w-9 h-9 md:w-8 md:h-8 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center border border-purple-500/50 relative">
-                  <Sparkles className="w-4 h-4 md:w-3.5 md:h-3.5 text-purple-400" />
-                  <div className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-[10px] md:text-[8px] font-bold text-white border-2 border-black">
-                    PRO
-                  </div>
-                </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm md:text-sm font-medium text-white">🥥 Coconut V13 Pro</p>
-                    <span className="px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
-                      PREMIUM
-                    </span>
-                  </div>
-                  <p className="text-xs md:text-xs text-gray-400">CocoBoard Preview · Professional Layout · AI Director</p>
-                </div>
-              </div>
-              <div className="text-purple-400 group-hover:text-purple-300 transition-colors">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/0 via-purple-600/20 to-pink-600/20 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
-          </button>
-
-          {/* 🚀 Coconut V14 - Complete Premium Interface */}
-          <button
-            onClick={() => {
-              playClick();
-              light();
-              onSelectTool('coconut-v14');
-            }}
-            onMouseEnter={() => playHover()}
-            className="w-full p-3 md:p-2.5 rounded-2xl backdrop-blur-3xl border border-cyan-500/30 hover:border-cyan-500/50 transition-all group relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(139, 92, 246, 0.15))',
-            }}
-          >
-            <div className="flex items-center justify-between relative z-10">
-              <div className="flex items-center gap-2.5 md:gap-2">
-                <div className="w-9 h-9 md:w-8 md:h-8 rounded-xl bg-gradient-to-br from-cyan-500/30 to-purple-500/30 flex items-center justify-center border border-cyan-500/50 relative">
-                  <Crown className="w-4 h-4 md:w-3.5 md:h-3.5 text-cyan-400" />
-                  <div className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center text-[10px] md:text-[8px] font-bold text-white border-2 border-black">
-                    V14
-                  </div>
-                </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm md:text-sm font-medium text-white">🥥 Coconut V14</p>
-                    <span className="px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-cyan-500 to-purple-500 text-white rounded-full">
-                      NEW
-                    </span>
-                  </div>
-                  <p className="text-xs md:text-xs text-gray-400">Dashboard · Settings · Credits Manager · Complete Interface</p>
-                </div>
-              </div>
-              <div className="text-cyan-400 group-hover:text-cyan-300 transition-colors">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-600/0 via-cyan-600/20 to-purple-600/20 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-out" />
-          </button>
         </div>
       </main>
 
@@ -2534,6 +2701,46 @@ export function CreateHubGlass({
             // Could implement: open video in new tab or download directly
             window.open(item.result, '_blank');
           }
+        }}
+      />
+      
+      {/* ✅ NEW: CREATOR BENEFITS PANEL */}
+      <CreatorBenefitsPanel
+        isOpen={showCreatorBenefits}
+        onClose={() => setShowCreatorBenefits(false)}
+        onNavigateToCoconut={() => {
+          setShowCreatorBenefits(false);
+          onNavigate('coconut-v14');
+        }}
+      />
+      
+      {/* ✅ NEW: PURCHASE CREDITS MODAL */}
+      <PurchaseCreditsModal
+        open={showPurchaseModal}
+        onClose={() => setShowPurchaseModal(false)}
+        currentCredits={{
+          total: freeCredits + paidCredits,
+          free: freeCredits,
+          paid: paidCredits
+        }}
+        onPurchase={async (packageId) => {
+          if (!userId) {
+            return {
+              success: false,
+              error: 'You must be logged in to purchase credits'
+            };
+          }
+          
+          const result = await purchaseCredits(userId, packageId);
+          
+          if (result.success) {
+            // Refresh credits after purchase (if test mode)
+            if (result.testMode) {
+              refetchCredits?.();
+            }
+          }
+          
+          return result;
         }}
       />
     </div>

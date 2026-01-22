@@ -14,6 +14,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import * as creditsManager from './credits-manager.ts'; // ✅ Use unified credits manager
 import * as kieAIImage from './kie-ai-image.ts'; // ✅ Kie AI image generation
 import * as pollinations from './pollinations.tsx'; // ✅ NEW: Pollinations Enterprise API
+import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking generations
 
 const app = new Hono();
 
@@ -97,7 +98,9 @@ app.post('/generate', async (c) => {
     if (isFreeModel) {
       // ✅ FIX: Calculate cost based on reference images and enhance setting
       const referenceImageCount = options.referenceImages?.length || 0;
-      const enhanceCost = options.enhance === true ? 1 : 0; // +1 credit if enhance is enabled
+      // ✅ CRITICAL FIX: Accept both 'enhance' and 'enhancePrompt' (frontend sends enhancePrompt)
+      const isEnhanceEnabled = options.enhance === true || options.enhancePrompt === true;
+      const enhanceCost = isEnhanceEnabled ? 1 : 0; // +1 credit if enhance is enabled
       const refImageCost = Math.min(referenceImageCount, 8); // +1 credit per reference image (max 8)
       const cost = 1 + refImageCost + enhanceCost; // Base 1 + references + enhance
 
@@ -137,7 +140,7 @@ app.post('/generate', async (c) => {
           height: options.height || 1024,
           seed: seed,
           quality: options.quality || 'high',
-          enhance: options.enhance === true, // false by default
+          enhance: isEnhanceEnabled, // ✅ Use unified enhance flag
           referenceImages: options.referenceImages || [],
           negativePrompt: options.negativePrompt || '',
           userId
@@ -156,6 +159,38 @@ app.post('/generate', async (c) => {
 
         console.log('✅ Free model generation successful');
         console.log('🔗 Image URL:', result.url);
+
+        // ✅ FIX: Track generation for Creator Dashboard stats
+        const generationId = `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const generation = {
+          id: generationId,
+          userId,
+          type: 'image',
+          model,
+          prompt,
+          width: options.width || 1024,
+          height: options.height || 1024,
+          status: 'complete',
+          result: {
+            url: result.url,
+            seed: result.seed || seed
+          },
+          cost,
+          createdAt: new Date().toISOString(),
+          startTime: Date.now(),
+          endTime: Date.now()
+        };
+
+        // Save generation record
+        await kv.set(`generation:${generationId}`, generation);
+
+        // Add to user's generation index
+        const userGenKey = `user:${userId}:generations`;
+        const userGenerations = await kv.get(userGenKey) || [];
+        userGenerations.unshift(generationId); // Add to beginning (newest first)
+        await kv.set(userGenKey, userGenerations);
+
+        console.log(`✅ Tracked generation ${generationId} for user ${userId}`);
 
         return c.json({
           success: true,
@@ -215,7 +250,9 @@ app.post('/generate', async (c) => {
       const referenceImages = options.referenceImages || [];
 
       // ✅ FIX: Calculate cost (PAID credits) including enhance setting
-      const enhanceCost = options.enhance === true ? 1 : 0; // +1 credit if enhance is enabled
+      // ✅ CRITICAL FIX: Accept both 'enhance' and 'enhancePrompt' (frontend sends enhancePrompt)
+      const isEnhanceEnabled = options.enhance === true || options.enhancePrompt === true;
+      const enhanceCost = isEnhanceEnabled ? 1 : 0; // +1 credit if enhance is enabled
       const baseCost = kieAIImage.calculateKieAIImageCost(
         kieAIModel,
         resolution,

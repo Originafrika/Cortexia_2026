@@ -5,6 +5,8 @@
 
 import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import * as credits from './credits.tsx'; // ✅ FIX: Import credits system
+import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking
 
 const app = new Hono();
 
@@ -86,12 +88,7 @@ app.post('/video/generate', async (c) => {
         createdAt: new Date().toISOString()
       };
 
-      await supabase
-        .from('kv_store_e55aa214')
-        .upsert({
-          key: `video_task:${result.data.taskId}`,
-          value: JSON.stringify(taskData)
-        });
+      await kv.set(`video_task:${result.data.taskId}`, taskData);
 
       return c.json({
         success: true,
@@ -205,12 +202,52 @@ app.get('/video/status/:taskId', async (c) => {
       }
 
       // Update KV with result
-      await supabase
-        .from('kv_store_e55aa214')
-        .upsert({
-          key: `video_result:${taskId}`,
-          value: JSON.stringify(response_data)
-        });
+      await kv.set(`video_result:${taskId}`, response_data);
+
+      // ✅ FIX: Track video generation for Creator Dashboard stats
+      // Get userId from original task
+      const taskKey = await kv.get(`video_task:${taskId}`);
+      if (taskKey && typeof taskKey === 'string') {
+        try {
+          const taskInfo = JSON.parse(taskKey);
+          const userId = taskInfo.userId || 'anonymous';
+          
+          const generationId = `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const generation = {
+            id: generationId,
+            userId,
+            type: 'video',
+            model: taskInfo.model,
+            prompt: taskInfo.prompt,
+            aspectRatio: taskInfo.aspectRatio,
+            generationType: taskInfo.generationType,
+            status: 'complete',
+            result: {
+              url: response_data.resultUrls?.[0],
+              storedUrl: response_data.storedUrl,
+              resolution: response_data.resolution
+            },
+            cost: taskInfo.model === 'veo3' ? 8 : 4, // veo3 = 8 credits, veo3_fast = 4 credits
+            createdAt: response_data.createdAt,
+            completedAt: response_data.completedAt,
+            startTime: new Date(response_data.createdAt).getTime(),
+            endTime: new Date(response_data.completedAt).getTime()
+          };
+
+          // Save generation record
+          await kv.set(`generation:${generationId}`, generation);
+
+          // Add to user's generation index
+          const userGenKey = `user:${userId}:generations`;
+          const userGenerations = await kv.get(userGenKey) || [];
+          userGenerations.unshift(generationId); // Add to beginning (newest first)
+          await kv.set(userGenKey, userGenerations);
+
+          console.log(`✅ Tracked video generation ${generationId} for user ${userId}`);
+        } catch (parseError) {
+          console.error('Failed to parse task info for tracking:', parseError);
+        }
+      }
     }
 
     // If failed, include error
@@ -246,12 +283,7 @@ app.post('/video/callback', async (c) => {
 
     if (code === 200 && data?.taskId) {
       // Store callback result
-      await supabase
-        .from('kv_store_e55aa214')
-        .upsert({
-          key: `video_callback:${data.taskId}`,
-          value: JSON.stringify(body)
-        });
+      await kv.set(`video_callback:${data.taskId}`, body);
 
       // Download and store video if available
       if (data.info?.resultUrls && data.info.resultUrls.length > 0) {
@@ -397,18 +429,13 @@ app.post('/video/extend', async (c) => {
 
     if (result.code === 200 && result.data?.taskId) {
       // Store extend task
-      await supabase
-        .from('kv_store_e55aa214')
-        .upsert({
-          key: `video_extend:${result.data.taskId}`,
-          value: JSON.stringify({
-            extendTaskId: result.data.taskId,
-            originalTaskId: taskId,
-            userId,
-            prompt,
-            createdAt: new Date().toISOString()
-          })
-        });
+      await kv.set(`video_extend:${result.data.taskId}`, {
+        extendTaskId: result.data.taskId,
+        originalTaskId: taskId,
+        userId,
+        prompt,
+        createdAt: new Date().toISOString()
+      });
 
       return c.json({
         success: true,

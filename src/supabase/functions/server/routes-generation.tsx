@@ -65,10 +65,12 @@ app.post('/api/coconut-v14/generate', async (c) => {
       status: 'preparing',
       currentStep: 'prepare',
       progress: 0,
+      type: 'image', // ✅ FIX: Add type for statistics filtering
       prompt: promptToUse, // ✅ Use the clean prompt
       specs: board.specs,
       references: board.references,
       startTime: Date.now(),
+      createdAt: new Date().toISOString(), // ✅ FIX: Add createdAt for date filtering
       endTime: null,
       result: null,
       error: null
@@ -76,6 +78,14 @@ app.post('/api/coconut-v14/generate', async (c) => {
 
     // Save generation
     await kv.set(`generation:${generationId}`, generation);
+
+    // ✅ FIX: Add generation to user's index for statistics tracking
+    const userGenKey = `user:${board.userId}:generations`;
+    const userGenerations = await kv.get(userGenKey) || [];
+    userGenerations.unshift(generationId); // Add to beginning (newest first)
+    await kv.set(userGenKey, userGenerations);
+    
+    console.log(`✅ Added generation ${generationId} to user ${board.userId} index`);
 
     // Start generation process (async)
     processGeneration(generationId).catch(err => {

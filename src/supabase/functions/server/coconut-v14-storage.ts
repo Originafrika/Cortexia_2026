@@ -1,9 +1,5 @@
-// ============================================
-// COCONUT V14 - STORAGE & MEDIA HANDLING
-// ============================================
-// Service pour gérer Supabase Storage (images, vidéos, assets)
-
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { shouldLog } from './server-config.ts'; // ✅ NEW: Import logging config
 
 // ============================================
 // CONFIGURATION
@@ -19,16 +15,31 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Supabase configuration is missing');
 }
 
-console.log('✅ Supabase Storage configured:', SUPABASE_URL);
+if (shouldLog('verbose')) {
+  console.log('✅ Supabase Storage configured:', SUPABASE_URL);
+}
 
-// Bucket names (prefixed pour Coconut)
+// Bucket names
 const BUCKETS = {
-  REFERENCES: 'coconut-v14-references',      // User-provided references
+  // ✅ INDIVIDUAL users (CreateHub, Feed, Creator) → PUBLIC bucket (no RLS)
+  REFERENCES_INDIVIDUAL: 'make-e55aa214-uploads',
+  
+  // ✅ ENTERPRISE users (Coconut V14 only) → Dedicated bucket (with RLS)
+  REFERENCES_ENTERPRISE: 'coconut-v14-references',
+  
+  // Other Coconut V14 buckets (ENTERPRISE only)
   ASSETS: 'coconut-v14-assets',              // Generated assets
   OUTPUTS: 'coconut-v14-outputs',            // Final outputs
   COCOBOARDS: 'coconut-v14-cocoboards',      // CocoBoard exports
   GENERATIONS: 'coconut-v14-generations'     // Phase 3 - Generated images
 } as const;
+
+// Helper: Get the correct references bucket based on account type
+function getReferencesBucket(accountType: 'individual' | 'enterprise' | 'developer'): string {
+  return accountType === 'enterprise' 
+    ? BUCKETS.REFERENCES_ENTERPRISE 
+    : BUCKETS.REFERENCES_INDIVIDUAL;
+}
 
 // ============================================
 // UTILITIES
@@ -75,10 +86,10 @@ export async function initializeStorageBuckets(): Promise<void> {
     const existingBucketNames = new Set(existingBuckets?.map(b => b.name) || []);
     
     // ✅ MIGRATION: Update REFERENCES bucket to public if it exists and is private
-    const referencesBucket = existingBuckets?.find(b => b.name === BUCKETS.REFERENCES);
+    const referencesBucket = existingBuckets?.find(b => b.name === BUCKETS.REFERENCES_ENTERPRISE);
     if (referencesBucket && !referencesBucket.public) {
       console.log('🔄 Migrating coconut-v14-references bucket to PUBLIC...');
-      const { error: updateError } = await supabase.storage.updateBucket(BUCKETS.REFERENCES, {
+      const { error: updateError } = await supabase.storage.updateBucket(BUCKETS.REFERENCES_ENTERPRISE, {
         public: true
       });
       
@@ -95,12 +106,12 @@ export async function initializeStorageBuckets(): Promise<void> {
         console.log(`📦 Creating bucket: ${bucketName}`);
         
         // ✅ REFERENCES bucket must be PUBLIC for Kie AI to access images
-        const isPublic = key === 'REFERENCES'; 
+        const isPublic = key === 'REFERENCES_INDIVIDUAL' || key === 'REFERENCES_ENTERPRISE'; 
         
         const { error: createError } = await supabase.storage.createBucket(bucketName, {
           public: isPublic, // ✅ Public only for REFERENCES bucket (Kie AI needs access)
           fileSizeLimit: MAX_FILE_SIZE,
-          allowedMimeTypes: key === 'REFERENCES' 
+          allowedMimeTypes: key === 'REFERENCES_INDIVIDUAL' || key === 'REFERENCES_ENTERPRISE' 
             ? [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES]
             : ALLOWED_IMAGE_TYPES
         });
@@ -201,6 +212,7 @@ export interface UploadReferenceParams {
   fileType: string;
   fileSize: number;
   category: 'image' | 'video';
+  accountType: 'individual' | 'enterprise' | 'developer';
 }
 
 export interface UploadReferenceResult {
@@ -239,6 +251,10 @@ export async function uploadReference(
       };
     }
     
+    // ✅ REMOVED: ensureBucketExists() to prevent timeout
+    // The bucket should exist from server startup initialization
+    // If it doesn't, the upload will fail with a clear error
+    
     // Generate unique path
     const timestamp = Date.now();
     const extension = params.fileName.split('.').pop();
@@ -250,9 +266,12 @@ export async function uploadReference(
     const sanitizedUserId = sanitizeUserId(params.userId);
     const path = `${sanitizedUserId}/${params.projectId}/${timestamp}-${sanitizedName}`;
     
+    console.log(`📦 Uploading to bucket: ${getReferencesBucket(params.accountType)}`);
+    console.log(`📂 Path: ${path}`);
+    
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
-      .from(BUCKETS.REFERENCES)
+      .from(getReferencesBucket(params.accountType))
       .upload(path, params.file, {
         contentType: params.fileType,
         upsert: false
@@ -260,6 +279,15 @@ export async function uploadReference(
     
     if (error) {
       console.error('❌ Upload error:', error);
+      
+      // ✅ Provide helpful error messages
+      if (error.message.includes('Bucket not found') || error.message.includes('bucket')) {
+        return {
+          success: false,
+          error: `Storage bucket not ready. Please contact support or try again in a moment.`
+        };
+      }
+      
       return {
         success: false,
         error: `Upload failed: ${error.message}`
@@ -268,9 +296,9 @@ export async function uploadReference(
     
     console.log('✅ File uploaded:', data.path);
     
-    // Generate signed URL for access
+    // Generate signed URL for access (not needed for public bucket but keep for compatibility)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from(BUCKETS.REFERENCES)
+      .from(getReferencesBucket(params.accountType))
       .createSignedUrl(data.path, SIGNED_URL_EXPIRY);
     
     if (signedUrlError) {
@@ -279,8 +307,10 @@ export async function uploadReference(
     
     // Get public URL (for metadata)
     const { data: publicUrlData } = supabase.storage
-      .from(BUCKETS.REFERENCES)
+      .from(getReferencesBucket(params.accountType))
       .getPublicUrl(data.path);
+    
+    console.log('✅ Public URL:', publicUrlData.publicUrl);
     
     return {
       success: true,
@@ -323,6 +353,7 @@ export async function uploadReferenceBatch(
     fileType: string;
     fileSize: number;
     category: 'image' | 'video';
+    accountType: 'individual' | 'enterprise' | 'developer';
   }>
 ): Promise<BatchUploadResult> {
   console.log(`📦 Batch uploading ${files.length} files...`);
@@ -419,7 +450,7 @@ export async function refreshReferenceUrls(
   return Promise.all(
     paths.map(async (path) => ({
       path,
-      signedUrl: await getSignedUrl(BUCKETS.REFERENCES, path)
+      signedUrl: await getSignedUrl(BUCKETS.REFERENCES_INDIVIDUAL, path)
     }))
   );
 }
@@ -816,4 +847,59 @@ export const STORAGE_INFO = {
   }
 };
 
-console.log('✅ Storage service loaded (COMPLETE - Phase 2 Day 3)');
+if (shouldLog('verbose')) {
+  console.log('✅ Storage service loaded (COMPLETE - Phase 2 Day 3)');
+}
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Ensure a bucket exists, creating it if necessary
+ */
+async function ensureBucketExists(bucketName: string, isPublic: boolean): Promise<void> {
+  try {
+    // ✅ Add timeout to prevent gateway timeout
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Bucket check timeout')), 5000) // 5 second timeout
+    );
+    
+    const checkPromise = (async () => {
+      const { data: existingBuckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        throw new Error(`Failed to list buckets: ${listError.message}`);
+      }
+      
+      const existingBucketNames = new Set(existingBuckets?.map(b => b.name) || []);
+      
+      if (!existingBucketNames.has(bucketName)) {
+        console.log(`📦 Creating bucket: ${bucketName}`);
+        
+        const { error: createError } = await supabase.storage.createBucket(bucketName, {
+          public: isPublic,
+          fileSizeLimit: MAX_FILE_SIZE,
+          allowedMimeTypes: isPublic ? [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES] : ALLOWED_IMAGE_TYPES
+        });
+        
+        if (createError) {
+          throw new Error(`Failed to create bucket ${bucketName}: ${createError.message}`);
+        } else {
+          console.log(`✅ Bucket created: ${bucketName} (${isPublic ? 'PUBLIC' : 'PRIVATE'})`);
+        }
+      } else {
+        console.log(`✅ Bucket exists: ${bucketName}`);
+      }
+    })();
+    
+    // Race between timeout and actual check
+    await Promise.race([checkPromise, timeoutPromise]);
+    
+  } catch (error) {
+    console.error(`⚠️ Bucket check failed for ${bucketName}:`, error.message);
+    // ✅ Don't throw - allow upload to proceed
+    // The upload will fail with a clearer error if bucket truly doesn't exist
+    console.log(`⚠️ Proceeding with upload anyway. If bucket missing, upload will fail with clear error.`);
+  }
+}

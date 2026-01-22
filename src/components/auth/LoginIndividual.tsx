@@ -42,9 +42,26 @@ export function LoginIndividual({ onSuccess, onSwitchToSignup, onBack }: LoginIn
         throw new Error(errorMessage);
       }
       
-      // ✅ Verify user type is individual
+      // ✅ CRITICAL FIX: Redirect to appropriate login page based on user type
       if (result.user.type !== 'individual') {
-        throw new Error(`Ce compte est de type "${result.user.type}". Veuillez utiliser la page de connexion appropriée.`);
+        console.log(`⚠️ [LoginIndividual] Wrong account type: ${result.user.type}. Showing friendly error.`);
+        
+        // Show user-friendly error with instructions
+        let errorMessage = '';
+        if (result.user.type === 'enterprise') {
+          errorMessage = 'Ce compte est de type Entreprise. Vous allez être redirigé vers la page de connexion Entreprise...';
+        } else if (result.user.type === 'developer') {
+          errorMessage = 'Ce compte est de type Développeur. Vous allez être redirigé vers la page de connexion Développeur...';
+        }
+        
+        setError(errorMessage);
+        
+        // Auto-redirect after 2 seconds
+        setTimeout(() => {
+          onBack(); // Return to landing page where user can choose correct login
+        }, 2000);
+        
+        return;
       }
       
       console.log('✅ [LoginIndividual] Login successful:', result.user.id);

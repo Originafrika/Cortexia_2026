@@ -95,6 +95,41 @@ app.get('/:userId', async (c) => {
     if (compensation.currentMonth !== currentMonth) {
       compensation = await monthlyReset(userId, compensation);
     }
+    
+    // ✅ ADMIN OVERRIDE: Check if admin has manually set Creator Stats
+    const userProfile = await kv.get(`user:profile:${userId}`) as any;
+    const hasAdminOverride = userProfile && (
+      userProfile.generationsThisMonth !== undefined ||
+      userProfile.publishedThisMonth !== undefined ||
+      userProfile.publishedWithLikesThisMonth !== undefined
+    );
+    
+    // ✅ Apply admin override if it exists
+    if (hasAdminOverride) {
+      console.log(`👑 [Compensation] Using ADMIN OVERRIDE stats for ${userId}`);
+      
+      if (userProfile.generationsThisMonth !== undefined) {
+        compensation.monthlyStats.imagesGenerated = userProfile.generationsThisMonth;
+      }
+      if (userProfile.publishedThisMonth !== undefined) {
+        compensation.monthlyStats.postsPublished = userProfile.publishedThisMonth;
+      }
+      if (userProfile.publishedWithLikesThisMonth !== undefined) {
+        compensation.monthlyStats.postsWithEnoughLikes = userProfile.publishedWithLikesThisMonth;
+      }
+      
+      // Recalculate eligibility with admin stats
+      const meetsRequirements = checkEligibility(compensation.monthlyStats);
+      compensation.monthlyStats.meetsRequirements = meetsRequirements;
+      compensation.isEligible = meetsRequirements;
+      
+      console.log(`✅ [Compensation] Admin override applied:`, {
+        imagesGenerated: compensation.monthlyStats.imagesGenerated,
+        postsPublished: compensation.monthlyStats.postsPublished,
+        postsWithEnoughLikes: compensation.monthlyStats.postsWithEnoughLikes,
+        isEligible: compensation.isEligible
+      });
+    }
 
     return c.json({
       success: true,

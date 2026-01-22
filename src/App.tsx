@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
 import { LayoutGroup } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 
@@ -25,16 +25,29 @@ import { CreateHubGlass } from './components/create/CreateHubGlass';
 import { TextToImageV3 } from './components/create/TextToImageV3';
 import { CoconutV14App } from './components/coconut-v14/CoconutV14App';
 import { CocoBoardDemo } from './components/coconut-v14/CocoBoardDemo';
-import { CoconutPage } from './components/coconut/CoconutPage';
-import { CreatorDashboard } from './components/CreatorDashboard';
+// ❌ REMOVED: CoconutPage doesn't exist in /components/coconut/
+// import { CoconutPage } from './components/coconut/CoconutPage';
+import { CreatorDashboard } from './components/CreatorDashboardNew'; // ✅ UPDATED: New dashboard with tabs
 import { Wallet } from './components/Wallet';
 import { Settings } from './components/Settings';
 import { AdminPanel } from './components/AdminPanel'; // ✅ NEW: Admin Panel
 import { Activity } from './components/Activity'; // ✅ NEW: Activity page
 import TestCampaignPage from './components/TestCampaignPage'; // ✅ TEST: Campaign endpoints
 import { GenerationView } from './components/generation/GenerationView'; // ✅ Generation view component
-import { DebugCreditsPanel } from './components/debug/DebugCreditsPanel'; // ✅ Debug panel
-import { TabBar } from './components/TabBar'; // ✅ TabBar navigation
+import { SettingsPage } from './pages/SettingsPage'; // ✅ NEW: Full settings page
+import { DebugCreditsPanel } from './components/debug/DebugCreditsPanel'; // ✅ NEW: Debug panel for credits
+import MigrationPage from './pages/admin/migration'; // ✅ NEW: Migration panel
+import StorageCleanupPage from './pages/admin/storage-cleanup'; // ✅ NEW: Storage cleanup panel
+import { MyUploadsPanel } from './components/uploads/MyUploadsPanel'; // ✅ NEW: My uploads management
+import { PaymentSuccess } from './components/PaymentSuccess'; // ✅ NEW: Payment success handler
+import { PaymentCancel } from './components/PaymentCancel'; // ✅ NEW: Payment cancel handler
+import EnterpriseSubscriptionSuccess from './pages/enterprise-subscription-success'; // ✅ FIXED: Enterprise subscription success
+import EnterpriseAddonSuccess from './pages/enterprise-addon-success'; // ✅ FIXED: Enterprise add-on success
+
+// Components
+import { TabBar } from './components/TabBar';
+import { UserProfile } from './components/UserProfile';
+import { NewMessage } from './components/NewMessage';
 
 export type Screen = 
   | 'landing'
@@ -60,7 +73,8 @@ export type Screen =
   | 'wallet'
   | 'settings'
   | 'new-message'
-  | 'activity';
+  | 'activity'
+  | 'my-uploads'; // ✅ NEW: My uploads management
 
 export default function App() {
   return (
@@ -74,8 +88,20 @@ export default function App() {
                 <Routes>
                   {/* ✅ Generation View - Must be before /* */}
                   <Route path="/generation/:generationId" element={<GenerationView />} />
+                  {/* ✅ Payment Success - Must be before /* */}
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+                  {/* ✅ Payment Cancel - Must be before /* */}
+                  <Route path="/payment-cancel" element={<PaymentCancel />} />
+                  {/* ✅ Enterprise Subscription Success - Must be before /* */}
+                  <Route path="/enterprise-subscription-success" element={<EnterpriseSubscriptionSuccess />} />
+                  {/* ✅ Enterprise Add-on Success - Must be before /* */}
+                  <Route path="/enterprise-addon-success" element={<EnterpriseAddonSuccess />} />
                   {/* ✅ Admin Panel - Dev only */}
                   <Route path="/admin" element={<AdminPanel />} />
+                  {/* ✅ Migration Panel - Admin only */}
+                  <Route path="/admin/migration" element={<MigrationPage />} />
+                  {/* ✅ Storage Cleanup Panel - Admin only */}
+                  <Route path="/admin/storage-cleanup" element={<StorageCleanupPage />} />
                   {/* ✅ TEST: Campaign Page */}
                   <Route path="/test" element={<TestCampaignPage />} />
                   {/* All routes (including /create via AppContent) */}
@@ -165,6 +191,7 @@ function AppContent() {
     // ✅ NEW: Route based on user type after auth
     if (isAuthenticated && user) {
       // ✅ CRITICAL: Check if onboarding is needed
+      // ALL users must complete onboarding
       if (!user.onboardingComplete) {
         console.log('[App] User needs onboarding, routing to /onboarding');
         return 'onboarding';
@@ -267,6 +294,12 @@ function AppContent() {
     // ✅ CRITICAL: Wait for auth to finish loading
     if (loading) {
       console.log('⏳ Auth still loading, skipping route protection');
+      return;
+    }
+    
+    // ✅ SECURITY: Also wait for userType to be defined (prevents race conditions on mobile)
+    if (isAuthenticated && !userType && currentScreen !== 'onboarding' && currentScreen !== 'auth-callback') {
+      console.log('⏳ Auth loaded but userType not yet defined, skipping route protection');
       return;
     }
     
@@ -547,7 +580,7 @@ function AppContent() {
         }
         if (selectedTool === 'coconut-v14') {
           // ✅ COCONUT V14 - Ultra-Premium Full App
-          return <CoconutV14App />;
+          return <CoconutV14App onNavigate={handleNavigate} />;
         }
         if (selectedTool === 'coconut-v13-premium' || selectedTool === 'coconut') {
           // ✅ CoconutV14 - CocoBoard Demo (Premium version)
@@ -579,28 +612,30 @@ function AppContent() {
           </div>
         );
       case 'coconut-campaign':
-        return <CoconutPage onNavigate={handleBackFromCoconut} />;
+        return <CoconutV14App onNavigate={handleBackFromCoconut} />; {/* ✅ FIXED: Use CoconutV14App instead of missing CoconutPage */}
       case 'coconut-v14-cocoboard':
         return <CocoBoardDemo onNavigate={() => handleBackFromCoconut()} />;
       case 'coconut-v14':
         // ✅ COCONUT V14 - Ultra-Premium Full App
-        return <CoconutV14App />;
+        return <CoconutV14App onNavigate={handleNavigate} />;
       case 'creator-dashboard':
         return <CreatorDashboard onNavigate={handleNavigate} />;
       case 'wallet':
         return <Wallet onNavigate={handleNavigate} />;
       case 'settings':
-        return <Settings onNavigate={handleNavigate} />;
+        return <SettingsPage />; // ✅ FIXED: SettingsPage doesn't use onNavigate
       case 'new-message':
         return <NewMessage onNavigate={handleNavigate} />;
       case 'activity':
         return <Activity onNavigate={handleNavigate} />;
+      case 'my-uploads':
+        return <MyUploadsPanel />;
       default:
         return <ForYouFeed onNavigate={handleNavigate} onOpenRemix={handleOpenRemix} />;
     }
   };
 
-  const showTabBar = !['landing', 'signup-individual', 'signup-enterprise', 'signup-developer', 'login', 'login-individual', 'login-enterprise', 'login-developer', 'onboarding', 'auth-callback', 'create', 'create-v4', 'coconut-campaign', 'coconut-v14-cocoboard', 'coconut-v14', 'creator-dashboard', 'wallet', 'settings', 'new-message', 'activity'].includes(currentScreen);
+  const showTabBar = !['landing', 'signup-individual', 'signup-enterprise', 'signup-developer', 'login', 'login-individual', 'login-enterprise', 'login-developer', 'onboarding', 'auth-callback', 'create', 'create-v4', 'coconut-campaign', 'coconut-v14-cocoboard', 'coconut-v14', 'creator-dashboard', 'wallet', 'settings', 'new-message', 'activity', 'my-uploads'].includes(currentScreen);
 
   return (
     <ProvidersProvider

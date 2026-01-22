@@ -301,6 +301,7 @@ export interface CocoBoard {
   specs: TechnicalSpecs;
   cost: Cost;
   status: CocoboardStatus;
+  useBrandGuidelines?: boolean; // ✅ NEW: Override user's global setting for this project
   createdAt: Date;
   updatedAt: Date;
 }

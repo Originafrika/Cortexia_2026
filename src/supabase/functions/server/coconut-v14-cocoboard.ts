@@ -292,10 +292,13 @@ export async function createCocoBoardFromAnalysis(
   };
   
   // Save to KV store
-  await kv.set(`coconut-v14:cocoboard:${cocoBoardId}`, cocoBoard);
+  await kv.set(`cocoboard:${cocoBoardId}`, cocoBoard);
   
-  // Also index by project
-  await kv.set(`coconut-v14:project:${projectId}:cocoboard`, cocoBoardId);
+  // Index by user for listing
+  await kv.set(`user:${userId}:cocoboard:${cocoBoardId}`, cocoBoardId);
+  
+  // Also index by project (using unified system)
+  await kv.set(`project:${projectId}:cocoboard`, cocoBoardId);
   
   console.log('✅ CocoBoard created:', cocoBoardId);
   
@@ -310,7 +313,7 @@ export async function createCocoBoardFromAnalysis(
  * Get CocoBoard by ID
  */
 export async function getCocoBoard(cocoBoardId: string): Promise<CocoBoard | null> {
-  const cocoBoard = await kv.get<CocoBoard>(`coconut-v14:cocoboard:${cocoBoardId}`);
+  const cocoBoard = await kv.get<CocoBoard>(`cocoboard:${cocoBoardId}`);
   return cocoBoard;
 }
 
@@ -318,7 +321,7 @@ export async function getCocoBoard(cocoBoardId: string): Promise<CocoBoard | nul
  * Get CocoBoard by project ID
  */
 export async function getCocoBoardByProject(projectId: string): Promise<CocoBoard | null> {
-  const cocoBoardId = await kv.get<string>(`coconut-v14:project:${projectId}:cocoboard`);
+  const cocoBoardId = await kv.get<string>(`project:${projectId}:cocoboard`);
   
   if (!cocoBoardId) {
     return null;
@@ -347,7 +350,7 @@ export async function updateCocoBoard(
     updatedAt: new Date().toISOString()
   };
   
-  await kv.set(`coconut-v14:cocoboard:${cocoBoardId}`, updated);
+  await kv.set(`cocoboard:${cocoBoardId}`, updated);
   
   console.log('✅ CocoBoard updated:', cocoBoardId);
   
@@ -358,7 +361,7 @@ export async function updateCocoBoard(
  * Delete CocoBoard
  */
 export async function deleteCocoBoard(cocoBoardId: string): Promise<void> {
-  await kv.del(`coconut-v14:cocoboard:${cocoBoardId}`);
+  await kv.del(`cocoboard:${cocoBoardId}`);
   console.log('✅ CocoBoard deleted:', cocoBoardId);
 }
 
@@ -423,7 +426,7 @@ export async function editCocoBoardField(
   const updated = applyFieldEdit(cocoBoard, payload);
   
   // Save
-  await kv.set(`coconut-v14:cocoboard:${payload.cocoBoardId}`, updated);
+  await kv.set(`cocoboard:${payload.cocoBoardId}`, updated);
   
   console.log('✅ Field edited:', payload.field);
   
@@ -568,7 +571,7 @@ export async function createCocoBoardVersion(
   
   // Archive current version
   const archiveId = `${cocoBoardId}-archive-v${existing.version}`;
-  await kv.set(`coconut-v14:cocoboard:${archiveId}`, existing);
+  await kv.set(`cocoboard:${archiveId}`, existing);
   
   // Create new version
   const newVersion = existing.version + 1;
@@ -591,10 +594,10 @@ export async function createCocoBoardVersion(
   };
   
   // Save new version
-  await kv.set(`coconut-v14:cocoboard:${newId}`, newCocoBoard);
+  await kv.set(`cocoboard:${newId}`, newCocoBoard);
   
   // Update project reference to new version
-  await kv.set(`coconut-v14:project:${existing.projectId}:cocoboard`, newId);
+  await kv.set(`project:${existing.projectId}:cocoboard`, newId);
   
   console.log(`✅ Created CocoBoard version ${newVersion}`);
   
@@ -605,7 +608,7 @@ export async function createCocoBoardVersion(
  * Get all versions of a CocoBoard
  */
 export async function getCocoBoardVersions(projectId: string): Promise<CocoBoard[]> {
-  const currentId = await kv.get<string>(`coconut-v14:project:${projectId}:cocoboard`);
+  const currentId = await kv.get<string>(`project:${projectId}:cocoboard`);
   
   if (!currentId) {
     return [];
@@ -676,7 +679,7 @@ export async function updateAssetStatus(
     updatedAt: new Date().toISOString()
   };
   
-  await kv.set(`coconut-v14:cocoboard:${cocoBoardId}`, updated);
+  await kv.set(`cocoboard:${cocoBoardId}`, updated);
   
   console.log(`✅ Asset ${assetId} status updated to ${status}`);
   
@@ -710,7 +713,7 @@ export async function assignAssetToZone(
     updatedAt: new Date().toISOString()
   };
   
-  await kv.set(`coconut-v14:cocoboard:${cocoBoardId}`, updated);
+  await kv.set(`cocoboard:${cocoBoardId}`, updated);
   
   console.log(`✅ Asset ${assetId} assigned to zone ${zoneId}`);
   

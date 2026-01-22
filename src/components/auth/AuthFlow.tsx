@@ -32,10 +32,19 @@ export function AuthFlow({ signupType, onNavigate, onSignupComplete, onBack }: A
   };
   
   const handleLoginSuccess = (uid: string, token: string) => {
-    // Login success is already handled by AuthContext.signIn
-    // Just route to onboarding (will be redirected to appropriate dashboard)
-    console.log(`✅ [AuthFlow] Login success: ${uid}`);
-    onNavigate('feed'); // Will auto-redirect based on userType
+    // ✅ CRITICAL FIX: Redirect based on user type from sessionStorage
+    const userType = sessionStorage.getItem('cortexia_user_type');
+    
+    console.log(`✅ [AuthFlow] Login success: ${uid}, type: ${userType}`);
+    
+    // ✅ Route to appropriate dashboard based on user type
+    if (userType === 'enterprise') {
+      onNavigate('coconut-v14'); // ✅ Enterprise → Coconut V14
+    } else if (userType === 'developer') {
+      onNavigate('coconut-v14'); // ✅ Developer → Coconut V14
+    } else {
+      onNavigate('feed'); // ✅ Individual → Feed
+    }
   };
 
   const handleSwitchToLogin = () => {

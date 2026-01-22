@@ -11,9 +11,10 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import * as gemini from './gemini-service.ts';
 import * as flux from './coconut-v14-flux.ts';
 import * as credits from './coconut-v14-credits.ts';
-import * as projects from './coconut-v14-projects.ts';
+import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
 import * as cocoboard from './coconut-v14-cocoboard.ts';
 import * as storage from './coconut-v14-storage.ts';
 import type { 
@@ -319,7 +320,7 @@ export async function singlePassGeneration(
     });
     
     // 10. Update project
-    await projects.updateProjectStatus(projectId, 'completed', {
+    await projectsUnified.updateProjectStatus(projectId, 'completed', {
       generationJobId: job.id,
       finalImage: finalUrl,
       cost: totalCost,
@@ -557,7 +558,7 @@ export async function multiPassGeneration(
     });
     
     // 10. Update project
-    await projects.updateProjectStatus(projectId, 'completed', {
+    await projectsUnified.updateProjectStatus(projectId, 'completed', {
       generationJobId: job.id,
       finalImage: finalUrl,
       assetsGenerated: generatedAssets.length,

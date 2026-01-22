@@ -22,7 +22,10 @@ import {
   Sparkles,
   Zap,
   Clock,
-  Film
+  Film,
+  Image as ImageIcon,
+  Link2,
+  ArrowRight,
 } from 'lucide-react';
 import type { VideoAnalysisResponse, VideoShot } from '../../supabase/functions/server/coconut-v14-video-analyzer';
 
@@ -239,6 +242,76 @@ export function VideoCocoBoardPremium({
                 <p className="text-xs text-amber-600 mb-1">Coût</p>
                 <p className="text-sm font-medium text-amber-700">{selectedShot.estimatedCost} cr</p>
               </div>
+            </div>
+
+            {/* ✅ NEW: Shot Dependencies */}
+            {selectedShot.referenceShotIds && selectedShot.referenceShotIds.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-[var(--coconut-husk)] mb-2 flex items-center gap-2">
+                  <Link2 className="w-4 h-4" />
+                  Shot Dependencies ({selectedShot.referenceShotIds.length})
+                </label>
+                <div className="space-y-2">
+                  {selectedShot.referenceShotIds.map((refId) => {
+                    const refShot = shots.find(s => s.id === refId);
+                    if (!refShot) return null;
+                    return (
+                      <div
+                        key={refId}
+                        className="flex items-center gap-3 p-3 bg-white rounded-lg border border-[var(--coconut-shell)]/20"
+                      >
+                        <ArrowRight className="w-5 h-5 text-[var(--coconut-shell)] flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-[var(--coconut-shell)]">
+                            Uses Shot {refShot.order}
+                          </p>
+                          <p className="text-xs text-[var(--coconut-husk)] line-clamp-1">
+                            {refShot.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Reference Images */}
+            {selectedShot.imageUrls && selectedShot.imageUrls.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-[var(--coconut-husk)] mb-2 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" />
+                  Reference Images ({selectedShot.imageUrls.length})
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {selectedShot.imageUrls.map((url, idx) => (
+                    <div
+                      key={idx}
+                      className="aspect-video rounded-lg overflow-hidden border-2 border-[var(--coconut-shell)]/20 bg-white/40 hover:border-[var(--coconut-palm)] transition-all"
+                    >
+                      <img
+                        src={url}
+                        alt={`Reference ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Generation Type Badge */}
+            <div className="flex items-center gap-2">
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+                selectedShot.generationType === 'TEXT_2_VIDEO' 
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-purple-100 text-purple-700'
+              }`}>
+                {selectedShot.generationType === 'TEXT_2_VIDEO' ? '📝 Text → Video' : '🖼️ Image → Video'}
+              </span>
+              <span className="px-3 py-1.5 rounded-lg bg-[var(--coconut-shell)]/10 text-[var(--coconut-shell)] text-xs font-bold">
+                {selectedShot.aspectRatio}
+              </span>
             </div>
           </div>
         </div>

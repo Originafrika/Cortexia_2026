@@ -173,12 +173,32 @@ export function Wallet({ onNavigate }: WalletProps) {
         setOriginsTransactions(transactions || []);
       }
 
-      // Mock credit transactions
-      setCreditTransactions([
-        { action: 'Video generated', credits: -10, date: new Date().toISOString(), type: 'debit' },
-        { action: 'Purchased 500 credits', credits: +500, date: new Date(Date.now() - 86400000 * 2).toISOString(), type: 'credit' },
-        { action: 'Image generated', credits: -1, date: new Date(Date.now() - 86400000 * 3).toISOString(), type: 'debit' },
-      ]);
+      // ✅ NEW: Load real credit history from activity-history
+      const activityRes = await fetch(`${apiUrl}/user-stats/${userId}/activity-history?limit=20`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      if (activityRes.ok) {
+        const { history } = await activityRes.json();
+        
+        // Map generations to credit transactions
+        const creditTxs = history.map((gen: any) => ({
+          action: gen.type === 'video' 
+            ? `Video generated (${gen.duration || 0}s)` 
+            : 'Image generated',
+          credits: -gen.cost, // Negative = debit
+          date: gen.createdAt,
+          type: 'debit',
+          status: gen.status,
+          imageUrl: gen.imageUrl
+        }));
+        
+        setCreditTransactions(creditTxs);
+        console.log('✅ [Wallet] Loaded real credit transactions:', creditTxs.length);
+      } else {
+        console.error('❌ [Wallet] Failed to load activity history');
+        // Fallback to empty array instead of mock data
+        setCreditTransactions([]);
+      }
 
       setLoading(false);
     } catch (error) {

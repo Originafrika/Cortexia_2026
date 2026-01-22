@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { handleAuth0SDKCallback, hasAuth0Callback } from '../../lib/services/auth0-sdk';
 import { useAuth } from '../../lib/contexts/AuthContext';
 

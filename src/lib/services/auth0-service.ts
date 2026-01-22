@@ -12,7 +12,15 @@ import { projectId, publicAnonKey } from '../../utils/supabase/info';
 const supabaseUrl = `https://${projectId}.supabase.co`;
 const supabaseAnonKey = publicAnonKey;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ✅ SINGLETON: Create single Supabase client instance
+// This prevents "Multiple GoTrueClient instances" warning
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // ============================================
 // SUPABASE NATIVE OAUTH (Google, Apple, GitHub)

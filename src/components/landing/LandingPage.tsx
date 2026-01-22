@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LandingNeutral } from './LandingNeutral';
+import { LandingScrollytelling } from './LandingScrollytelling';
 import { LandingEnterprise } from './LandingEnterprise';
 import { LandingIndividual } from './LandingIndividual';
 import { LandingDeveloper } from './LandingDeveloper';
@@ -15,7 +15,7 @@ type UserType = 'enterprise' | 'individual' | 'developer' | null;
 export function LandingPage({ onNavigate }: LandingPageProps) {
   const [selectedUserType, setSelectedUserType] = useState<UserType>(null);
   const [showSelector, setShowSelector] = useState(false);
-  const [showLoginSelector, setShowLoginSelector] = useState(false); // ✅ NEW: For login selector
+  const [showLoginSelector, setShowLoginSelector] = useState(false);
 
   const handleGetStarted = () => {
     setShowSelector(true);
@@ -110,10 +110,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
     );
   }
 
-  // Default: Show neutral landing + user type selector
+  // Default: Show new scrollytelling landing + user type selector
   return (
     <>
-      <LandingNeutral 
+      <LandingScrollytelling 
         onGetStarted={handleGetStarted}
         onLogin={handleShowLogin}
       />

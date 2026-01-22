@@ -381,6 +381,129 @@ app.get('/leaderboard', async (c) => {
 // ============================================================================
 
 /**
+ * GET /referral/:userId/referrals
+ * Get detailed list of user's referrals with monthly stats
+ */
+app.get('/:userId/referrals', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    // Get referral IDs
+    const referralIds = await kv.get(`user:referrals:${userId}`) || [];
+
+    if (referralIds.length === 0) {
+      return c.json({
+        success: true,
+        referrals: [],
+        summary: {
+          total: 0,
+          activeThisMonth: 0,
+          totalCommissionThisMonth: 0
+        }
+      });
+    }
+
+    // Get current month
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // Get detailed info for each referral
+    const referrals = [];
+    let totalCommissionThisMonth = 0;
+    let activeThisMonth = 0;
+
+    for (const referralUserId of referralIds) {
+      const referralProfile = await kv.get(`user:profile:${referralUserId}`);
+      
+      if (!referralProfile) continue;
+
+      // Get their purchases
+      const purchasesKey = `purchases:${referralUserId}`;
+      const allPurchases = await kv.get(purchasesKey) || [];
+
+      // Filter purchases this month
+      const thisMonthPurchases = allPurchases.filter((p: any) => {
+        const purchaseDate = new Date(p.date);
+        const purchaseMonth = `${purchaseDate.getFullYear()}-${String(purchaseDate.getMonth() + 1).padStart(2, '0')}`;
+        return purchaseMonth === currentMonth && p.status === 'completed';
+      });
+
+      // Calculate total spent this month
+      const totalSpentThisMonth = thisMonthPurchases.reduce((sum: number, p: any) => 
+        sum + (p.amount || 0), 0
+      );
+
+      // Calculate commission (10%)
+      const commissionThisMonth = totalSpentThisMonth * 0.10;
+
+      if (thisMonthPurchases.length > 0) {
+        activeThisMonth++;
+        totalCommissionThisMonth += commissionThisMonth;
+      }
+
+      // Get total lifetime purchases
+      const totalLifetime = allPurchases
+        .filter((p: any) => p.status === 'completed')
+        .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+      // Check if user has Compensation eligibility (for context)
+      const compensation = await kv.get(`creator:compensation:${referralUserId}`);
+      const isEligibleCreator = compensation?.isEligible || false;
+
+      referrals.push({
+        userId: referralUserId,
+        username: referralProfile.username,
+        displayName: referralProfile.displayName,
+        avatar: referralProfile.avatar,
+        accountType: referralProfile.accountType,
+        joinedAt: referralProfile.referredAt || referralProfile.createdAt,
+        
+        // Monthly stats
+        purchasesThisMonth: thisMonthPurchases.length,
+        totalSpentThisMonth,
+        commissionThisMonth,
+        isActiveThisMonth: thisMonthPurchases.length > 0,
+        
+        // Lifetime stats
+        totalLifetimePurchases: allPurchases.filter((p: any) => p.status === 'completed').length,
+        totalLifetimeSpent: totalLifetime,
+        totalLifetimeCommission: totalLifetime * 0.10,
+        
+        // Creator status
+        isEligibleCreator,
+        
+        // Last purchase
+        lastPurchaseDate: allPurchases.length > 0 
+          ? allPurchases.sort((a: any, b: any) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            )[0].date
+          : null
+      });
+    }
+
+    // Sort by commission this month (highest first)
+    referrals.sort((a, b) => b.commissionThisMonth - a.commissionThisMonth);
+
+    return c.json({
+      success: true,
+      referrals,
+      summary: {
+        total: referralIds.length,
+        activeThisMonth,
+        totalCommissionThisMonth,
+        currentMonth
+      }
+    });
+  } catch (error) {
+    console.error('❌ Get referrals error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get referrals'
+    }, 500);
+  }
+});
+
+/**
  * GET /referral/:userId/link
  * Get user's referral link
  */

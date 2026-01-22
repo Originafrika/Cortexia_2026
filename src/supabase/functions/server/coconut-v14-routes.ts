@@ -1,7 +1,7 @@
 import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
-import * as projects from './coconut-v14-projects.ts';
+import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
 import * as credits from './coconut-v14-credits.ts';
 import { analyzeWithRetry } from './coconut-v14-analyzer.ts';
 import { analyzeMissingAssets, calculateAssetGenerationCost } from './coconut-v14-assets.ts';
@@ -9,6 +9,7 @@ import * as storage from './coconut-v14-storage.ts';
 import * as cocoboard from './coconut-v14-cocoboard.ts';
 import * as flux from './coconut-v14-flux.ts';
 import { initDemoUserCredits, getUserCredits, addCredits } from './coconut-v14-init-credits.ts';
+import * as kv from './kv_store.tsx'; // ✅ NEW: Import KV store for user profiles
 import type { 
   CreateProjectPayload,
   AnalyzeIntentPayload,
@@ -60,6 +61,27 @@ async function checkEnterpriseAccount(userId: string): Promise<boolean> {
 }
 
 // ============================================
+// HELPER: GET USER PROFILE
+// ============================================
+
+async function getUserProfile(userId: string): Promise<any | null> {
+  try {
+    // Try user:profile:userId first (most common)
+    let profile = await kv.get(`user:profile:${userId}`);
+    
+    // Fallback to user:userId
+    if (!profile) {
+      profile = await kv.get(`user:${userId}`);
+    }
+    
+    return profile;
+  } catch (error) {
+    console.error('❌ Error fetching user profile:', error);
+    return null;
+  }
+}
+
+// ============================================
 // PROJECTS ROUTES
 // ============================================
 
@@ -81,7 +103,7 @@ app.post('/coconut-v14/projects/create', async (c) => {
     }
     
     // Créer projet
-    const project = await projects.createProject(payload);
+    const project = await projectsUnified.createProject(payload);
     
     return c.json<ApiResponse>({ 
       success: true, 
@@ -111,7 +133,7 @@ app.get('/coconut-v14/projects/:userId', async (c) => {
     const offset = c.req.query('offset') ? parseInt(c.req.query('offset')!) : undefined;
     const status = c.req.query('status') as any;
     
-    const projectsList = await projects.getUserProjects(userId, {
+    const projectsList = await projectsUnified.getUserProjects(userId, {
       limit,
       offset,
       status
@@ -143,7 +165,7 @@ app.get('/coconut-v14/project/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId');
     
-    const project = await projects.getProject(projectId);
+    const project = await projectsUnified.getProject(projectId);
     
     if (!project) {
       return c.json<ApiResponse>({ 
@@ -175,7 +197,7 @@ app.delete('/coconut-v14/project/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId');
     
-    await projects.deleteProject(projectId);
+    await projectsUnified.deleteProject(projectId);
     
     return c.json<ApiResponse>({ 
       success: true,
@@ -222,6 +244,14 @@ app.post('/coconut-v14/analyze-intent', async (c) => {
       videosCount: payload.references.videos.length
     });
     
+    // ✅ NEW: Get user profile for brand guidelines
+    const userProfile = await getUserProfile(payload.userId);
+    console.log('👤 User profile loaded:', {
+      hasCompanyName: !!userProfile?.companyName,
+      hasBrandColors: !!userProfile?.brandColors,
+      hasLogo: !!userProfile?.companyLogo
+    });
+    
     // 1. Vérifier crédits AVANT l'analyse
     const analysisCost = 100;
     const hasCredits = await credits.checkCredits(payload.userId, analysisCost);
@@ -237,7 +267,7 @@ app.post('/coconut-v14/analyze-intent', async (c) => {
     
     // 2. Appeler Gemini avec retry logic (max 3 attempts)
     console.log('🧠 Calling Gemini analysis...');
-    const analysisResult = await analyzeWithRetry(payload, 2);
+    const analysisResult = await analyzeWithRetry(payload, 2, userProfile); // ✅ PASS USER PROFILE
     console.log('✅ Gemini analysis completed');
     
     // 3. Analyser assets manquants
@@ -271,7 +301,7 @@ app.post('/coconut-v14/analyze-intent', async (c) => {
     console.log(`✅ Debited ${analysisCost} credits for analysis`);
     
     // 6. Update project status et sauvegarder analysis
-    await projects.updateProjectStatus(payload.projectId, 'analyzed', {
+    await projectsUnified.updateProjectStatus(payload.projectId, 'analyzed', {
       analysis: analysisResult,
       assetAnalysis,
       costBreakdown: {

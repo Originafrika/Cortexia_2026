@@ -17,9 +17,14 @@ import { UserProfile } from './UserProfile';
 import { RemixChainViewer } from './feed/RemixChainViewer';
 import { RemixCarousel } from './feed/RemixCarousel'; // ✅ NEW
 import { useAuth } from '../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
+import { getAvatarUrl, formatUsername } from '../utils/avatarHelpers'; // ✅ NEW: Avatar helpers
+import { useNavigate } from 'react-router'; // ✅ NEW: Import useNavigate
+import { downloadImageWithWatermark } from '../utils/watermarkHelpers'; // ✅ NEW: Watermark helper
+import { useCurrentUser } from '../lib/hooks/useCurrentUser'; // ✅ NEW: Get current user ID
 
 interface Post {
   id: string;
+  userId?: string; // ✅ ADD: userId for avatar generation
   username: string;
   verified: boolean;
   caption: string;
@@ -47,6 +52,35 @@ interface ForYouFeedProps {
 
 export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: ForYouFeedProps) {
   const { user } = useAuth(); // ✅ NEW: Get user from AuthContext
+  const navigate = useNavigate(); // ✅ NEW: For redirecting
+  const currentUserId = useCurrentUser(); // ✅ NEW: Get current user ID
+  
+  // ✅ NEW: Access Control - Block Enterprise & Developers
+  useEffect(() => {
+    if (!user) {
+      // Not logged in - allow viewing but restrict actions
+      return;
+    }
+    
+    // Block Enterprise accounts
+    if (user.accountType === 'enterprise') {
+      console.log('🚫 Feed blocked for Enterprise accounts');
+      toast.error('Feed is only available for Individual accounts');
+      navigate('/coconut-v14');
+      return;
+    }
+    
+    // Block Developer accounts
+    if (user.accountType === 'developer') {
+      console.log('🚫 Feed blocked for Developer accounts');
+      toast.error('Feed is only available for Individual accounts');
+      navigate('/dashboard-dev');
+      return;
+    }
+    
+    console.log('✅ Feed access granted for Individual user');
+  }, [user, navigate]);
+  
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
   const [posts, setPosts] = useState<Post[]>([]);
   const [showOptionsSheet, setShowOptionsSheet] = useState(false);
@@ -73,6 +107,9 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
   
   // ✅ NEW: Loading state for remix chains
   const [loadingRemixChains, setLoadingRemixChains] = useState<Set<string>>(new Set());
+  
+  // ✅ NEW: Creator status tracking for posts
+  const [postCreatorStatus, setPostCreatorStatus] = useState<Record<string, boolean>>({});
   
   // ✅ Filter posts based on selected filter (MOVED UP before using currentPost)
   const filteredPosts = useMemo(() => {
@@ -182,6 +219,32 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
     }));
   }, [currentPost?.id, currentPost?.remixChainData]);
 
+  // ✅ NEW: Check if post author is a Creator
+  const checkCreatorStatus = useCallback(async (userId: string, postId: string) => {
+    if (!userId || postCreatorStatus[postId] !== undefined) return;
+    
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/creators/${userId}/coconut-access`,
+        { headers: { 'Authorization': `Bearer ${publicAnonKey}` } }
+      );
+      const data = await response.json();
+      setPostCreatorStatus(prev => ({
+        ...prev,
+        [postId]: data.hasCoconutAccess || false
+      }));
+    } catch (error) {
+      console.error('Failed to check Creator status:', error);
+    }
+  }, [postCreatorStatus]);
+
+  // ✅ NEW: Check Creator status when post loads
+  useEffect(() => {
+    if (currentPost?.userId) {
+      checkCreatorStatus(currentPost.userId, currentPost.id);
+    }
+  }, [currentPost?.id, currentPost?.userId, checkCreatorStatus]);
+
   // ✅ Fetch real feed data from backend
   const fetchFeedPosts = useCallback(async (offset = 0, limit = 20) => {
     try {
@@ -202,6 +265,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
       if (data.success && data.creations) {
         const newPosts: Post[] = data.creations.map((creation: any) => ({
           id: creation.id,
+          userId: creation.userId, // ✅ ADD: userId for avatar generation
           username: creation.username,
           verified: false,
           caption: creation.caption || creation.prompt,
@@ -560,7 +624,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
   }, [currentPost]);
 
   const handleDotClick = useCallback((variantIndex: number) => {
-    if (!currentPost.remixVariants) return;
+    if (!currentPost?.remixVariants) return;
     
     setPosts(prev => prev.map(post => {
       if (post.id === currentPost.id) {
@@ -602,9 +666,30 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
     );
   }
 
+  // ✅ Calculate display media URL (AFTER early returns when currentPost is guaranteed to exist)
   const displayMediaUrl = currentPost.remixVariants && currentPost.remixVariants.length > 0
     ? currentPost.remixVariants[currentPost.currentVariant]
     : currentPost.mediaUrl;
+
+  // ✅ NEW: Handle download with watermark for non-Creators
+  const handleDownload = async () => {
+    try {
+      const filename = `cortexia-${currentPost.id}.jpg`;
+      await downloadImageWithWatermark(
+        displayMediaUrl,
+        filename,
+        currentUserId.userId || null,
+        projectId,
+        publicAnonKey
+      );
+      toast.success('Downloaded successfully!');
+      setShowOptionsSheet(false);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download');
+      setShowOptionsSheet(false);
+    }
+  };
 
   const commentsCount = parseInt(currentPost.comments.replace('K', '')) * 1000;
 
@@ -724,7 +809,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
                 aria-label={`View @${currentPost.username}'s profile`}
               >
                 <ImageWithFallback
-                  src={currentPost.avatarUrl}
+                  src={getAvatarUrl(currentPost.avatarUrl, currentPost.username, currentPost.userId)} // ✅ FIX: Pass correct params
                   alt={currentPost.username}
                   className="w-10 h-10 rounded-full object-cover border-2 border-white"
                 />
@@ -748,11 +833,17 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
             aria-label={`View @${currentPost.username}'s profile`}
           >
             <div className="flex items-center gap-1.5">
-              <span className="text-[#6366f1]">@{currentPost.username === '@cortexia_user' ? currentPost.userId?.split('|')[1]?.slice(0, 8) || 'creator' : currentPost.username?.startsWith('user_') || currentPost.username?.startsWith('auth0|') ? currentPost.username.split('|')[1]?.slice(0, 8) || currentPost.username.slice(0, 12) : currentPost.username}</span>
+              <span className="text-[#6366f1]">@{formatUsername(currentPost.username)}</span>
               {currentPost.verified && (
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 0L9.6 5.6L16 8L9.6 10.4L8 16L6.4 10.4L0 8L6.4 5.6L8 0Z" fill="#6366f1"/>
                 </svg>
+              )}
+              {/* ✅ NEW: Creator Badge */}
+              {postCreatorStatus[currentPost.id] && (
+                <span className="px-2 py-0.5 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white text-xs font-bold rounded-full">
+                  CREATOR
+                </span>
               )}
             </div>
           </button>
@@ -893,10 +984,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
             username={currentPost.username}
             isFollowing={currentPost.following || false}
             onClose={() => setShowOptionsSheet(false)}
-            onDownload={() => {
-              toast.success('Media downloaded to your device');
-              setShowOptionsSheet(false);
-            }}
+            onDownload={handleDownload}
             onCopyLink={() => {
               navigator.clipboard.writeText(`https://cortexia.app/p/${currentPost.id}`);
               toast.success('Link copied to clipboard');
@@ -917,10 +1005,19 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
           />
         )}
 
-        {showCommentsSheet && (
+        {showCommentsSheet && currentPost && (
           <CommentsSheet
-            totalComments={commentsCount}
+            postId={currentPost.id}
+            totalComments={parseInt(currentPost.comments) || 0}
             onClose={() => setShowCommentsSheet(false)}
+            onCommentsUpdate={(newCount) => {
+              // ✅ Update comments count in the post
+              setPosts(prev => prev.map(post => 
+                post.id === currentPost.id 
+                  ? { ...post, comments: newCount.toString() }
+                  : post
+              ));
+            }}
           />
         )}
 

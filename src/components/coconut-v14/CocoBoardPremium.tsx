@@ -40,7 +40,7 @@ import { SpecsInputModal } from './SpecsInputModal';
 import { ModeSelector, type GenerationMode } from './ModeSelector';
 import { GenerationPreviewModal } from './GenerationPreviewModal';
 import { AdvancedModeIndicator } from './AdvancedModeIndicator';
-import { ErrorBoundary } from '../ui-premium/ErrorBoundary';
+import { AdvancedErrorBoundary as ErrorBoundary } from './AdvancedErrorBoundary'; // ✅ FIXED: Use AdvancedErrorBoundary instead of ui-premium
 import { 
   Loader2, AlertCircle, Sparkles, Zap, Palette, 
   Settings2, Image as ImageIcon, Wand2, FileText,

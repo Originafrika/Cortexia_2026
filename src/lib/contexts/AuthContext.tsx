@@ -8,6 +8,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, handleAuth0Callback, signOutAuth0, updateAuth0UserMetadata, onAuth0StateChange, getAuth0Session } from '../services/auth0-service';
 import { projectId, publicAnonKey } from '../../utils/supabase/info'; // ✅ FIX: Correct path
+import { preloadCoconutAccess } from '../hooks/useCoconutAccess'; // ✅ NEW: Preload Coconut data
 
 // ============================================
 // TYPES
@@ -174,7 +175,7 @@ const PROTECTED_ROUTES = [
 
 // Routes accessible by user type
 const TYPE_ROUTES: Record<UserType, string[]> = {
-  individual: ['feed', 'discovery', 'create', 'create-v4', 'profile', 'messages', 'wallet', 'creator-dashboard', 'settings'],
+  individual: ['feed', 'discovery', 'create', 'create-v4', 'profile', 'messages', 'wallet', 'creator-dashboard', 'settings', 'coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard'], // ✅ Individual can access Coconut IF they're Creators (checked in CoconutV14App)
   enterprise: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'], // ✅ Enterprise = Coconut ONLY
   developer: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'] // ✅ Developer = API + Coconut
 };
@@ -212,6 +213,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
               const profile = JSON.parse(storedProfileData);
               console.log('✅ [AuthContext] Loaded profile from sessionStorage:', profile.accountType);
+              
+              // ✅ CRITICAL FIX: Fetch user type from backend KV store to ensure consistency
+              try {
+                const typeResponse = await fetch(
+                  `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${supabaseUser.id}/type`,
+                  {
+                    headers: {
+                      'Authorization': `Bearer ${publicAnonKey}`,
+                    },
+                  }
+                );
+                
+                if (typeResponse.ok) {
+                  const typeData = await typeResponse.json();
+                  if (typeData.success && typeData.type) {
+                    console.log(`✅ [AuthContext] User type from backend: ${typeData.type} (was ${profile.accountType} in sessionStorage)`);
+                    profile.accountType = typeData.type; // ✅ Override with backend value
+                    profile.onboardingComplete = typeData.onboardingComplete;
+                    
+                    // ✅ Update sessionStorage to sync
+                    sessionStorage.setItem('cortexia_user_data', JSON.stringify(profile));
+                    sessionStorage.setItem('cortexia_user_type', typeData.type); // ✅ CRITICAL: Also update cortexia_user_type for AuthFlow
+                  }
+                }
+              } catch (typeErr) {
+                console.warn('⚠️ [AuthContext] Failed to fetch user type from backend, using cached value');
+              }
               
               userData = {
                 id: supabaseUser.id,
@@ -330,34 +358,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const supabaseUser = session.user;
         const metadata = supabaseUser.user_metadata || {};
         
-        const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
-                               sessionStorage.getItem('cortexia_pending_user_type') ||
-                               metadata.user_type || 
-                               'individual';
-        
-        const userData: User = {
-          id: supabaseUser.id,
-          email: supabaseUser.email!,
-          name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
-          type: storedUserType as UserType,
-          onboardingComplete: metadata.onboarding_complete || false,
-          createdAt: supabaseUser.created_at,
-          companyLogo: metadata.company_logo,
-          brandColors: metadata.brand_colors,
-          companyName: metadata.company_name,
-          provider: 'auth0',
-          auth0Id: supabaseUser.id,
-          picture: metadata.picture,
-          referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
+        // ✅ CRITICAL FIX: Fetch user type from backend KV store instead of just sessionStorage
+        const initUserFromSession = async () => {
+          let userType: UserType = 'individual';
+          let onboardingComplete = false;
+          
+          try {
+            const typeResponse = await fetch(
+              `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${supabaseUser.id}/type`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${publicAnonKey}`,
+                },
+              }
+            );
+            
+            if (typeResponse.ok) {
+              const typeData = await typeResponse.json();
+              if (typeData.success && typeData.type) {
+                console.log(`✅ [AuthContext] User type from backend (auth listener): ${typeData.type}`);
+                userType = typeData.type as UserType;
+                onboardingComplete = typeData.onboardingComplete;
+                
+                // ✅ Update sessionStorage
+                sessionStorage.setItem('cortexia_user_type', userType);
+              }
+            } else {
+              // Fallback to sessionStorage if backend fails
+              const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
+                                     sessionStorage.getItem('cortexia_pending_user_type') ||
+                                     metadata.user_type || 
+                                     'individual';
+              userType = storedUserType as UserType;
+              onboardingComplete = metadata.onboarding_complete || false;
+            }
+          } catch (err) {
+            console.warn('⚠️ [AuthContext] Failed to fetch user type in auth listener, using fallback');
+            // Fallback to sessionStorage
+            const storedUserType = sessionStorage.getItem('cortexia_user_type') || 
+                                   sessionStorage.getItem('cortexia_pending_user_type') ||
+                                   metadata.user_type || 
+                                   'individual';
+            userType = storedUserType as UserType;
+            onboardingComplete = metadata.onboarding_complete || false;
+          }
+          
+          const userData: User = {
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            name: metadata.full_name || metadata.name || supabaseUser.email?.split('@')[0],
+            type: userType, // ✅ Use backend value
+            onboardingComplete: onboardingComplete,
+            createdAt: supabaseUser.created_at,
+            companyLogo: metadata.company_logo,
+            brandColors: metadata.brand_colors,
+            companyName: metadata.company_name,
+            provider: 'auth0',
+            auth0Id: supabaseUser.id,
+            picture: metadata.picture,
+            referralCode: sessionStorage.getItem('cortexia_referral_code') || undefined
+          };
+          
+          console.log('✅ [AuthContext] Setting user from auth state change:', userData.id, userData.type);
+          setUser(userData);
+          saveOrUpdateAuth0User(userData);
+          setSession(supabaseUser.id);
+          
+          // Store user type for future use
+          sessionStorage.setItem('cortexia_user_type', userData.type);
         };
         
-        console.log('✅ [AuthContext] Setting user from auth state change:', userData.id);
-        setUser(userData);
-        saveOrUpdateAuth0User(userData);
-        setSession(supabaseUser.id);
-        
-        // Store user type for future use
-        sessionStorage.setItem('cortexia_user_type', userData.type);
+        // ✅ Execute async function
+        initUserFromSession();
       }
       // ✅ FIX V3: NEVER auto-clear user from session events
       // OAuth sessions can expire/refresh without meaning the user signed out
@@ -398,12 +470,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabaseUser = data.user;
       const metadata = supabaseUser.user_metadata || {};
       
+      // ✅ CRITICAL FIX: Fetch user type from backend KV store
+      let userType: UserType = (metadata.user_type || 'individual') as UserType;
+      let onboardingComplete = metadata.onboarding_complete || false;
+      
+      try {
+        const typeResponse = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${supabaseUser.id}/type`,
+          {
+            headers: {
+              'Authorization': `Bearer ${publicAnonKey}`,
+            },
+          }
+        );
+        
+        if (typeResponse.ok) {
+          const typeData = await typeResponse.json();
+          if (typeData.success && typeData.type) {
+            console.log(`✅ [AuthContext] User type from backend: ${typeData.type}`);
+            userType = typeData.type as UserType; // ✅ Use backend value
+            onboardingComplete = typeData.onboardingComplete;
+            
+            // ✅ CRITICAL: Update sessionStorage for AuthFlow redirect
+            sessionStorage.setItem('cortexia_user_type', userType);
+          }
+        }
+      } catch (typeErr) {
+        console.warn('⚠️ [AuthContext] Failed to fetch user type from backend during sign in');
+      }
+      
       const userData: User = {
         id: supabaseUser.id,
         email: supabaseUser.email!,
         name: metadata.name || supabaseUser.email?.split('@')[0],
-        type: (metadata.user_type || 'individual') as UserType,
-        onboardingComplete: metadata.onboarding_complete || false,
+        type: userType, // ✅ Use backend value
+        onboardingComplete: onboardingComplete,
         createdAt: supabaseUser.created_at,
         companyLogo: metadata.company_logo,
         brandColors: metadata.brand_colors,
@@ -416,6 +517,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userData);
       setSession(supabaseUser.id);
       saveOrUpdateAuth0User(userData); // Sync to localStorage for compatibility
+      
+      // ✅ OPTIMIZATION: Preload Coconut access data for instant loading
+      preloadCoconutAccess(userData.id).catch(err => 
+        console.warn('⚠️ Failed to preload Coconut data (non-critical):', err)
+      );
       
       return { success: true, user: userData };
     } catch (error: any) {
@@ -546,6 +652,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
     
+    // ✅ CRITICAL: Onboarding and auth-callback are accessible by ALL authenticated users
+    if (route === 'onboarding' || route === 'auth-callback') {
+      return true;
+    }
+    
+    // ✅ FIX: During loading, allow access to avoid race conditions on mobile
+    if (loading) {
+      console.log('⏳ [canAccessRoute] Loading in progress, allowing access to:', route);
+      return true;
+    }
+    
     // Protected routes require auth
     if (!user) {
       return false;
@@ -574,6 +691,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // ✅ NEW: Create user profile in backend if new user
         try {
+          console.log('[AuthContext] 🔄 Creating Auth0 user profile in backend...', {
+            userId: user.id,
+            email: user.email,
+            type: user.type,
+            provider: user.provider,
+          });
+          
           const response = await fetch(
             `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/create-or-update-auth0`,
             {
@@ -594,9 +718,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           );
           
+          console.log('[AuthContext] Backend response status:', response.status);
+          
           if (response.ok) {
             const data = await response.json();
-            console.log('[AuthContext] Auth0 user profile created/updated in backend', data);
+            console.log('[AuthContext] ✅ Auth0 user profile created/updated in backend', data);
             
             // ✅ NEW: Update user object with backend data
             const updatedUser: User = {
@@ -624,10 +750,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setIsNewUser(false);
               return { isNewUser: false };
             }
+          } else {
+            // ✅ CRITICAL: Log response body for debugging
+            const errorText = await response.text();
+            console.error('[AuthContext] ❌ Backend returned error:', {
+              status: response.status,
+              statusText: response.statusText,
+              body: errorText,
+            });
           }
         } catch (err) {
-          console.error('[AuthContext] Failed to create Auth0 user profile in backend:', err);
-          // Non-blocking error - user can still continue
+          console.error('[AuthContext] ❌ CRITICAL: Failed to create Auth0 user profile in backend:', err);
+          console.error('[AuthContext] User will NOT be saved in KV store! Provider:', user.provider, 'Email:', user.email);
+          // Non-blocking error - user can still continue BUT WARN LOUDLY
         }
         
         return { isNewUser: false };

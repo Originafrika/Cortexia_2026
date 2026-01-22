@@ -36,9 +36,16 @@ import {
 interface TypeSelectorPremiumProps {
   onSelectType: (type: 'image' | 'video' | 'campaign') => void;
   onBack: () => void;
+  coconutGenerationsRemaining?: number; // ✅ NEW: Remaining Coconut generations for Creators
+  isEnterprise?: boolean; // ✅ NEW: Is Enterprise user (unlimited)
 }
 
-export function TypeSelectorPremium({ onSelectType, onBack }: TypeSelectorPremiumProps) {
+export function TypeSelectorPremium({ 
+  onSelectType, 
+  onBack,
+  coconutGenerationsRemaining,
+  isEnterprise 
+}: TypeSelectorPremiumProps) {
   const { playClick, playWhoosh, playSuccess } = useSoundContext();
   const { light, medium } = useHaptic();
 
@@ -155,6 +162,53 @@ export function TypeSelectorPremium({ onSelectType, onBack }: TypeSelectorPremiu
               L'IA analysera ensuite votre projet en détail avec <span className="bg-gradient-to-r from-cyan-500 to-purple-500 bg-clip-text text-transparent font-semibold">Gemini 2.5 Flash</span>
             </span>
           </p>
+          
+          {/* ✅ NEW: Coconut Generations Quota Display */}
+          {!isEnterprise && coconutGenerationsRemaining !== undefined && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-xl border border-white/60 shadow-xl"
+            >
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-lg blur opacity-50" />
+                <div className="relative w-10 h-10 rounded-lg bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-semibold text-[var(--coconut-husk)] uppercase tracking-wide">
+                  Coconut Générations
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-black ${coconutGenerationsRemaining === 0 ? 'text-red-600' : 'bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] bg-clip-text text-transparent'}`}>
+                    {coconutGenerationsRemaining}
+                  </span>
+                  <span className="text-sm text-[var(--coconut-husk)]">/  3 restantes ce mois</span>
+                </div>
+              </div>
+              {coconutGenerationsRemaining === 0 && (
+                <div className="ml-2 px-3 py-1 rounded-full bg-red-600 text-white text-xs font-bold">
+                  QUOTA ÉPUISÉ
+                </div>
+              )}
+            </motion.div>
+          )}
+          
+          {isEnterprise && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 backdrop-blur-xl border border-amber-500/30 shadow-xl"
+            >
+              <Star className="w-5 h-5 text-amber-500" />
+              <div className="text-sm font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+                Enterprise • Générations illimitées
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* ========== PREMIUM LAYOUT: FEATURED + 2 COLUMNS ========== */}

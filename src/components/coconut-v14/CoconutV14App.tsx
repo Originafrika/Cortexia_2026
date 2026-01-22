@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Menu, X, ChevronRight, 
@@ -26,6 +26,8 @@ import { toast } from 'sonner@2.0.3';
 import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
 // ✅ NEW: Projects API
 import { getProject, createProject, type Project } from '../../lib/services/cortexia-projects-api';
+// ✅ NEW: Coconut Access Hook
+import { useCoconutAccess } from '../../lib/hooks/useCoconutAccess';
 
 // Components
 import { IntentInputPremium } from './IntentInputPremium'; // 🆕 PREMIUM VERSION
@@ -50,6 +52,7 @@ import { CampaignHistoryManager } from './CampaignHistoryManager';
 import { UnifiedHistoryManager } from './UnifiedHistoryManager';
 import { UserProfileCoconut } from './UserProfileCoconut';
 import { AssetManager } from './AssetManager';
+import { EnterpriseSubscriptionManager } from './EnterpriseSubscriptionManager'; // ✅ NEW: Enterprise subscription
 import { DirectionSelectorPremium } from './DirectionSelectorPremium'; // 🆕 PREMIUM VERSION
 import { TypeSelectorPremium } from './TypeSelectorPremium'; // 🆕 PREMIUM VERSION
 import { NavigationPremium } from './NavigationPremium'; // 🆕 NEW: Premium Navigation Sidebar
@@ -91,14 +94,16 @@ type CoconutV14Screen =
 const Navigation = ({ 
   currentScreen, 
   onNavigate,
-  onToggleSidebar 
+  onToggleSidebar,
+  onBackToFeed
 }: { 
   currentScreen: CoconutV14Screen; 
   onNavigate: (screen: CoconutV14Screen) => void;
   onToggleSidebar: () => void;
+  onBackToFeed?: () => void;
 }) => {
-  const { getCoconutCredits } = useCredits();
-  const totalCredits = getCoconutCredits(); // ✅ Coconut V14 uses ONLY paid credits
+  const { getCoconutCredits, refetchCredits } = useCredits();
+  const totalCredits = getCoconutCredits(); // ✅ Coconut V14 uses total credits (monthly + add-on for Enterprise)
   const { playClick, playWhoosh } = useSoundContext(); // 🔊 PHASE 2: Add sound
   
   const menuItems = [
@@ -185,8 +190,11 @@ const Navigation = ({
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--coconut-cream)]/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1200" />
             
             <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-bold text-[var(--coconut-husk)] uppercase tracking-wider">Total Credits</span>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-xs font-bold text-[var(--coconut-husk)] uppercase tracking-wider block">Total Credits</span>
+                  <span className="text-[10px] text-[var(--coconut-husk)]/60 mt-0.5 block">Pay-as-you-go • $0.09/credit</span>
+                </div>
                 <div className="relative">
                   {/* Icon glow */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-lg blur-md opacity-50" />
@@ -394,10 +402,13 @@ const Navigation = ({
 // MAIN APP CONTENT (uses NotificationProvider)
 // ============================================
 
-function CoconutV14AppContent() {
+function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) => void }) {
   // ✅ Get real authenticated user
   const { userId, userName, displayName, isDemoUser } = useCurrentUser();
   const { userType } = useAuth();
+  
+  // ✅ NEW: Check Coconut access
+  const { accessData, isLoading: isCheckingAccess, error: accessError, trackGeneration } = useCoconutAccess(userId);
   
   // ✅ PHASE 1 FIX: Start on Dashboard instead of intent-input
   const [currentScreen, setCurrentScreen] = useState<CoconutV14Screen>('dashboard');
@@ -441,9 +452,42 @@ function CoconutV14AppContent() {
   // ✅ NEW: Campaign editing
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   
-  const { getCoconutCredits } = useCredits();
+  const { getCoconutCredits, refetchCredits } = useCredits();
   const notify = useNotify();
   const navigate = useNavigate(); // ✅ Keep for other routes if needed
+  
+  // ✅ NEW: Access Control - Block unauthorized users
+  useEffect(() => {
+    // Skip if still checking access
+    if (isCheckingAccess) return;
+    
+    // Block developers completely
+    if (userType === 'developer') {
+      console.log('🚫 Developers cannot access Coconut V14');
+      toast.error('Developers cannot access Coconut. Use API instead.');
+      navigate('/dashboard-dev');
+      return;
+    }
+    
+    // Check if user has Coconut access (Enterprise or Creator)
+    if (!accessData?.hasAccess) {
+      console.log('🚫 No Coconut access detected');
+      toast.error('You need Creator status or Enterprise account to access Coconut V14');
+      navigate('/create-hub');
+      return;
+    }
+    
+    // Show warning if no generations left (for Creators only)
+    if (!accessData.isEnterprise && accessData.remainingGenerations === 0) {
+      toast.warning('No Coconut generations left this month. Upgrade to Enterprise for unlimited access.');
+    }
+    
+    console.log('✅ Coconut access granted:', {
+      isEnterprise: accessData.isEnterprise,
+      remaining: accessData.remainingGenerations,
+      isCreator: accessData.isCreator
+    });
+  }, [userId, userType, accessData, isCheckingAccess, navigate]);
   
   // ✅ NEW: Load project from URL params if projectId is provided
   useEffect(() => {
@@ -647,6 +691,10 @@ function CoconutV14AppContent() {
       setGeminiAnalysis(result.data);  // ✅ FIXED: result.data is the analysis
       setCurrentProjectId(result.data.projectId || newProjectId);
       
+      // ✅ Refetch credits after analysis (100 credits were deducted)
+      await refetchCredits();
+      console.log('💎 Credits refreshed after analysis');
+      
       // 🆕 NEW: Show direction selector instead of going directly to analysis-view
       setCurrentScreen('direction-select');
       
@@ -707,6 +755,23 @@ function CoconutV14AppContent() {
   // 🆕 PHASE 1: Handler for type selection
   const handleTypeSelect = (type: 'image' | 'video' | 'campaign') => {
     console.log('📸 Type selected:', type);
+    
+    // ✅ Block Campaign mode for non-Enterprise users (Creators only)
+    if (type === 'campaign' && !accessData?.isEnterprise) {
+      console.log('🚫 Campaign mode blocked for non-Enterprise');
+      toast.error('Campaign mode is only available for Enterprise accounts');
+      notify.error('Upgrade Required', 'Campaign mode is an Enterprise-only feature');
+      return;
+    }
+    
+    // ✅ Check if Creator has generations left
+    if (!accessData?.isEnterprise && accessData?.remainingGenerations === 0) {
+      console.log('🚫 No generations left');
+      toast.error('No Coconut generations left this month');
+      notify.error('Quota Exceeded', 'Buy 1000 credits to unlock Creator access or upgrade to Enterprise');
+      return;
+    }
+    
     setSelectedType(type);
     
     // ✅ NEW: If campaign type, use dedicated campaign workflow
@@ -743,6 +808,7 @@ function CoconutV14AppContent() {
           currentScreen={currentScreen}
           onNavigate={setCurrentScreen}
           onToggleSidebar={() => {}}
+          onBackToFeed={onNavigate ? () => onNavigate('feed') : undefined}
         />
       </div>
 
@@ -766,6 +832,7 @@ function CoconutV14AppContent() {
                 currentScreen={currentScreen}
                 onNavigate={setCurrentScreen}
                 onToggleSidebar={() => setSidebarOpen(false)}
+                onBackToFeed={onNavigate ? () => onNavigate('feed') : undefined}
               />
             </div>
           </>
@@ -810,10 +877,7 @@ function CoconutV14AppContent() {
             )}
             
             {currentScreen === 'credits' && (
-              <CreditsManager 
-                currentCredits={getCoconutCredits()}
-                isEnterprise={true} // ✅ Coconut V14 is ONLY for Enterprise users
-              />
+              <EnterpriseSubscriptionManager />
             )}
             
             {currentScreen === 'settings' && (
@@ -847,6 +911,7 @@ function CoconutV14AppContent() {
                 onBack={() => setCurrentScreen('type-select')} // ✅ PHASE 2: Back to type selector
                 isLoading={isAnalyzing}
                 userCredits={getCoconutCredits()}
+                userId={userId} // ✅ NEW: Pass real userId
               />
             )}
             
@@ -933,6 +998,8 @@ function CoconutV14AppContent() {
               <TypeSelectorPremium
                 onSelectType={handleTypeSelect}
                 onBack={() => setCurrentScreen('dashboard')}
+                coconutGenerationsRemaining={accessData?.remainingGenerations}
+                isEnterprise={accessData?.isEnterprise}
               />
             )}
             
@@ -979,12 +1046,12 @@ function CoconutV14AppContent() {
 // EXPORTED WRAPPER WITH NOTIFICATION PROVIDER
 // ============================================
 
-export function CoconutV14App() {
+export function CoconutV14App({ onNavigate }: { onNavigate?: (screen: string) => void }) {
   return (
     <AdvancedErrorBoundary context="CoconutV14App">
       <SoundProvider>
         <NotificationProvider>
-          <CoconutV14AppContent />
+          <CoconutV14AppContent onNavigate={onNavigate} />
         </NotificationProvider>
       </SoundProvider>
     </AdvancedErrorBoundary>

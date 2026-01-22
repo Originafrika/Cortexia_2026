@@ -41,9 +41,26 @@ export function LoginEnterprise({ onSuccess, onSwitchToSignup, onBack }: LoginEn
         throw new Error(errorMessage);
       }
       
-      // ✅ Verify user type is enterprise
+      // ✅ CRITICAL FIX: Redirect to appropriate login page based on user type
       if (result.user.type !== 'enterprise') {
-        throw new Error(`Ce compte est de type "${result.user.type}". Veuillez utiliser la page de connexion appropriée.`);
+        console.log(`⚠️ [LoginEnterprise] Wrong account type: ${result.user.type}. Showing friendly error.`);
+        
+        // Show user-friendly error with instructions
+        let errorMessage = '';
+        if (result.user.type === 'individual') {
+          errorMessage = 'Ce compte est de type Particulier. Vous allez être redirigé vers la page de connexion Particulier...';
+        } else if (result.user.type === 'developer') {
+          errorMessage = 'Ce compte est de type Développeur. Vous allez être redirigé vers la page de connexion Développeur...';
+        }
+        
+        setError(errorMessage);
+        
+        // Auto-redirect after 2 seconds
+        setTimeout(() => {
+          onBack(); // Return to landing page where user can choose correct login
+        }, 2000);
+        
+        return;
       }
       
       console.log('✅ [LoginEnterprise] Login successful:', result.user.id);

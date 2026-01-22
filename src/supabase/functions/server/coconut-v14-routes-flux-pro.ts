@@ -6,7 +6,7 @@
 import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
-import * as projects from './coconut-v14-projects.ts';
+import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
 import * as credits from './coconut-v14-credits.ts';
 import { handleAnalyzeIntent } from './coconut-v14-analyzer-flux-pro.ts'; // ✅ NEW: Flux Pro analyzer
 import { analyzeMissingAssets, calculateAssetGenerationCost } from './coconut-v14-assets.ts';
@@ -73,7 +73,7 @@ app.post('/coconut-v14/projects', async (c) => {
   console.warn('⚠️ DEPRECATED: /coconut-v14/projects - Use /projects/create instead');
   try {
     const payload: CreateProjectPayload = await c.req.json();
-    const project = await projects.createProject(payload);
+    const project = await projectsUnified.createProject(payload);
     
     return c.json({
       success: true,
@@ -97,7 +97,7 @@ app.post('/coconut-v14/projects/create', async (c) => {
   console.warn('⚠️ DEPRECATED: /coconut-v14/projects/create - Use /projects/create instead');
   try {
     const payload: CreateProjectPayload = await c.req.json();
-    const project = await projects.createProject(payload);
+    const project = await projectsUnified.createProject(payload);
     
     return c.json({
       success: true,
@@ -418,7 +418,7 @@ app.get('/coconut-v14/credits/:userId', async (c) => {
 app.get('/coconut-v14/projects/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId');
-    const project = await projects.getProject(projectId);
+    const project = await projectsUnified.getProject(projectId);
     
     if (!project) {
       return c.json({
@@ -447,7 +447,7 @@ app.get('/coconut-v14/projects/:projectId', async (c) => {
 app.get('/coconut-v14/projects/user/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const userProjects = await projects.getUserProjects(userId);
+    const userProjects = await projectsUnified.getUserProjects(userId);
     
     return c.json({
       success: true,
@@ -471,7 +471,7 @@ app.patch('/coconut-v14/projects/:projectId', async (c) => {
     const projectId = c.req.param('projectId');
     const updates = await c.req.json();
     
-    const updatedProject = await projects.updateProject(projectId, updates);
+    const updatedProject = await projectsUnified.updateProject(projectId, updates);
     
     return c.json({
       success: true,
@@ -493,7 +493,7 @@ app.patch('/coconut-v14/projects/:projectId', async (c) => {
 app.delete('/coconut-v14/projects/:projectId', async (c) => {
   try {
     const projectId = c.req.param('projectId');
-    await projects.deleteProject(projectId);
+    await projectsUnified.deleteProject(projectId);
     
     return c.json({
       success: true,

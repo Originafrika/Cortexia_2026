@@ -1,17 +1,13 @@
 /**
  * COCONUT V14 - CREDITS MANAGER ULTRA-PREMIUM
- * Flexible credit purchase system
+ * Enterprise subscription system with add-on credits
  * 
  * IMPORTANT: In Coconut V14, this is ONLY used for Enterprise accounts.
  * Personal users access CreateHub, NOT Coconut V14.
  * 
  * Pricing Model:
- * - Enterprise subscription: 10,000 credits/month (resets on 1st of each month)
- * - Enterprise additional credits: $0.10 per credit (never expire)
- * 
- * Minimums:
- * - Enterprise additional credits: 1,000 credits minimum ($100.00)
- * - No quick buy options for Enterprise (custom amounts only)
+ * - Enterprise subscription: $999/month for 10,000 credits (resets every 30 days)
+ * - Enterprise additional credits: $0.09 per credit (never expire, minimum 1,000 credits = $90)
  * 
  * Usage:
  * - Gemini Analysis: 100 credits
@@ -116,7 +112,7 @@ export function CreditsManager({
   const [purchasing, setPurchasing] = useState(false);
 
   const minimumPurchase = isEnterprise ? 1000 : 10;
-  const pricePerCredit = 0.10;
+  const pricePerCredit = 0.09;
   const totalPrice = purchaseAmount * pricePerCredit;
 
   // Fetch data on mount
@@ -284,7 +280,7 @@ export function CreditsManager({
             Credits Management
           </h1>
           <p className="text-base md:text-lg text-[var(--coconut-husk)] max-w-2xl mx-auto">
-            Pay-as-you-go • $0.10 per credit • No subscription required
+            Pay-as-you-go • $0.09 per credit • No subscription required
           </p>
         </motion.div>
 

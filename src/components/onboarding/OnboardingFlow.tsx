@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star, Copy, Gift } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
+import { AcquisitionSourceStep } from './AcquisitionSourceStep'; // ✅ NEW: Import acquisition source step
 
 interface OnboardingFlowProps {
   userType: 'individual' | 'enterprise' | 'developer';
@@ -13,12 +14,34 @@ export function OnboardingFlow({ userType, onComplete }: OnboardingFlowProps) {
   const { completeOnboarding } = useAuth(); // ✅ NEW: Get completeOnboarding
   const [currentStep, setCurrentStep] = useState(0);
   const [preferences, setPreferences] = useState({
+    // Common
     styles: [] as string[],
     goals: [] as string[],
+    
+    // Individual
+    creatorType: '' as string, // photographer, designer, marketer, hobbyist, etc.
+    experienceLevel: '' as string, // beginner, intermediate, pro
+    contentFrequency: '' as string, // daily, weekly, monthly, occasional
+    creatorOptIn: false as boolean,
+    
+    // Enterprise
+    companyName: '' as string,
+    industry: '' as string, // tech, retail, agency, etc.
+    teamSize: '' as string, // 1-10, 11-50, 51-200, 201+
+    role: '' as string, // marketing manager, creative director, etc.
+    painPoints: [] as string[], // slow turnaround, high costs, lack of consistency, etc.
+    currentTools: [] as string[], // photoshop, canva, midjourney, etc.
+    monthlyBudget: '' as string, // <1k, 1k-5k, 5k-20k, 20k+
     companyLogo: null as string | null,
     brandColors: [] as string[],
-    companyName: '' as string, // ✅ NEW: Company name
-    creatorOptIn: false as boolean,
+    autoBrandGuidelines: true as boolean, // ✅ NEW: Auto-apply brand guidelines (default: true)
+    acquisitionSource: '' as string, // ✅ NEW: How did you hear about us?
+    
+    // Developer
+    productType: '' as string, // saas, ecommerce, mobile app, etc.
+    useCase: '' as string, // user avatars, product images, marketing content, etc.
+    techStack: [] as string[], // react, python, nodejs, etc.
+    expectedVolume: '' as string, // <1k, 1k-10k, 10k-100k, 100k+
   });
 
   // Individual steps
@@ -68,24 +91,47 @@ export function OnboardingFlow({ userType, onComplete }: OnboardingFlowProps) {
   // Enterprise steps
   const enterpriseSteps = [
     {
-      title: 'Welcome to Coconut',
-      subtitle: 'Professional AI creative suite',
+      title: 'Welcome to the fluid state',
+      subtitle: 'Where campaigns launch at the speed of thought',
       component: <WelcomeStep userType={userType} />,
     },
     {
-      title: 'Your use cases',
-      subtitle: 'What will you create?',
+      title: 'Tell us about you',
+      subtitle: 'So we can tailor your experience',
       component: (
-        <GoalsStep
-          goals={preferences.goals}
-          onChange={(goals) => setPreferences({ ...preferences, goals })}
-          isEnterprise
+        <EnterpriseProfileStep
+          companyName={preferences.companyName}
+          industry={preferences.industry}
+          teamSize={preferences.teamSize}
+          role={preferences.role}
+          onChange={(data) => setPreferences({ ...preferences, ...data })}
         />
       ),
     },
     {
-      title: 'Brand setup',
-      subtitle: 'Upload your brand assets',
+      title: 'What keeps you up at night?',
+      subtitle: 'The challenges we\'ll help you solve',
+      component: (
+        <PainPointsStep
+          painPoints={preferences.painPoints}
+          onChange={(painPoints) => setPreferences({ ...preferences, painPoints })}
+        />
+      ),
+    },
+    {
+      title: 'Your creative workflow today',
+      subtitle: 'Let\'s understand your current process',
+      component: (
+        <CurrentToolsStep
+          currentTools={preferences.currentTools}
+          monthlyBudget={preferences.monthlyBudget}
+          onChange={(data) => setPreferences({ ...preferences, ...data })}
+        />
+      ),
+    },
+    {
+      title: 'Make it yours',
+      subtitle: 'Your brand, perfectly consistent',
       component: (
         <BrandSetupStep
           logo={preferences.companyLogo}
@@ -95,8 +141,18 @@ export function OnboardingFlow({ userType, onComplete }: OnboardingFlowProps) {
       ),
     },
     {
-      title: 'Ready to create',
-      subtitle: 'Purchase credits to begin',
+      title: 'How did you hear about us?',
+      subtitle: 'Help us improve our reach',
+      component: (
+        <AcquisitionSourceStep
+          acquisitionSource={preferences.acquisitionSource}
+          onChange={(acquisitionSource) => setPreferences({ ...preferences, acquisitionSource })}
+        />
+      ),
+    },
+    {
+      title: 'You\'re ready',
+      subtitle: 'Brief at 9. Campaign by lunch.',
       component: <CompletionStep userType={userType} />,
     },
   ];
@@ -133,19 +189,42 @@ export function OnboardingFlow({ userType, onComplete }: OnboardingFlowProps) {
     if (isLastStep) {
       toast.success('Onboarding complete!');
       
-      // ✅ FIXED: Save ALL preferences for all user types
+      // ✅ Save ALL onboarding data to user profile in KV store
       await completeOnboarding({
-        // Common data for all users
+        // Common data
         styles: preferences.styles,
         goals: preferences.goals,
-        creatorOptIn: preferences.creatorOptIn,
+        
+        // Individual-specific data
+        ...(userType === 'individual' && {
+          creatorType: preferences.creatorType,
+          experienceLevel: preferences.experienceLevel,
+          contentFrequency: preferences.contentFrequency,
+          creatorOptIn: preferences.creatorOptIn,
+        }),
         
         // Enterprise-specific data
         ...(userType === 'enterprise' && {
+          companyName: preferences.companyName,
+          industry: preferences.industry,
+          teamSize: preferences.teamSize,
+          role: preferences.role,
+          painPoints: preferences.painPoints,
+          currentTools: preferences.currentTools,
+          monthlyBudget: preferences.monthlyBudget,
           companyLogo: preferences.companyLogo,
           brandColors: preferences.brandColors,
-          companyName: preferences.companyName
-        })
+          autoBrandGuidelines: preferences.autoBrandGuidelines,
+          acquisitionSource: preferences.acquisitionSource,
+        }),
+        
+        // Developer-specific data
+        ...(userType === 'developer' && {
+          productType: preferences.productType,
+          useCase: preferences.useCase,
+          techStack: preferences.techStack,
+          expectedVolume: preferences.expectedVolume,
+        }),
       });
       
       onComplete();
@@ -440,12 +519,20 @@ function BrandSetupStep({
 }: { 
   logo: string | null; 
   colors: string[]; 
-  onChange: (data: { companyLogo?: string | null; brandColors?: string[] }) => void;
+  onChange: (data: { companyLogo?: string | null; brandColors?: string[]; autoBrandGuidelines?: boolean }) => void;
 }) {
+  const [autoApply, setAutoApply] = useState(true); // Default: ON
+
   const handleLogoUpload = () => {
     // Simulated file upload
     toast.success('Logo uploaded successfully!');
     onChange({ companyLogo: 'mock-logo-url' });
+  };
+
+  const handleToggleAutoApply = () => {
+    const newValue = !autoApply;
+    setAutoApply(newValue);
+    onChange({ autoBrandGuidelines: newValue });
   };
 
   return (
@@ -480,6 +567,69 @@ function BrandSetupStep({
             We'll detect colors from your logo automatically
           </p>
         </div>
+      </div>
+
+      {/* ✅ NEW: Auto-Apply Brand Guidelines Toggle */}
+      <div className="mt-8 pt-6 border-t border-white/10">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <h4 className="text-base mb-2">Apply brand guidelines automatically</h4>
+            <p className="text-sm text-white/60">
+              {autoApply 
+                ? 'Your logo and colors will be included in all Coconut generations'
+                : 'You can specify brand details per project (recommended for agencies)'}
+            </p>
+          </div>
+          
+          <button
+            onClick={handleToggleAutoApply}
+            className={`relative w-14 h-8 rounded-full transition-all ${
+              autoApply 
+                ? 'bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA]' 
+                : 'bg-white/20'
+            }`}
+          >
+            <motion.div
+              className="absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-lg"
+              animate={{ x: autoApply ? 24 : 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+            />
+          </button>
+        </div>
+
+        {/* Info box */}
+        <motion.div
+          className={`mt-4 p-4 rounded-xl border transition-all ${
+            autoApply
+              ? 'bg-[#F5EBE0]/10 border-[#F5EBE0]/20'
+              : 'bg-blue-500/10 border-blue-500/20'
+          }`}
+          key={autoApply ? 'on' : 'off'}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              {autoApply ? (
+                <Check className="text-[#F5EBE0]" size={18} />
+              ) : (
+                <Building2 className="text-blue-400" size={18} />
+              )}
+            </div>
+            <div className="text-xs text-white/70">
+              {autoApply ? (
+                <>
+                  <strong className="text-white">Recommended for single-brand companies.</strong> Every Coconut project will automatically include your brand assets for consistent results.
+                </>
+              ) : (
+                <>
+                  <strong className="text-white">Perfect for agencies.</strong> You can manually specify brand details for each client project in the CocoBoard.
+                </>
+              )}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -634,8 +784,8 @@ function CompletionStep({ userType, creatorOptIn }: { userType: 'individual' | '
                     <span className="text-xs text-[#F5EBE0]">3</span>
                   </div>
                   <div>
-                    <p className="text-white mb-1">Unlock Coconut access</p>
-                    <p className="text-xs text-white/60">AI creative director unlocks automatically when requirements are met</p>
+                    <p className="text-white mb-1">Unlock Creator Benefits</p>
+                    <p className="text-xs text-white/60">3 Coconut generations/month • 10-15% referral commissions • Watermark-free downloads</p>
                   </div>
                 </div>
               </div>
@@ -923,6 +1073,229 @@ function CreatorOptInStep({ optIn, onChange }: { optIn: boolean; onChange: (optI
           </div>
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+// Enterprise Profile Step Component
+function EnterpriseProfileStep({ 
+  companyName, 
+  industry, 
+  teamSize, 
+  role, 
+  onChange 
+}: { 
+  companyName: string; 
+  industry: string; 
+  teamSize: string; 
+  role: string; 
+  onChange: (data: { companyName?: string; industry?: string; teamSize?: string; role?: string }) => void;
+}) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange({ [name]: value } as any);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Company Name */}
+      <div>
+        <label className="block text-sm text-white/60 mb-3">Company Name</label>
+        <input
+          type="text"
+          name="companyName"
+          value={companyName}
+          onChange={handleInputChange}
+          className="w-full p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 transition-all hover:bg-white/10"
+        />
+      </div>
+
+      {/* Industry */}
+      <div>
+        <label className="block text-sm text-white/60 mb-3">Industry</label>
+        <input
+          type="text"
+          name="industry"
+          value={industry}
+          onChange={handleInputChange}
+          className="w-full p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 transition-all hover:bg-white/10"
+        />
+      </div>
+
+      {/* Team Size */}
+      <div>
+        <label className="block text-sm text-white/60 mb-3">Team Size</label>
+        <input
+          type="text"
+          name="teamSize"
+          value={teamSize}
+          onChange={handleInputChange}
+          className="w-full p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 transition-all hover:bg-white/10"
+        />
+      </div>
+
+      {/* Role */}
+      <div>
+        <label className="block text-sm text-white/60 mb-3">Your Role</label>
+        <input
+          type="text"
+          name="role"
+          value={role}
+          onChange={handleInputChange}
+          className="w-full p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 transition-all hover:bg-white/10"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Pain Points Step Component
+function PainPointsStep({ 
+  painPoints, 
+  onChange 
+}: { 
+  painPoints: string[]; 
+  onChange: (painPoints: string[]) => void;
+}) {
+  const options = [
+    { id: 'slow_turnaround', label: 'Slow Turnaround Time' },
+    { id: 'high_costs', label: 'High Costs' },
+    { id: 'lack_of_consistency', label: 'Lack of Consistency' },
+    { id: 'limited_resources', label: 'Limited Resources' },
+    { id: 'complex_process', label: 'Complex Process' },
+    { id: 'time_consumption', label: 'Time Consumption' },
+    { id: 'quality_issues', label: 'Quality Issues' },
+    { id: 'limited_creativity', label: 'Limited Creativity' },
+    { id: 'technical_difficulties', label: 'Technical Difficulties' },
+    { id: 'inconsistent_branding', label: 'Inconsistent Branding' },
+  ];
+
+  const togglePainPoint = (id: string) => {
+    if (painPoints.includes(id)) {
+      onChange(painPoints.filter(p => p !== id));
+    } else {
+      onChange([...painPoints, id]);
+    }
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+      {options.map((option, idx) => {
+        const isSelected = painPoints.includes(option.id);
+
+        return (
+          <motion.button
+            key={option.id}
+            onClick={() => togglePainPoint(option.id)}
+            className={`p-6 rounded-2xl backdrop-blur-sm border transition-all ${
+              isSelected
+                ? 'bg-gradient-to-br from-[#F5EBE0]/20 to-[#E3D5CA]/20 border-[#F5EBE0]/50'
+                : 'bg-white/5 border-white/10 hover:bg-white/10'
+            }`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: idx * 0.1 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                isSelected ? 'bg-[#F5EBE0]/30' : 'bg-white/10'
+              }`}>
+                <Sparkles className={isSelected ? 'text-[#F5EBE0]' : 'text-white/60'} size={24} />
+              </div>
+              <span className="text-left">{option.label}</span>
+            </div>
+
+            {isSelected && (
+              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-[#F5EBE0] flex items-center justify-center">
+                <Check size={14} className="text-black" />
+              </div>
+            )}
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Current Tools Step Component
+function CurrentToolsStep({ 
+  currentTools, 
+  monthlyBudget, 
+  onChange 
+}: { 
+  currentTools: string[]; 
+  monthlyBudget: string; 
+  onChange: (data: { currentTools?: string[]; monthlyBudget?: string }) => void;
+}) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange({ [name]: value } as any);
+  };
+
+  const handleToolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    if (currentTools.includes(value)) {
+      onChange({ currentTools: currentTools.filter(t => t !== value) });
+    } else {
+      onChange({ currentTools: [...currentTools, value] });
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Current Tools */}
+      <div>
+        <label className="block text-sm text-white/60 mb-3">Current Tools</label>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {['Photoshop', 'Canva', 'Midjourney', 'Illustrator', 'Figma', 'Adobe XD'].map((tool, idx) => {
+            const isSelected = currentTools.includes(tool);
+
+            return (
+              <motion.button
+                key={tool}
+                onClick={() => handleToolChange({ target: { value: tool } } as any)}
+                className={`p-4 rounded-xl backdrop-blur-sm border transition-all ${
+                  isSelected
+                    ? 'bg-gradient-to-br from-[#F5EBE0]/20 to-[#E3D5CA]/20 border-[#F5EBE0]/50'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.05 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isSelected ? 'bg-[#F5EBE0]/30' : 'bg-white/10'
+                  }`}>
+                    <Sparkles className={isSelected ? 'text-[#F5EBE0]' : 'text-white/60'} size={20} />
+                  </div>
+                  <span className="text-left">{tool}</span>
+                </div>
+
+                {isSelected && (
+                  <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-[#F5EBE0] flex items-center justify-center">
+                    <Check size={14} className="text-black" />
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Monthly Budget */}
+      <div>
+        <label className="block text-sm text-white/60 mb-3">Monthly Budget</label>
+        <input
+          type="text"
+          name="monthlyBudget"
+          value={monthlyBudget}
+          onChange={handleInputChange}
+          className="w-full p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 transition-all hover:bg-white/10"
+        />
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { AnalyzingLoaderPremium } from './AnalyzingLoaderPremium';
 import { VideoCocoBoardPremium } from './VideoCocoBoardPremium';
 import { VideoPlayerPremium } from './VideoPlayerPremium';
+import { VideoCocoBoard } from './VideoCocoBoard';
 import type { IntentData } from './IntentInputPremium';
 import type { VideoAnalysisResponse, VideoShot } from '../../supabase/functions/server/coconut-v14-video-analyzer';
 import type { VideoGenerationJob } from '../../supabase/functions/server/coconut-v14-video-routes';
@@ -93,9 +94,15 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
         });
 
         const cocoBoardData = await cocoBoardResponse.json();
+        console.log('📦 CocoBoard creation response:', cocoBoardData);
+        
         if (cocoBoardData.success) {
+          console.log('✅ CocoBoard created successfully:', cocoBoardData.cocoBoardId);
           setCocoBoardId(cocoBoardData.cocoBoardId);
           setStage('cocoboard');
+        } else {
+          console.error('❌ CocoBoard creation failed:', cocoBoardData);
+          throw new Error(cocoBoardData.error || 'Failed to create CocoBoard');
         }
       } else {
         console.error('❌ Analysis failed:', data);
@@ -109,13 +116,17 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
 
   // Stage 3: Generate
   const handleGenerate = async (shots: VideoShot[]) => {
-    if (!cocoBoardId) return;
+    if (!cocoBoardId) {
+      console.error('❌ No cocoBoardId, cannot generate');
+      return;
+    }
 
     try {
-      setStage('generating');
+      console.log('🎬🎬🎬 handleGenerate called with:', { cocoBoardId, shots: shots.length });
 
       // Update CocoBoard with edited shots
-      await fetch(`${apiUrl}/coconut-v14/video/cocoboard/${cocoBoardId}`, {
+      console.log('📝 Updating CocoBoard with edited shots...');
+      const updateRes = await fetch(`${apiUrl}/coconut-v14/video/cocoboard/${cocoBoardId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`,
@@ -123,8 +134,11 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
         },
         body: JSON.stringify({ editedShots: shots })
       });
+      
+      console.log('📝 CocoBoard update response:', updateRes.status, updateRes.ok);
 
       // Start generation
+      console.log('🚀 Starting video generation...');
       const response = await fetch(`${apiUrl}/coconut-v14/video/generate`, {
         method: 'POST',
         headers: {
@@ -137,19 +151,43 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
         })
       });
 
+      console.log('🚀 Generation response status:', response.status, response.ok);
       const data = await response.json();
+      console.log('🚀 Generation response data:', data);
 
       if (data.success && data.jobId) {
-        // Poll for completion
+        console.log('✅ Generation started, jobId:', data.jobId);
+        
+        // ✅ FIX: Set initial job state BEFORE changing stage
+        setGenerationJob({
+          id: data.jobId,
+          status: 'queued',
+          progress: 0,
+          currentShot: 0,
+          totalShots: data.totalShots,
+          shots: [],
+          estimatedCost: data.estimatedCost
+        });
+        
+        // Now change to generating stage
+        setStage('generating');
+        
+        // Start polling
         pollGenerationStatus(data.jobId);
+      } else {
+        console.error('❌ Generation failed:', data);
+        setStage('error');
       }
     } catch (error) {
       console.error('❌ Video generation error:', error);
+      setStage('error');
     }
   };
 
   // Poll generation status
   const pollGenerationStatus = async (jobId: string) => {
+    console.log(`🔄 Starting polling for job ${jobId}...`);
+    
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`${apiUrl}/coconut-v14/video/generate/${jobId}/status`, {
@@ -159,20 +197,31 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
         });
 
         const data = await response.json();
+        
+        console.log(`🔄 Poll update for job ${jobId}:`, {
+          status: data.data?.status,
+          progress: data.data?.progress,
+          currentShot: data.data?.currentShot,
+          totalShots: data.data?.totalShots
+        });
 
         if (data.success && data.data) {
           setGenerationJob(data.data);
 
           if (data.data.status === 'completed' || data.data.status === 'failed') {
+            console.log(`✅ Job ${jobId} finished with status: ${data.data.status}`);
             clearInterval(interval);
             if (data.data.status === 'completed') {
               setStage('completed');
+            } else {
+              setStage('error');
             }
           }
         }
       } catch (error) {
         console.error('❌ Poll error:', error);
         clearInterval(interval);
+        setStage('error');
       }
     }, 3000);
   };
@@ -198,75 +247,24 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
   }
 
   if (stage === 'generating' && generationJob) {
+    // ✅ NEW: Use VideoCocoBoard with live polling
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full bg-white/80 backdrop-blur-2xl rounded-2xl p-8 border border-white/60 shadow-2xl">
-          <h2 className="text-2xl font-bold text-[var(--coconut-shell)] mb-4">Génération en cours</h2>
-          <div className="mb-6">
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] transition-all duration-500"
-                style={{ width: `${generationJob.progress}%` }}
-              />
-            </div>
-            <p className="text-sm text-[var(--coconut-husk)] mt-2">
-              Shot {generationJob.currentShot || 0}/{generationJob.totalShots} • {generationJob.progress}%
-            </p>
-          </div>
-
-          {/* Shots status */}
-          <div className="space-y-2">
-            {generationJob.shots.map((shot, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                <span className="text-sm text-[var(--coconut-shell)]">Shot {shot.order}</span>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  shot.status === 'completed' ? 'bg-green-100 text-green-700' :
-                  shot.status === 'generating' ? 'bg-blue-100 text-blue-700' :
-                  shot.status === 'failed' ? 'bg-red-100 text-red-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {shot.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <VideoCocoBoard
+        cocoBoardId={cocoBoardId!}
+        jobId={generationJob.id}
+        onClose={onBack}
+      />
     );
   }
 
   if (stage === 'completed' && generationJob) {
-    const completedShots = generationJob.shots.filter(s => s.status === 'completed' && s.videoUrl);
-
+    // ✅ NEW: Use VideoCocoBoard to show completed generation with all details
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] p-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="bg-white/80 backdrop-blur-2xl rounded-2xl p-6 border border-white/60">
-            <h2 className="text-2xl font-bold text-[var(--coconut-shell)] mb-2">Vidéo générée !</h2>
-            <p className="text-[var(--coconut-husk)]">{completedShots.length} shots créés avec succès</p>
-          </div>
-
-          {/* Video Players */}
-          <div className="space-y-6">
-            {completedShots.map((shot, i) => (
-              <div key={i} className="bg-white/80 backdrop-blur-2xl rounded-2xl p-6 border border-white/60">
-                <h3 className="text-lg font-semibold text-[var(--coconut-shell)] mb-4">Shot {shot.order}</h3>
-                <VideoPlayerPremium
-                  videoUrl={shot.videoUrl!}
-                  onDownload={() => window.open(shot.videoUrl, '_blank')}
-                />
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={onBack}
-            className="w-full py-3 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
-          >
-            Retour au dashboard
-          </button>
-        </div>
-      </div>
+      <VideoCocoBoard
+        cocoBoardId={cocoBoardId!}
+        jobId={generationJob.id}
+        onClose={onBack}
+      />
     );
   }
 

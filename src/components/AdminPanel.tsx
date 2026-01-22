@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Trash2, RefreshCw, AlertTriangle, Users, Database, Edit2, Save, X, Plus, Minus } from 'lucide-react';
+import { Trash2, RefreshCw, AlertTriangle, Users, Database, Edit2, Save, X, Plus, Minus, Crown, TestTube } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { ReferralSystemTester } from './ReferralSystemTester';
 
 interface UserProfile {
   userId: string;
@@ -14,9 +15,20 @@ interface UserProfile {
   referralLink?: string; // ✅ Add referral link
   freeCredits: number;
   paidCredits: number;
+  // ✅ Enterprise credit details
+  isEnterprise?: boolean;
+  enterpriseMonthly?: number;
+  enterpriseAddon?: number;
+  enterpriseTotal?: number;
+  nextResetDate?: string;
   createdAt: string;
   lastLoginAt: string;
   expiresAt?: string | null; // ✅ Add expiration field
+  // 👑 Creator Stats
+  isCreator?: boolean;
+  generationsThisMonth?: number;
+  publishedThisMonth?: number;
+  publishedWithLikesThisMonth?: number;
 }
 
 export function AdminPanel() {
@@ -24,6 +36,8 @@ export function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [showReferralTester, setShowReferralTester] = useState(false);
+  const [testUserId, setTestUserId] = useState<string>('');
   const [editForm, setEditForm] = useState({
     displayName: '',
     username: '',
@@ -33,6 +47,17 @@ export function AdminPanel() {
     freeCredits: 0,
     paidCredits: 0,
     expiresAt: null as string | null,
+    // ✅ Enterprise credit details
+    isEnterprise: false,
+    enterpriseMonthly: 0,
+    enterpriseAddon: 0,
+    enterpriseTotal: 0,
+    nextResetDate: '',
+    // 👑 Creator Stats
+    isCreator: false,
+    generationsThisMonth: 0,
+    publishedThisMonth: 0,
+    publishedWithLikesThisMonth: 0,
   });
 
   const fetchUsers = async () => {
@@ -142,6 +167,17 @@ export function AdminPanel() {
       freeCredits: user.freeCredits,
       paidCredits: user.paidCredits,
       expiresAt: user.expiresAt || null,
+      // ✅ Enterprise credit details
+      isEnterprise: user.isEnterprise || false,
+      enterpriseMonthly: user.enterpriseMonthly || 0,
+      enterpriseAddon: user.enterpriseAddon || 0,
+      enterpriseTotal: user.enterpriseTotal || 0,
+      nextResetDate: user.nextResetDate || '',
+      // 👑 Creator Stats
+      isCreator: user.isCreator || false,
+      generationsThisMonth: user.generationsThisMonth || 0,
+      publishedThisMonth: user.publishedThisMonth || 0,
+      publishedWithLikesThisMonth: user.publishedWithLikesThisMonth || 0,
     });
   };
 
@@ -156,6 +192,17 @@ export function AdminPanel() {
       freeCredits: 0,
       paidCredits: 0,
       expiresAt: null,
+      // ✅ Enterprise credit details
+      isEnterprise: false,
+      enterpriseMonthly: 0,
+      enterpriseAddon: 0,
+      enterpriseTotal: 0,
+      nextResetDate: '',
+      // 👑 Creator Stats
+      isCreator: false,
+      generationsThisMonth: 0,
+      publishedThisMonth: 0,
+      publishedWithLikesThisMonth: 0,
     });
   };
 
@@ -341,12 +388,39 @@ export function AdminPanel() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-white">
-                        {user.freeCredits + user.paidCredits}
-                      </div>
-                      <div className="text-xs text-neutral-500">
-                        {user.freeCredits} free / {user.paidCredits} paid
-                      </div>
+                      {user.isEnterprise ? (
+                        // ✅ Enterprise credits display
+                        <div>
+                          <div className="text-sm text-purple-400 font-semibold">
+                            {user.enterpriseTotal?.toLocaleString() || 0} 💎
+                          </div>
+                          <div className="text-xs text-neutral-500 space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                              {user.enterpriseMonthly?.toLocaleString() || 0} monthly
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                              {user.enterpriseAddon?.toLocaleString() || 0} add-on
+                            </div>
+                          </div>
+                          {user.nextResetDate && (
+                            <div className="text-xs text-neutral-600 mt-1">
+                              Reset: {new Date(user.nextResetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        // ✅ Individual/Developer credits display
+                        <div>
+                          <div className="text-sm text-white">
+                            {user.freeCredits + user.paidCredits}
+                          </div>
+                          <div className="text-xs text-neutral-500">
+                            {user.freeCredits} free / {user.paidCredits} paid
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-neutral-400">
@@ -355,6 +429,16 @@ export function AdminPanel() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center gap-2 justify-end">
+                        <button
+                          onClick={() => {
+                            setTestUserId(user.userId);
+                            setShowReferralTester(true);
+                          }}
+                          className="px-3 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-sm flex items-center gap-2 transition-colors"
+                        >
+                          <TestTube className="w-3 h-3" />
+                          Test
+                        </button>
                         <button
                           onClick={() => startEdit(user)}
                           className="px-3 py-1 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-sm flex items-center gap-2 transition-colors"
@@ -397,26 +481,26 @@ export function AdminPanel() {
 
       {/* Edit Modal */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 z-50">
-          <div className="bg-gradient-to-br from-neutral-900 to-black rounded-2xl border border-white/10 shadow-2xl max-w-2xl w-full p-8">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8 z-50 overflow-y-auto">
+          <div className="bg-gradient-to-br from-neutral-900 to-black rounded-2xl border border-white/10 shadow-2xl max-w-2xl w-full p-4 md:p-8 my-4">
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">Edit User</h2>
-                <p className="text-sm text-neutral-400 font-mono mt-1">{editingUser.userId}</p>
+                <h2 className="text-xl md:text-2xl font-bold text-white">Edit User</h2>
+                <p className="text-xs md:text-sm text-neutral-400 font-mono mt-1 truncate max-w-[200px] md:max-w-none">{editingUser.userId}</p>
               </div>
               <button
                 onClick={cancelEdit}
-                className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors flex-shrink-0"
               >
                 <X className="w-5 h-5 text-neutral-400" />
               </button>
             </div>
 
             {/* Edit Form */}
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[60vh] md:max-h-none overflow-y-auto pr-2">
               {/* Profile Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-400 mb-2">Display Name</label>
                   <input
@@ -474,7 +558,7 @@ export function AdminPanel() {
 
               {/* ✅ Referral Code & Link Section */}
               <div className="border-t border-white/10 pt-4 mt-4">
-                <h3 className="text-lg font-semibold text-white mb-4">Referral System</h3>
+                <h3 className="text-base md:text-lg font-semibold text-white mb-4">Referral System</h3>
                 
                 <div>
                   <label className="block text-sm font-medium text-neutral-400 mb-2">
@@ -499,12 +583,12 @@ export function AdminPanel() {
                     <label className="block text-sm font-medium text-neutral-400 mb-2">
                       Referral Link
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <input
                         type="text"
                         value={`${window.location.origin}/?ref=${editForm.referralCode}`}
                         readOnly
-                        className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-neutral-400 font-mono text-sm focus:outline-none select-all"
+                        className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-neutral-400 font-mono text-xs md:text-sm focus:outline-none select-all"
                       />
                       <button
                         onClick={() => {
@@ -522,11 +606,11 @@ export function AdminPanel() {
               
               {/* Credits Management */}
               <div className="border-t border-white/10 pt-4 mt-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Credits Management</h3>
+                <h3 className="text-base md:text-lg font-semibold text-white mb-4">Credits Management</h3>
                 
                 {/* Enterprise Warning */}
                 {editForm.accountType === 'enterprise' && (
-                  <div className="mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <div className="mb-4 p-3 md:p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                       <div>
@@ -542,7 +626,7 @@ export function AdminPanel() {
                   </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Free Credits */}
                   <div>
                     <label className="block text-sm font-medium text-green-400 mb-2">
@@ -682,6 +766,131 @@ export function AdminPanel() {
                   </div>
                 )}
               </div>
+
+              {/* 👑 Creator Stats Management (Individual only) */}
+              {editForm.accountType === 'individual' && (
+                <div className="border-t border-white/10 pt-4 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Crown className="w-5 h-5 text-yellow-400" />
+                    <h3 className="text-base md:text-lg font-semibold text-white">Creator Stats</h3>
+                  </div>
+                  
+                  {/* Creator Status Toggle */}
+                  <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-yellow-400">Creator Status</p>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          Creators get 3 Coconut generations/month, watermark-free downloads, and commissions
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setEditForm({ ...editForm, isCreator: !editForm.isCreator })}
+                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                          editForm.isCreator ? 'bg-yellow-500' : 'bg-neutral-600'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                            editForm.isCreator ? 'translate-x-7' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Generations This Month */}
+                    <div>
+                      <label className="block text-sm font-medium text-blue-400 mb-2">
+                        Generations (Month)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditForm({ ...editForm, generationsThisMonth: Math.max(0, editForm.generationsThisMonth - 1) })}
+                          className="w-10 h-10 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="number"
+                          value={editForm.generationsThisMonth}
+                          onChange={(e) => setEditForm({ ...editForm, generationsThisMonth: Math.max(0, parseInt(e.target.value) || 0) })}
+                          className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-center font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        />
+                        <button
+                          onClick={() => setEditForm({ ...editForm, generationsThisMonth: editForm.generationsThisMonth + 1 })}
+                          className="w-10 h-10 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 flex items-center justify-center transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Published This Month */}
+                    <div>
+                      <label className="block text-sm font-medium text-green-400 mb-2">
+                        Published (Month)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditForm({ ...editForm, publishedThisMonth: Math.max(0, editForm.publishedThisMonth - 1) })}
+                          className="w-10 h-10 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="number"
+                          value={editForm.publishedThisMonth}
+                          onChange={(e) => setEditForm({ ...editForm, publishedThisMonth: Math.max(0, parseInt(e.target.value) || 0) })}
+                          className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-center font-mono focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                        />
+                        <button
+                          onClick={() => setEditForm({ ...editForm, publishedThisMonth: editForm.publishedThisMonth + 1 })}
+                          className="w-10 h-10 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 flex items-center justify-center transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Published with Likes This Month */}
+                    <div>
+                      <label className="block text-sm font-medium text-pink-400 mb-2">
+                        Liked Posts (Month)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditForm({ ...editForm, publishedWithLikesThisMonth: Math.max(0, editForm.publishedWithLikesThisMonth - 1) })}
+                          className="w-10 h-10 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="number"
+                          value={editForm.publishedWithLikesThisMonth}
+                          onChange={(e) => setEditForm({ ...editForm, publishedWithLikesThisMonth: Math.max(0, parseInt(e.target.value) || 0) })}
+                          className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-center font-mono focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                        />
+                        <button
+                          onClick={() => setEditForm({ ...editForm, publishedWithLikesThisMonth: editForm.publishedWithLikesThisMonth + 1 })}
+                          className="w-10 h-10 rounded-lg bg-pink-500/20 hover:bg-pink-500/30 text-pink-400 flex items-center justify-center transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info Note */}
+                  <div className="mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <p className="text-xs text-blue-300">
+                      💡 These stats reset monthly. Creator commissions (10-15%) are based on consecutive months of Creator status.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -702,6 +911,14 @@ export function AdminPanel() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Referral Tester Modal */}
+      {showReferralTester && testUserId && (
+        <ReferralSystemTester
+          userId={testUserId}
+          onClose={() => setShowReferralTester(false)}
+        />
       )}
     </div>
   );

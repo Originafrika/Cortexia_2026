@@ -22,7 +22,8 @@ import {
   User,
   ChevronRight,
   Plus,
-  Building2
+  Building2,
+  ArrowLeft
 } from 'lucide-react';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { useSoundContext } from './SoundProvider';
@@ -47,18 +48,23 @@ interface NavigationPremiumProps {
   currentScreen: CoconutScreen;
   onNavigate: (screen: CoconutScreen) => void;
   onToggleSidebar?: () => void;
+  onBackToFeed?: () => void; // ✅ NEW: Allow navigation back to Feed
 }
 
 export function NavigationPremium({
   currentScreen,
   onNavigate,
-  onToggleSidebar
+  onToggleSidebar,
+  onBackToFeed
 }: NavigationPremiumProps) {
   const { credits, getCoconutCredits } = useCredits();
   const { playClick, playHover } = useSoundContext();
   const { user } = useAuth(); // ✅ NEW: Use user from AuthContext
   
-  const totalCredits = getCoconutCredits(); // ✅ Coconut V14 uses ONLY paid credits
+  // ✅ FIXED: Calculate total differently for Enterprise vs Regular users
+  const totalCredits = credits.isEnterprise 
+    ? (credits.monthlyCreditsRemaining || 0) + (credits.addOnCredits || 0)
+    : getCoconutCredits(); // Regular users: paid credits only
   
   // Navigation items
   const navItems = [
@@ -154,6 +160,37 @@ export function NavigationPremium({
         </div>
       </div>
       
+      {/* ✅ NEW: Back to Feed Button (for Creators only) */}
+      {onBackToFeed && user?.type !== 'enterprise' && (
+        <div className="px-4 pt-4">
+          <motion.button
+            onClick={() => {
+              playClick();
+              onBackToFeed();
+            }}
+            onMouseEnter={playHover}
+            whileHover={{ x: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="relative w-full text-left px-4 py-3 rounded-xl transition-all group hover:bg-white/30"
+          >
+            <div className="relative flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-white/40 text-[var(--coconut-shell)] group-hover:bg-white/60 transition-all">
+                <ArrowLeft className="w-5 h-5" />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-[var(--coconut-husk)] group-hover:text-[var(--coconut-shell)] transition-colors">
+                  Retour au Feed
+                </div>
+                <div className="text-xs text-[var(--coconut-husk)]/70">
+                  Quitter Coconut
+                </div>
+              </div>
+            </div>
+          </motion.button>
+        </div>
+      )}
+      
       {/* Credits Display */}
       <div className="px-6 py-4 border-b border-white/10">
         <div className="relative group">
@@ -173,16 +210,32 @@ export function NavigationPremium({
               <span className="text-xs text-[var(--coconut-husk)]">disponibles</span>
             </div>
             
-            <div className="mt-3 flex gap-2 text-[10px]">
-              <div className="flex items-center gap-1 text-[var(--coconut-husk)]">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span>{credits.free} gratuits</span>
+            {/* ✅ NEW: Show breakdown based on user type */}
+            {credits.isEnterprise ? (
+              // Enterprise: Show monthly + add-on
+              <div className="mt-3 flex gap-2 text-[10px]">
+                <div className="flex items-center gap-1 text-[var(--coconut-husk)]">
+                  <div className="w-2 h-2 rounded-full bg-[var(--coconut-palm)]" />
+                  <span>{credits.monthlyCreditsRemaining || 0} mensuels</span>
+                </div>
+                <div className="flex items-center gap-1 text-[var(--coconut-husk)]">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>{credits.addOnCredits || 0} add-on</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1 text-[var(--coconut-husk)]">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <span>{credits.paid} payés</span>
+            ) : (
+              // Regular: Show free + paid
+              <div className="mt-3 flex gap-2 text-[10px]">
+                <div className="flex items-center gap-1 text-[var(--coconut-husk)]">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>{credits.free} gratuits</span>
+                </div>
+                <div className="flex items-center gap-1 text-[var(--coconut-husk)]">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>{credits.paid} payés</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

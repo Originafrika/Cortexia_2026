@@ -4,7 +4,62 @@
  * BDS: Géométrie (structure), Astronomie (vision systémique)
  */
 
-import type { CocoNode } from '../services/cortexia-api';
+// ❌ REMOVED: Import from cortexia-api (will be deleted in Phase 3)
+// import type { CocoNode } from '../services/cortexia-api';
+
+/**
+ * CocoNode type (moved from cortexia-api for Phase 3 compatibility)
+ */
+export interface CocoNode {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'image' | 'video' | 'shot' | 'composition' | 'asset';
+  
+  generationType?: {
+    method: 'text-to-image' | 'image-to-image' | 'text-to-video' | 'image-to-video' | 'video-extend' | 'composition';
+    requiresReference: boolean;
+    referenceType?: 'user-upload' | 'generated' | 'previous-result';
+  };
+  
+  prompt: string;
+  negativePrompt?: string;
+  model: string;
+  
+  dependencies: string[];
+  referenceImages?: Array<{
+    source: 'user-upload' | 'generated' | 'previous-node';
+    nodeId?: string;
+    url?: string;
+    purpose: 'style-reference' | 'starting-frame' | 'last-frame' | 'composition-layer';
+  }>;
+  
+  level: number;
+  status: 'pending' | 'generating' | 'completed' | 'failed' | 'validating';
+  
+  result?: {
+    url: string;
+    thumbnailUrl?: string;
+    width?: number;
+    height?: number;
+    duration?: number;
+    validationScore?: number;
+    feedback?: string;
+  };
+  
+  metadata: any;
+  settings?: {
+    duration?: number;
+    aspectRatio?: string;
+    qualityLevel?: string;
+    resolution?: string;
+    startFrame?: string;
+    endFrame?: string;
+  };
+  
+  retryCount: number;
+  suggestedImprovedPrompt?: string;
+}
 
 export interface CocoTemplate {
   id: string;

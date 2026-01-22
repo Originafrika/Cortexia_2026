@@ -41,9 +41,26 @@ export function LoginDeveloper({ onSuccess, onSwitchToSignup, onBack }: LoginDev
         throw new Error(errorMessage);
       }
       
-      // ✅ Verify user type is developer
+      // ✅ CRITICAL FIX: Redirect to appropriate login page based on user type
       if (result.user.type !== 'developer') {
-        throw new Error(`Ce compte est de type "${result.user.type}". Veuillez utiliser la page de connexion appropriée.`);
+        console.log(`⚠️ [LoginDeveloper] Wrong account type: ${result.user.type}. Showing friendly error.`);
+        
+        // Show user-friendly error with instructions
+        let errorMessage = '';
+        if (result.user.type === 'enterprise') {
+          errorMessage = 'Ce compte est de type Entreprise. Vous allez être redirigé vers la page de connexion Entreprise...';
+        } else if (result.user.type === 'individual') {
+          errorMessage = 'Ce compte est de type Particulier. Vous allez être redirigé vers la page de connexion Particulier...';
+        }
+        
+        setError(errorMessage);
+        
+        // Auto-redirect after 2 seconds
+        setTimeout(() => {
+          onBack(); // Return to landing page where user can choose correct login
+        }, 2000);
+        
+        return;
       }
       
       console.log('✅ [LoginDeveloper] Login successful:', result.user.id);

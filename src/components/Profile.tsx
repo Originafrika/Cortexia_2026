@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, Share2, Edit2, Copy } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { ProfileMenu } from './ProfileMenu';
+import { EditAvatarModalPro } from './EditAvatarModalPro'; // ✅ UPDATED: Pro avatar modal with compression
 import type { Screen } from '../App';
 import { useAuth } from '../lib/contexts/AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -43,6 +44,8 @@ export function Profile({ onNavigate }: ProfileProps) {
   });
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null); // ✅ NEW: Full user profile from backend
+  const [generationStats, setGenerationStats] = useState<any>(null); // ✅ NEW: Generation statistics
+  const [showEditAvatar, setShowEditAvatar] = useState(false); // ✅ NEW: Edit avatar modal state
 
   useEffect(() => {
     loadUserData();
@@ -66,6 +69,17 @@ export function Profile({ onNavigate }: ProfileProps) {
         const { profile } = await profileRes.json();
         setUserProfile(profile);
         console.log('✅ Loaded user profile:', profile);
+      }
+      
+      // ✅ NEW: Load generation stats
+      const statsRes = await fetch(`${apiUrl}/user-stats/${user.id}/stats`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      
+      if (statsRes.ok) {
+        const { stats: genStats } = await statsRes.json();
+        setGenerationStats(genStats);
+        console.log('✅ Loaded generation stats:', genStats);
       }
       
       // Load user's posts/creations
@@ -160,7 +174,7 @@ export function Profile({ onNavigate }: ProfileProps) {
                 alt="Profile"
                 className="w-24 h-24 rounded-full object-cover"
               />
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#6366f1] rounded-full flex items-center justify-center">
+              <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#6366f1] rounded-full flex items-center justify-center" onClick={() => setShowEditAvatar(true)}>
                 <Edit2 className="text-white" size={16} />
               </button>
             </div>
@@ -252,6 +266,22 @@ export function Profile({ onNavigate }: ProfileProps) {
 
       {showMenu && (
         <ProfileMenu onClose={() => setShowMenu(false)} onNavigate={onNavigate} />
+      )}
+      
+      {showEditAvatar && (
+        <EditAvatarModalPro 
+          userId={user?.id || ''}
+          currentAvatar={userProfile?.avatar || user?.picture || ''}
+          onClose={() => setShowEditAvatar(false)}
+          onSuccess={(newAvatarUrl) => {
+            // Update local state
+            if (userProfile) {
+              setUserProfile({ ...userProfile, avatar: newAvatarUrl });
+            }
+            // Close modal
+            setShowEditAvatar(false);
+          }}
+        />
       )}
     </>
   );

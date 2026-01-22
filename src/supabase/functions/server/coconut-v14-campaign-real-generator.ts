@@ -44,6 +44,40 @@ export async function generateCampaignImageReal(params: {
 }): Promise<CampaignAssetResult> {
   const { asset, visualIdentity, providedAssets } = params;
 
+  // ✅ CHECK MOCK MODE - Skip actual generation if in mock mode
+  const USE_MOCK_GENERATION = Deno.env.get('USE_MOCK_CAMPAIGN_GENERATION') !== 'false'; // Default true
+  
+  if (USE_MOCK_GENERATION) {
+    console.log(`📦 MOCK MODE - Simulating campaign image generation (no API calls)`);
+    console.log(`   Asset: ${asset.id}`);
+    console.log(`   Concept: ${asset.concept}`);
+    console.log(`   Format: ${asset.format} @ ${asset.resolution || '2K'}`);
+    
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Return mock result
+    const mockImageUrl = `https://mock-campaign-storage.example.com/images/asset-${asset.id}-${Date.now()}.jpg`;
+    const mockCost = calculateFluxCost(asset.format, asset.resolution || '2K');
+    
+    console.log(`   ✅ Mock campaign image generated: ${mockImageUrl}`);
+    
+    return {
+      assetId: asset.id,
+      weekNumber: asset.weekNumber,
+      type: 'image',
+      concept: asset.concept,
+      url: mockImageUrl,
+      thumbnailUrl: mockImageUrl,
+      format: asset.format,
+      resolution: asset.resolution,
+      actualCost: mockCost,
+      status: 'completed',
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Original code continues below
   console.log(`🖼️ [Campaign Real Gen] Generating image: ${asset.id}`);
   console.log(`   Concept: ${asset.concept}`);
   console.log(`   Format: ${asset.format} @ ${asset.resolution || '2K'}`);
@@ -198,6 +232,43 @@ export async function generateCampaignVideoReal(params: {
 }): Promise<CampaignAssetResult> {
   const { asset, visualIdentity, providedAssets } = params;
 
+  // ✅ CHECK MOCK MODE - Skip actual generation if in mock mode
+  const USE_MOCK_GENERATION = Deno.env.get('USE_MOCK_CAMPAIGN_GENERATION') !== 'false'; // Default true
+  
+  if (USE_MOCK_GENERATION) {
+    console.log(`📦 MOCK MODE - Simulating campaign video generation (no API calls)`);
+    console.log(`   Asset: ${asset.id}`);
+    console.log(`   Concept: ${asset.concept}`);
+    console.log(`   Duration: ${asset.videoDuration || 8}s @ ${asset.format}`);
+    
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Return mock result
+    const mockVideoUrl = `https://mock-campaign-storage.example.com/videos/asset-${asset.id}-${Date.now()}.mp4`;
+    const mockCost = calculateVeoCost(
+      asset.videoDuration || 8,
+      (asset.videoModel || 'veo3_fast') as 'veo3_fast' | 'veo3'
+    );
+    
+    console.log(`   ✅ Mock campaign video generated: ${mockVideoUrl}`);
+    
+    return {
+      assetId: asset.id,
+      weekNumber: asset.weekNumber,
+      type: 'video',
+      concept: asset.concept,
+      url: mockVideoUrl,
+      thumbnailUrl: `${mockVideoUrl}?frame=0`,
+      format: asset.format,
+      duration: asset.videoDuration,
+      actualCost: mockCost,
+      status: 'completed',
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Original code continues below
   console.log(`🎬 [Campaign Real Gen] Generating video: ${asset.id}`);
   console.log(`   Concept: ${asset.concept}`);
   console.log(`   Duration: ${asset.videoDuration || 8}s @ ${asset.format}`);

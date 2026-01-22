@@ -1,4 +1,5 @@
 import type { Screen } from '../App';
+import { useAuth } from '../lib/contexts/AuthContext'; // ✅ Import AuthContext for logout
 
 // Icons inline
 const ArrowLeft = ({ className, size }: { className?: string; size?: number }) => (
@@ -164,8 +165,23 @@ interface SettingsProps {
 }
 
 export function Settings({ onNavigate }: SettingsProps) {
+  // ✅ Get signOut function from AuthContext
+  const { signOut, user } = useAuth();
+  
   // ✅ DEBUG: Log component render
-  console.log('🔧 [Settings] Rendering component');
+  console.log('🔧 [Settings] Rendering component', user?.email);
+  
+  // ✅ Handle logout
+  const handleLogout = async () => {
+    console.log('🚪 [Settings] Logging out...');
+    try {
+      await signOut();
+      console.log('✅ [Settings] Logout successful, redirecting to login');
+      onNavigate('login');
+    } catch (error) {
+      console.error('❌ [Settings] Logout error:', error);
+    }
+  };
   
   const sections = [
     {
@@ -263,7 +279,7 @@ export function Settings({ onNavigate }: SettingsProps) {
         </div>
 
         {/* Logout Button */}
-        <button className="w-full py-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 flex items-center justify-center gap-2">
+        <button className="w-full py-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 flex items-center justify-center gap-2" onClick={handleLogout}>
           <LogOut size={20} />
           Log Out
         </button>

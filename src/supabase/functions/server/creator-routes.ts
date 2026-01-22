@@ -20,6 +20,14 @@ interface CreatorStats {
   postsWithEnoughLikes: number; // Target: 5 (each >= 5 likes)
   isTopCreator: boolean;
   coconutAccessActive: boolean;
+  // ✅ NEW: Coconut generation tracking
+  coconutGenerationsUsed: number; // Max 3/month for creators
+  // ✅ NEW: Commission streak tracking
+  commissionStreakMonths: number; // Consecutive months as creator (10% + 1%/month up to 15%)
+  currentCommissionRate: number; // 10-15%
+  // ✅ NEW: Fast-track via 1000 credits purchase
+  boughtCreatorAccess: boolean; // True if paid 1000 credits this month
+  creatorAccessExpiresAt: string | null; // End of current month
 }
 
 // ============================================================================
@@ -48,7 +56,12 @@ app.post('/track/creation', async (c) => {
       postsPublished: 0,
       postsWithEnoughLikes: 0,
       isTopCreator: false,
-      coconutAccessActive: false
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
     };
     
     stats.creationsCount++;
@@ -101,7 +114,12 @@ app.post('/track/post', async (c) => {
       postsPublished: 0,
       postsWithEnoughLikes: 0,
       isTopCreator: false,
-      coconutAccessActive: false
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
     };
     
     stats.postsPublished++;
@@ -168,7 +186,12 @@ app.post('/track/like', async (c) => {
           postsPublished: 0,
           postsWithEnoughLikes: 0,
           isTopCreator: false,
-          coconutAccessActive: false
+          coconutAccessActive: false,
+          coconutGenerationsUsed: 0,
+          commissionStreakMonths: 0,
+          currentCommissionRate: 10,
+          boughtCreatorAccess: false,
+          creatorAccessExpiresAt: null
         };
         
         stats.postsWithEnoughLikes = likedPosts.length;
@@ -212,7 +235,12 @@ app.get('/stats/:userId/:month', async (c) => {
       postsPublished: 0,
       postsWithEnoughLikes: 0,
       isTopCreator: false,
-      coconutAccessActive: false
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
     };
 
     return c.json({
@@ -245,7 +273,12 @@ app.get('/stats/:userId/current', async (c) => {
       postsPublished: 0,
       postsWithEnoughLikes: 0,
       isTopCreator: false,
-      coconutAccessActive: false
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
     };
 
     return c.json({
@@ -282,7 +315,12 @@ app.get('/:userId/status', async (c) => {
       postsPublished: 0,
       postsWithEnoughLikes: 0,
       isTopCreator: false,
-      coconutAccessActive: false
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
     };
 
     const isTopCreator = (
@@ -338,6 +376,413 @@ app.get('/leaderboard', async (c) => {
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get leaderboard'
+    }, 500);
+  }
+});
+
+// ============================================================================
+// ✅ NEW: BUY CREATOR ACCESS (1000 CREDITS)
+// ============================================================================
+
+/**
+ * POST /creators/buy-access
+ * Buy Creator access for current month with 1000 credits
+ * This gives:
+ * - 3 Coconut generations for the current month
+ * - 10% commission on referrals
+ * - Watermark-free downloads
+ * Expires at end of current month
+ */
+app.post('/buy-access', async (c) => {
+  try {
+    const { userId } = await c.req.json();
+
+    if (!userId) {
+      return c.json({ success: false, error: 'userId required' }, 400);
+    }
+
+    // Get user profile
+    const userKey = `user:profile:${userId}`;
+    const user = await kv.get(userKey);
+    
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+
+    // Check if user has 1000 credits
+    const totalCredits = (user.freeCredits || 0) + (user.paidCredits || 0);
+    
+    if (totalCredits < 1000) {
+      return c.json({ 
+        success: false, 
+        error: 'Insufficient credits. Need 1000 credits to unlock Creator access.' 
+      }, 400);
+    }
+
+    // Deduct 1000 credits (prioritize paid credits first)
+    if (user.paidCredits >= 1000) {
+      user.paidCredits -= 1000;
+    } else {
+      const remaining = 1000 - user.paidCredits;
+      user.paidCredits = 0;
+      user.freeCredits -= remaining;
+    }
+
+    // Update user profile
+    user.hasCoconutAccess = true;
+    await kv.set(userKey, user);
+
+    // Update creator stats
+    const month = getCurrentMonth();
+    const statsKey = `creator:stats:${userId}:${month}`;
+    let stats: CreatorStats = await kv.get(statsKey) || {
+      userId,
+      month,
+      creationsCount: 0,
+      postsPublished: 0,
+      postsWithEnoughLikes: 0,
+      isTopCreator: false,
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
+    };
+
+    stats.boughtCreatorAccess = true;
+    stats.coconutAccessActive = true;
+    stats.creatorAccessExpiresAt = getEndOfMonth();
+    await kv.set(statsKey, stats);
+
+    console.log(`💎 ${userId} bought Creator access for ${month} with 1000 credits`);
+
+    return c.json({
+      success: true,
+      message: 'Creator access unlocked for this month!',
+      expiresAt: stats.creatorAccessExpiresAt,
+      remainingCredits: (user.freeCredits || 0) + (user.paidCredits || 0)
+    });
+  } catch (error) {
+    console.error('❌ Buy creator access error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to buy creator access'
+    }, 500);
+  }
+});
+
+// ============================================================================
+// ✅ NEW: TRACK COCONUT GENERATION
+// ============================================================================
+
+/**
+ * POST /creators/track/coconut-generation
+ * Track Coconut generation usage (max 3/month for creators)
+ */
+app.post('/track/coconut-generation', async (c) => {
+  try {
+    const { userId, mode } = await c.req.json();
+
+    if (!userId) {
+      return c.json({ success: false, error: 'userId required' }, 400);
+    }
+
+    const month = getCurrentMonth();
+    const statsKey = `creator:stats:${userId}:${month}`;
+    
+    let stats: CreatorStats = await kv.get(statsKey) || {
+      userId,
+      month,
+      creationsCount: 0,
+      postsPublished: 0,
+      postsWithEnoughLikes: 0,
+      isTopCreator: false,
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
+    };
+
+    // Increment Coconut generation count
+    stats.coconutGenerationsUsed++;
+    await kv.set(statsKey, stats);
+
+    console.log(`🥥 ${userId} used Coconut generation ${stats.coconutGenerationsUsed}/3 (${mode})`);
+
+    return c.json({
+      success: true,
+      coconutGenerationsUsed: stats.coconutGenerationsUsed,
+      coconutGenerationsRemaining: Math.max(0, 3 - stats.coconutGenerationsUsed)
+    });
+  } catch (error) {
+    console.error('❌ Track Coconut generation error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to track Coconut generation'
+    }, 500);
+  }
+});
+
+// ============================================================================
+// ✅ NEW: CHECK COCONUT ACCESS
+// ============================================================================
+
+/**
+ * GET /creators/:userId/coconut-access
+ * Check if user has Coconut access and how many generations remaining
+ */
+app.get('/:userId/coconut-access', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+    const month = getCurrentMonth();
+
+    // Get user profile
+    const userKey = `user:profile:${userId}`;
+    const user = await kv.get(userKey);
+    
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+
+    // Check account type
+    if (user.accountType === 'enterprise') {
+      return c.json({
+        success: true,
+        hasCoconutAccess: true,
+        isEnterprise: true,
+        coconutGenerationsUsed: 0,
+        coconutGenerationsRemaining: -1, // Unlimited for enterprise
+        reason: 'Enterprise account'
+      });
+    }
+
+    // Get creator stats
+    const statsKey = `creator:stats:${userId}:${month}`;
+    const stats: CreatorStats = await kv.get(statsKey) || {
+      userId,
+      month,
+      creationsCount: 0,
+      postsPublished: 0,
+      postsWithEnoughLikes: 0,
+      isTopCreator: false,
+      coconutAccessActive: false,
+      coconutGenerationsUsed: 0,
+      commissionStreakMonths: 0,
+      currentCommissionRate: 10,
+      boughtCreatorAccess: false,
+      creatorAccessExpiresAt: null
+    };
+    
+    // ✅ ADMIN OVERRIDE: Check if admin has manually set isCreator = true
+    const isCreatorByAdmin = user.isCreator === true;
+    
+    // ✅ AUTO-ACTIVATE: If admin set isCreator = true, automatically activate Coconut access
+    if (isCreatorByAdmin && !stats.coconutAccessActive) {
+      stats.coconutAccessActive = true;
+      stats.creatorAccessExpiresAt = getEndOfMonth();
+      await kv.set(statsKey, stats);
+      console.log(`👑 [CoconutAccess] Auto-activated Coconut access for admin-set Creator ${userId}`);
+    }
+    
+    // User is Creator if:
+    // 1. They earned it (isTopCreator from stats)
+    // 2. Admin manually set isCreator = true
+    // 3. They bought Creator access
+    const isCreator = stats.isTopCreator || isCreatorByAdmin || stats.boughtCreatorAccess;
+
+    // Check if creator access is active
+    const hasAccess = stats.coconutAccessActive && isCreator;
+    const generationsRemaining = hasAccess ? Math.max(0, 3 - stats.coconutGenerationsUsed) : 0;
+    
+    if (isCreatorByAdmin) {
+      console.log(`👑 [CoconutAccess] Admin set isCreator=true for ${userId} - hasAccess: ${hasAccess}`);
+    }
+
+    const responseData = {
+      success: true,
+      hasCoconutAccess: hasAccess,
+      isCreator: isCreator,
+      isEnterprise: user.accountType === 'enterprise',
+      accountType: user.accountType,
+      boughtAccess: stats.boughtCreatorAccess,
+      coconutGenerationsUsed: stats.coconutGenerationsUsed,
+      coconutGenerationsRemaining: generationsRemaining,
+      expiresAt: stats.creatorAccessExpiresAt,
+      commissionRate: stats.currentCommissionRate
+    };
+    
+    console.log(`🥥 [CoconutAccess] Response for ${userId}:`, JSON.stringify(responseData, null, 2));
+
+    return c.json(responseData);
+  } catch (error) {
+    console.error('❌ Check Coconut access error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to check Coconut access'
+    }, 500);
+  }
+});
+
+// ============================================================================
+// ✅ NEW: MONTHLY RESET (Called by cron on 1st of each month)
+// ============================================================================
+
+/**
+ * GET /creators/monthly-reset
+ * Reset monthly creator stats and recalculate commission streaks
+ * Called automatically on the 1st of each month
+ */
+app.get('/monthly-reset', async (c) => {
+  try {
+    console.log('🔄 Starting monthly Creator reset...');
+
+    const prevMonth = getPreviousMonth();
+    const currentMonth = getCurrentMonth();
+
+    // Get all creator stats from previous month
+    const allStats = await kv.getByPrefix(`creator:stats:`) || [];
+    const prevMonthStats = allStats.filter((stats: CreatorStats) => stats.month === prevMonth);
+
+    let resetCount = 0;
+
+    for (const prevStats of prevMonthStats) {
+      const userId = prevStats.userId;
+      
+      // Get or create new month stats
+      const newStatsKey = `creator:stats:${userId}:${currentMonth}`;
+      let newStats: CreatorStats = {
+        userId,
+        month: currentMonth,
+        creationsCount: 0,
+        postsPublished: 0,
+        postsWithEnoughLikes: 0,
+        isTopCreator: false,
+        coconutAccessActive: false,
+        coconutGenerationsUsed: 0,
+        commissionStreakMonths: prevStats.commissionStreakMonths || 0, // ✅ Keep streak from last month
+        currentCommissionRate: prevStats.currentCommissionRate || 10,  // ✅ Keep rate
+        boughtCreatorAccess: false,
+        creatorAccessExpiresAt: null
+      };
+
+      // ✅ Reset Coconut access if bought (not earned)
+      if (prevStats.boughtCreatorAccess && !prevStats.isTopCreator) {
+        const userKey = `user:profile:${userId}`;
+        const user = await kv.get(userKey);
+        if (user) {
+          user.hasCoconutAccess = false;
+          await kv.set(userKey, user);
+        }
+      }
+
+      await kv.set(newStatsKey, newStats);
+      resetCount++;
+      
+      console.log(`🔄 ${userId}: Reset for ${currentMonth} (streak preserved: ${newStats.commissionStreakMonths} months)`);
+    }
+
+    console.log(`✅ Monthly reset complete: ${resetCount} creators processed`);
+
+    return c.json({
+      success: true,
+      message: 'Monthly Creator reset complete',
+      stats: {
+        totalProcessed: resetCount
+      }
+    });
+  } catch (error) {
+    console.error('❌ Monthly reset error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to reset monthly stats'
+    }, 500);
+  }
+});
+
+// ============================================================================
+// ✅ NEW: END OF MONTH STREAK CALCULATION (Called on last day of month)
+// ============================================================================
+
+/**
+ * GET /creators/end-of-month-streak-check
+ * Check and update commission streaks at the END of each month
+ * This evaluates if users maintained Creator status for 2 consecutive months
+ * Called on the last day of each month (e.g., 31st, 30th, 28/29th)
+ */
+app.get('/end-of-month-streak-check', async (c) => {
+  try {
+    console.log('📊 Starting end-of-month streak check...');
+
+    const currentMonth = getCurrentMonth();
+    const prevMonth = getPreviousMonth();
+
+    // Get all creator stats for current month
+    const allStats = await kv.getByPrefix(`creator:stats:`) || [];
+    const currentMonthStats = allStats.filter((stats: CreatorStats) => stats.month === currentMonth);
+
+    let streakIncrementedCount = 0;
+    let streakResetCount = 0;
+
+    for (const currentStats of currentMonthStats) {
+      const userId = currentStats.userId;
+      
+      // Check if user was Creator this month
+      const isCreatorThisMonth = currentStats.isTopCreator || currentStats.boughtCreatorAccess;
+      
+      // Get previous month stats
+      const prevStatsKey = `creator:stats:${userId}:${prevMonth}`;
+      const prevStats: CreatorStats = await kv.get(prevStatsKey);
+      
+      const wasCreatorLastMonth = prevStats ? (prevStats.isTopCreator || prevStats.boughtCreatorAccess) : false;
+      
+      // Update streak based on consecutive Creator months
+      if (isCreatorThisMonth && wasCreatorLastMonth) {
+        // ✅ Maintained Creator status for 2 consecutive months → Increment streak
+        currentStats.commissionStreakMonths = Math.min(6, currentStats.commissionStreakMonths + 1);
+        currentStats.currentCommissionRate = 10 + currentStats.commissionStreakMonths; // 10-15%
+        streakIncrementedCount++;
+        
+        console.log(`📈 ${userId}: Streak +1 (${currentStats.commissionStreakMonths} months, ${currentStats.currentCommissionRate}%)`);
+      } else if (!isCreatorThisMonth && wasCreatorLastMonth) {
+        // ❌ Was Creator last month but NOT this month → Reset streak to 0
+        currentStats.commissionStreakMonths = 0;
+        currentStats.currentCommissionRate = 10;
+        streakResetCount++;
+        
+        console.log(`📉 ${userId}: Streak reset (not Creator this month)`);
+      } else if (isCreatorThisMonth && !wasCreatorLastMonth) {
+        // 🆕 New Creator (wasn't Creator last month) → Start at 10%
+        currentStats.commissionStreakMonths = 0;
+        currentStats.currentCommissionRate = 10;
+        
+        console.log(`🆕 ${userId}: New Creator (10%)`);
+      }
+      
+      // Save updated stats
+      const statsKey = `creator:stats:${userId}:${currentMonth}`;
+      await kv.set(statsKey, currentStats);
+    }
+
+    console.log(`✅ End-of-month streak check complete`);
+    console.log(`   - Streaks incremented: ${streakIncrementedCount}`);
+    console.log(`   - Streaks reset: ${streakResetCount}`);
+
+    return c.json({
+      success: true,
+      message: 'End-of-month streak check complete',
+      stats: {
+        streaksIncremented: streakIncrementedCount,
+        streaksReset: streakResetCount
+      }
+    });
+  } catch (error) {
+    console.error('❌ End-of-month streak check error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to check streaks'
     }, 500);
   }
 });
@@ -400,6 +845,32 @@ function getCurrentMonth(): string {
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
+}
+
+/**
+ * Get previous month in format YYYY-MM
+ */
+function getPreviousMonth(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  
+  if (month === 0) {
+    return `${year - 1}-12`;
+  } else {
+    return `${year}-${String(month).padStart(2, '0')}`;
+  }
+}
+
+/**
+ * Get end of current month in ISO format
+ */
+function getEndOfMonth(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+  return endOfMonth.toISOString();
 }
 
 /**

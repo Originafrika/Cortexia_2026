@@ -51,6 +51,11 @@ interface UserProfile {
   hasCoconutAccess: boolean;
   topCreatorMonth: string | null;
   topCreatorSince: string | null;
+  // 👑 Creator Stats (for admin management)
+  isCreator?: boolean;
+  generationsThisMonth?: number;
+  publishedThisMonth?: number;
+  publishedWithLikesThisMonth?: number;
   
   // Social
   followersCount: number;
@@ -357,6 +362,37 @@ app.post('/create-or-update-auth0', async (c) => {
 // ============================================================================
 
 /**
+ * GET /users/:userId/type
+ * Get user account type only (lightweight endpoint)
+ */
+app.get('/:userId/type', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    const profile = await kv.get(`user:profile:${userId}`);
+    
+    if (!profile) {
+      return c.json({
+        success: false,
+        error: 'Profile not found'
+      }, 404);
+    }
+
+    return c.json({
+      success: true,
+      type: profile.accountType,
+      onboardingComplete: profile.onboardingComplete || false
+    });
+  } catch (error) {
+    console.error('❌ Get user type error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get user type'
+    }, 500);
+  }
+});
+
+/**
  * GET /users/:userId/profile
  * Get user profile
  */
@@ -627,6 +663,121 @@ app.delete('/:userId/profile', async (c) => {
 });
 
 /**
+ * DELETE /users/:userId/account
+ * ✅ PRODUCTION READY: Permanently delete user account and all associated data
+ * This is a HARD DELETE that removes:
+ * - User profile
+ * - All posts
+ * - All comments
+ * - All likes
+ * - Avatar from storage
+ * - Supabase Auth account
+ */
+app.delete('/:userId/account', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+    
+    console.log(`🗑️ Starting HARD DELETE for user: ${userId}`);
+
+    // 1. Get user profile
+    const profile = await kv.get(`user:profile:${userId}`);
+    
+    if (!profile) {
+      return c.json({
+        success: false,
+        error: 'Profile not found'
+      }, 404);
+    }
+
+    // 2. Delete all user posts
+    const posts = await kv.getByPrefix(`post:`);
+    const userPosts = posts.filter((p: any) => p?.userId === userId);
+    
+    for (const post of userPosts) {
+      // Delete post comments
+      await kv.del(`post:comments:${post.id}`);
+      // Delete post likes
+      await kv.del(`post:likes:${post.id}`);
+      // Delete the post itself
+      await kv.del(`post:${post.id}`);
+    }
+    console.log(`✅ Deleted ${userPosts.length} posts`);
+
+    // 3. Delete all user comments on other posts
+    const allComments = await kv.getByPrefix(`post:comments:`);
+    for (const commentList of allComments) {
+      if (Array.isArray(commentList)) {
+        const filtered = commentList.filter((c: any) => c?.userId !== userId);
+        const key = `post:comments:${commentList[0]?.postId || ''}`;
+        if (key) await kv.set(key, filtered);
+      }
+    }
+    console.log(`✅ Deleted user comments`);
+
+    // 4. Delete all user likes
+    const allLikes = await kv.getByPrefix(`post:likes:`);
+    for (const likeList of allLikes) {
+      if (Array.isArray(likeList)) {
+        const filtered = likeList.filter((userId_like: string) => userId_like !== userId);
+        const postId = likeList.toString().split(':').pop();
+        if (postId) await kv.set(`post:likes:${postId}`, filtered);
+      }
+    }
+    console.log(`✅ Deleted user likes`);
+
+    // 5. Delete avatar from Supabase Storage
+    if (profile.avatar) {
+      try {
+        const avatarPath = profile.avatar.split('/').pop();
+        if (avatarPath) {
+          await supabase.storage
+            .from('make-e55aa214-avatars')
+            .remove([`avatars/${avatarPath}`]);
+          console.log(`✅ Deleted avatar from storage`);
+        }
+      } catch (err) {
+        console.warn('⚠️ Avatar deletion failed:', err);
+      }
+    }
+
+    // 6. Remove from referral system
+    await kv.del(`referral:code:${profile.referralCode}`);
+    const referrals = await kv.get(`user:referrals:${userId}`) || [];
+    await kv.del(`user:referrals:${userId}`);
+    console.log(`✅ Deleted referral data`);
+
+    // 7. Delete user profile
+    await kv.del(`user:profile:${userId}`);
+    console.log(`✅ Deleted user profile`);
+
+    // 8. Delete Supabase Auth user
+    try {
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      if (authError) {
+        console.warn('⚠️ Auth deletion failed:', authError);
+      } else {
+        console.log(`✅ Deleted Supabase Auth user`);
+      }
+    } catch (err) {
+      console.warn('⚠️ Auth deletion error:', err);
+    }
+
+    console.log(`✅ HARD DELETE COMPLETE for user: ${userId}`);
+
+    return c.json({
+      success: true,
+      message: 'Account permanently deleted'
+    });
+  } catch (error) {
+    console.error('❌ Delete account error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete account'
+    }, 500);
+  }
+});
+
+/**
  * POST /users/:userId/complete-onboarding
  * Complete onboarding and update profile
  */
@@ -714,18 +865,38 @@ app.get('/admin/list-all', async (c) => {
   try {
     const allProfiles = await kv.getByPrefix('user:profile:') || [];
 
-    const users = allProfiles.map((profile: UserProfile) => ({
-      userId: profile.userId,
-      email: profile.email,
-      username: profile.username,
-      displayName: profile.displayName,
-      accountType: profile.accountType,
-      onboardingComplete: profile.onboardingComplete,
-      referralCode: profile.referralCode,
-      freeCredits: profile.freeCredits,
-      paidCredits: profile.paidCredits,
-      createdAt: profile.createdAt,
-      lastLoginAt: profile.lastLoginAt
+    // ✅ Import unified credits system
+    const CreditsSystem = await import('./unified-credits-system.ts');
+
+    const users = await Promise.all(allProfiles.map(async (profile: UserProfile) => {
+      // ✅ Get REAL credits from unified system
+      const creditBalance = await CreditsSystem.getCredits(profile.userId);
+      
+      return {
+        userId: profile.userId,
+        email: profile.email,
+        username: profile.username,
+        displayName: profile.displayName,
+        accountType: profile.accountType,
+        onboardingComplete: profile.onboardingComplete,
+        referralCode: profile.referralCode,
+        // ✅ Use unified credits system (not profile fields)
+        freeCredits: creditBalance.free,
+        paidCredits: creditBalance.paid,
+        // ✅ Enterprise details
+        isEnterprise: creditBalance.isEnterprise,
+        enterpriseMonthly: creditBalance.enterprise?.monthlyCredits || 0,
+        enterpriseAddon: creditBalance.enterprise?.addOnCredits || 0,
+        enterpriseTotal: creditBalance.enterprise?.totalCredits || 0,
+        nextResetDate: creditBalance.nextResetDate,
+        createdAt: profile.createdAt,
+        lastLoginAt: profile.lastLoginAt,
+        // 👑 Creator Stats
+        isCreator: profile.isCreator || false,
+        generationsThisMonth: profile.generationsThisMonth || 0,
+        publishedThisMonth: profile.publishedThisMonth || 0,
+        publishedWithLikesThisMonth: profile.publishedWithLikesThisMonth || 0
+      };
     }));
 
     console.log(`📋 Listed ${users.length} users from KV store`);
@@ -772,37 +943,41 @@ app.put('/admin/update/:userId', async (c) => {
       username: updates.username || profile.username,
       email: updates.email || profile.email,
       accountType: updates.accountType || profile.accountType,
+      // 👑 Creator Stats
+      isCreator: updates.isCreator !== undefined ? updates.isCreator : profile.isCreator,
+      generationsThisMonth: updates.generationsThisMonth !== undefined ? updates.generationsThisMonth : profile.generationsThisMonth,
+      publishedThisMonth: updates.publishedThisMonth !== undefined ? updates.publishedThisMonth : profile.publishedThisMonth,
+      publishedWithLikesThisMonth: updates.publishedWithLikesThisMonth !== undefined ? updates.publishedWithLikesThisMonth : profile.publishedWithLikesThisMonth,
       updatedAt: new Date().toISOString()
     };
 
-    // Update credits separately
-    const currentCredits = await kv.get(`user:${userId}:credits`) || {
-      freeCredits: profile.freeCredits || 0,
-      paidCredits: profile.paidCredits || 0
-    };
+    // Update credits separately - USE NEW SYSTEM (credits:${userId}:paid)
+    const currentFreeCredits = await kv.get(`credits:${userId}:free`) || 0;
+    const currentPaidCredits = await kv.get(`credits:${userId}:paid`) || 0;
 
-    const updatedCredits = {
-      freeCredits: updates.freeCredits !== undefined ? updates.freeCredits : currentCredits.freeCredits,
-      paidCredits: updates.paidCredits !== undefined ? updates.paidCredits : currentCredits.paidCredits,
-      totalCreditsUsed: currentCredits.totalCreditsUsed || 0,
-      lastResetDate: currentCredits.lastResetDate || new Date().toISOString(),
-      expiresAt: updates.expiresAt !== undefined ? updates.expiresAt : currentCredits.expiresAt
-    };
+    const updatedFreeCredits = updates.freeCredits !== undefined ? updates.freeCredits : currentFreeCredits;
+    const updatedPaidCredits = updates.paidCredits !== undefined ? updates.paidCredits : currentPaidCredits;
+
+    // Save to NEW system
+    await kv.set(`credits:${userId}:free`, updatedFreeCredits);
+    await kv.set(`credits:${userId}:paid`, updatedPaidCredits);
 
     // Also update profile credits for display
-    updatedProfile.freeCredits = updatedCredits.freeCredits;
-    updatedProfile.paidCredits = updatedCredits.paidCredits;
+    updatedProfile.freeCredits = updatedFreeCredits;
+    updatedProfile.paidCredits = updatedPaidCredits;
 
     // Save updates
     await kv.set(`user:profile:${userId}`, updatedProfile);
-    await kv.set(`user:${userId}:credits`, updatedCredits);
 
     console.log(`✅ Admin updated user ${userId}`);
 
     return c.json({
       success: true,
       profile: updatedProfile,
-      credits: updatedCredits
+      credits: {
+        free: updatedFreeCredits,
+        paid: updatedPaidCredits
+      }
     });
   } catch (error) {
     console.error('❌ Admin update user error:', error);

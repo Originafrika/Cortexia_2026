@@ -4,10 +4,10 @@
  */
 
 import { Hono } from 'npm:hono';
+import * as cocoboard from './coconut-v14-cocoboard.ts';
 import * as flux from './coconut-v14-flux.ts';
 import * as credits from './coconut-v14-credits.ts';
-import * as projects from './coconut-v14-projects.ts';
-import * as cocoboard from './coconut-v14-cocoboard.ts';
+import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
 import type { ApiResponse } from '../../../lib/types/coconut-v14.ts';
 
 const app = new Hono();
@@ -76,7 +76,7 @@ app.post('/coconut-v14/flux/text-to-image', async (c) => {
     console.log(`✅ Debited ${generationCost} credits`);
     
     // Update project status
-    await projects.updateProjectStatus(projectId, 'generating', {
+    await projectsUnified.updateProjectStatus(projectId, 'generating', {
       generationType: 'text-to-image',
       taskId,
       startedAt: new Date().toISOString()
@@ -181,7 +181,7 @@ app.post('/coconut-v14/flux/image-to-image', async (c) => {
     console.log(`✅ Debited ${generationCost} credits`);
     
     // Update project status
-    await projects.updateProjectStatus(projectId, 'generating', {
+    await projectsUnified.updateProjectStatus(projectId, 'generating', {
       generationType: 'image-to-image',
       taskId,
       referencesCount: references.length,
@@ -278,7 +278,7 @@ app.post('/coconut-v14/flux/task/:taskId/poll', async (c) => {
     
     // Update project status if provided
     if (userId && projectId) {
-      await projects.updateProjectStatus(projectId, 'completed', {
+      await projectsUnified.updateProjectStatus(projectId, 'completed', {
         taskId,
         imageUrl,
         completedAt: new Date().toISOString()
