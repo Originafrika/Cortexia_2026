@@ -23,38 +23,25 @@ import userRoutes from './user-routes.ts'; // ✅ NEW: User profiles
 import referralSystemRoutes from './referral-system-routes.ts'; // ✅ NEW: Referral system dashboard
 import originsRoutes from './origins-routes.ts'; // ✅ NEW: Origins currency
 import compensationRoutes from './creator-compensation-routes.ts'; // ✅ NEW: Creator compensation
-// ❌ REMOVED: import creatorSystemRoutes from './creator-system.ts'; // File is incomplete, features already in creator-routes.ts
-import feedLikesTrackerRoutes from './feed-likes-tracker.ts'; // ✅ NEW: Feed likes tracker for Creator conditions
+import feedLikesTrackerRoutes from './feed-likes-tracker.ts'; // ✅ FIXED: Feed likes tracker (removed -routes)
 import withdrawalRoutes from './withdrawal-routes.ts'; // ✅ NEW: Withdrawal system
-import creditsCronRoutes from './credits-cron.ts'; // ✅ NEW: Monthly credits reset cron
-import stripeWebhookRoutes from './stripe-webhook.ts'; // ✅ FIX: Mount under /stripe (route defines /webhook internally)
-import stripeCheckoutRoutes from './stripe-checkout-routes.ts'; // ✅ NEW: Stripe checkout for credit purchases
-import debugRoutes from './debug-routes.ts'; // ✅ NEW: Debug routes for development
-import kieAIImageRoutes from './kie-ai-image-routes.ts'; // ✅ NEW: Kie AI image generation (Flux + Nano Banana)
-import kieAIVideoRoutes from './kie-ai.ts'; // ✅ NEW: Kie AI video generation (Veo 3.1)
-import generateRoutes from './generate-routes.ts'; // ✅ NEW: Universal /generate endpoint (free + paid models)
-import creditsRoutes from './coconut-v14-credits-routes.ts'; // ✅ FIX: Credits API routes (LEGACY - will be replaced)
-import creditsRoutesV3 from './credits-routes-v3.ts'; // ✅ NEW V3: Clean unified credits system
-import activityRoutes from './activity-routes.ts'; // ✅ NEW: Activity feed
-import videoRoutes from './coconut-v14-video-routes.ts'; // ✅ NEW: Coconut V14 Video routes (Analyze only)
-import projectsRoutes from './projects.tsx'; // ✅ NEW: Projects management
-import campaignRoutes from './coconut-v14-campaign-routes.ts'; // ✅ NEW: Campaign mode routes
-import migrationRoutes from './migration-routes.ts'; // ✅ NEW: Temporary migration routes
-import storageRoutes from './storage-routes.ts'; // ✅ NEW: Storage upload routes
-import storageCleanupRoutes from './storage-cleanup-routes.ts'; // ✅ NEW: Storage cleanup cron
-import userStatsRoutes from './user-stats-routes.ts'; // ✅ NEW: User stats & analytics
-import avatarRoutes from './avatar-routes.ts'; // ✅ NEW: Avatar upload/delete
 import enterpriseRoutes from './enterprise-routes.ts'; // ✅ NEW: Enterprise subscription
-import teamRoutes from './team-routes.ts'; // ✅ NEW: Team collaboration
-import developerRoutes from './developer-routes.ts'; // ✅ NEW: Developer dashboard
-import creatorSystemRoutes from './creator-system-routes.ts'; // ✅ NEW: Creator system
-import enhancedFeedRoutes from './enhanced-feed-routes.ts'; // ✅ NEW: Enhanced feed
-import notificationsRoutes from './notifications-routes.ts'; // ✅ NEW: Notifications
-import { initializeStorageBuckets } from './coconut-v14-storage.ts';
-import { initializeFeedBucket } from './feed-storage.ts'; // ✅ NEW: Feed storage
-import { initializeMockData } from './mock-data-init.ts'; // ✅ NEW: Mock data initializer
+import notificationsRoutes from './notifications-routes.ts'; // ✅ NEW: Notifications system
+import storageCleanupRoutes from './storage-cleanup-routes.ts'; // ✅ NEW: Storage cleanup cron
+import creditsRoutesV3 from './credits-routes-v3.ts'; // ✅ V3: Unified credits system
+import developerRoutes from './developer-routes.ts'; // ✅ NEW: Developer API keys
+import paymentRoutes from './payment-routes.ts'; // ✅ NEW: Payments (FedaPay + Stripe)
+import payoutRoutes from './payout-routes.ts'; // ✅ NEW: Payouts/Retraits (FedaPay + Stripe) 🆕
 import * as kv from './kv_store.tsx'; // ✅ Import KV store for expiration check
 import { logStartup, logVerbose, showStartupBanner, shouldLog } from './server-config.ts'; // ✅ NEW: Server config
+import storageRoutes from './storage-routes.ts'; // ✅ Storage routes
+import userStatsRoutes from './user-stats-routes.ts'; // ✅ User stats routes
+import avatarRoutes from './avatar-routes.ts'; // ✅ Avatar routes
+import creatorSystemRoutes from './creator-system-routes.ts'; // ✅ Creator system routes
+import enhancedFeedRoutes from './enhanced-feed-routes.ts'; // ✅ Enhanced feed routes
+import { initializeStorageBuckets } from './coconut-v14-storage.ts'; // ✅ Storage initialization
+import { initializeFeedBucket } from './feed-storage.ts'; // ✅ Feed bucket initialization
+import { initializeMockData } from './mock-data-init.ts'; // ✅ Mock data initialization
 
 // ============================================
 // MOUNT ROUTES
@@ -75,23 +62,11 @@ app.route('/users', userRoutes); // ✅ NEW: User profiles
 app.route('/referral', referralSystemRoutes); // ✅ NEW: Referral system dashboard
 app.route('/origins', originsRoutes); // ✅ NEW: Origins currency
 app.route('/compensation', compensationRoutes); // ✅ NEW: Creator compensation
-// ❌ REMOVED: app.route('/creator-system', creatorSystemRoutes); // File is incomplete, features already in creator-routes.ts
-app.route('/feed-likes', feedLikesTrackerRoutes); // ✅ NEW: Feed likes tracker for Creator conditions
+app.route('/feed-likes', feedLikesTrackerRoutes); // ✅ NEW: Feed likes tracker
 app.route('/withdrawal', withdrawalRoutes); // ✅ NEW: Withdrawal system
 app.route('/enterprise', enterpriseRoutes); // ✅ NEW: Enterprise subscription
-app.route('/team', teamRoutes); // ✅ NEW: Team collaboration
-app.route('/activity', activityRoutes); // ✅ NEW: Activity feed
-app.route('/projects', projectsRoutes); // ✅ NEW: Projects management
-app.route('/campaign', campaignRoutes); // ✅ NEW: Campaign mode routes
-app.route('/migration', migrationRoutes); // ✅ NEW: Temporary migration routes
-app.route('/credits-cron', creditsCronRoutes); // ✅ NEW: Monthly credits reset cron
-app.route('/stripe', stripeWebhookRoutes); // ✅ FIX: Mount under /stripe (route defines /webhook internally)
-app.route('/checkout', stripeCheckoutRoutes); // ✅ NEW: Stripe checkout for credit purchases
-app.route('/debug', debugRoutes); // ✅ NEW: Debug routes for development
-app.route('/kie-ai-image', kieAIImageRoutes); // ✅ NEW: Kie AI image generation (Flux + Nano Banana)
-app.route('/', kieAIVideoRoutes); // ✅ NEW: Kie AI video generation (Veo 3.1) - mounted at root for /video/* routes
-app.route('/', generateRoutes); // ✅ NEW: Universal /generate endpoint (free + paid models)
-app.route('/', videoRoutes); // ✅ NEW: Coconut V14 Video routes (Analyze only)
+app.route('/payments', paymentRoutes); // ✅ NEW: Payments (FedaPay + Stripe)
+app.route('/payouts', payoutRoutes); // ✅ NEW: Payouts/Retraits (FedaPay + Stripe) 🆕
 app.route('/', fluxRoutes);
 app.route('/', orchestratorRoutes);
 app.route('/', historyRoutes);

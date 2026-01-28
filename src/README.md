@@ -77,7 +77,12 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 
 | Document | Description |
 |----------|-------------|
+| **[PAYMENT_ARCHITECTURE.md](./PAYMENT_ARCHITECTURE.md)** | 🏗️ Architecture hybride complète FedaPay + Stripe (achats, retraits, wireframes UI) 🆕 |
+| **[PAYMENT_IMPLEMENTATION_COMPLETE.md](./PAYMENT_IMPLEMENTATION_COMPLETE.md)** | ✅ Statut implémentation paiements & checklist déploiement 🆕 |
+| **[PAYMENT_ROUTES_FIXES.md](./PAYMENT_ROUTES_FIXES.md)** | 🔧 Corrections FedaPay (migration vers API REST) 🆕 |
 | **[README_STRIPE.md](./README_STRIPE.md)** | Configuration Stripe (checkout, webhooks, subscriptions) |
+| **[stripe.md](./stripe.md)** | 📚 Documentation complète Stripe API (payments, billing, checkout, connect, etc.) |
+| **[fedapay.md](./fedapay.md)** | 📚 Documentation complète FedaPay API (paiements mobile money Afrique de l'Ouest) |
 
 ---
 

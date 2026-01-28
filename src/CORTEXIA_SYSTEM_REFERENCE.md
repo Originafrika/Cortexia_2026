@@ -17,6 +17,7 @@
 7. [Restrictions d'Accès](#7-restrictions-daccès)
 8. [Flux Techniques](#8-flux-techniques)
 9. [Storage Cleanup (Cron Jobs)](#9-storage-cleanup-cron-jobs)
+10. [**Architecture Paiements & Retraits**](#10-architecture-paiements--retraits) 🆕
 
 ---
 
@@ -1035,6 +1036,313 @@ curl -X POST https://PROJECT_ID.supabase.co/functions/v1/make-server-e55aa214/st
 
 ---
 
+## 10. ARCHITECTURE PAIEMENTS & RETRAITS 🆕
+
+### **10.1 Vue d'Ensemble - Dual Gateway Strategy**
+
+Cortexia utilise une **architecture hybride dual-gateway** combinant **FedaPay** (Afrique de l'Ouest) et **Stripe** (International) pour optimiser l'expérience utilisateur selon la région géographique.
+
+```
+┌───────────────────────────────────────────────┐
+│       CORTEXIA PAYMENT SYSTEM V3              │
+│         (Dual Gateway Strategy)               │
+└───────────────────────────────────────────────┘
+                     │
+       ┌─────────────┴─────────────┐
+       │                           │
+┌──────▼──────┐            ┌──────▼──────┐
+│   FedaPay   │            │   Stripe    │
+│  (Africa)   │            │ (Worldwide) │
+└─────────────┘            └─────────────┘
+```
+
+**Documentation complète:** [PAYMENT_ARCHITECTURE.md](./PAYMENT_ARCHITECTURE.md)
+
+---
+
+### **10.2 ACHATS DE CRÉDITS**
+
+#### **10.2.1 Individual Users**
+
+**Option A: FedaPay** (Afrique de l'Ouest)
+- **Pays:** 🇧🇯 Bénin, 🇹🇬 Togo, 🇨🇮 CI, 🇸🇳 Sénégal, 🇧🇫 Burkina, 🇲🇱 Mali, 🇳🇪 Niger, 🇬🇳 Guinée
+- **Méthodes:** Mobile Money (MTN, Moov, Orange, Wave, Togocel, Airtel) + Cartes
+- **Devises:** XOF (Franc CFA), GNF (Franc guinéen)
+- **Frais:** 2-3%
+- **Avantages:** ✅ Instantané, ✅ Pas de carte obligatoire, ✅ UX mobile native
+
+**Option B: Stripe** (International)
+- **Pays:** USA, Europe, Canada, Asie, etc. (50+ pays)
+- **Méthodes:** Cartes (Visa, MasterCard, Amex), Apple Pay, Google Pay, Link, SEPA
+- **Devises:** 135+ devises supportées
+- **Frais:** 2.9% + $0.30
+- **Avantages:** ✅ Couverture mondiale, ✅ UX optimisée, ✅ Fraud detection
+
+**Détection automatique:**
+```typescript
+const userCountry = await getUserCountry(userId);
+
+if (isFedaPayRegion(userCountry)) {
+  // FedaPay pour Afrique
+  return createFedaPayTransaction({...});
+} else {
+  // Stripe pour le reste
+  return createStripeCheckoutSession({...});
+}
+```
+
+---
+
+#### **10.2.2 Enterprise Users**
+
+**Stripe UNIQUEMENT** (Worldwide)
+
+**Abonnement $999/mois:**
+- 10,000 crédits mensuels (reset le 1er)
+- Auto-renewal via Stripe Billing
+- Factures automatiques
+
+**Add-on Credits:**
+- Achats ponctuels persistants (n'expirent jamais)
+- Cumulables avec subscription
+
+**Structure KV:**
+```json
+// user:subscription:{userId}
+{
+  "plan": "pro",
+  "status": "active",
+  "monthlyCredits": 10000,
+  "addonCredits": 5000,
+  "stripeCustomerId": "cus_abc123",
+  "stripeSubscriptionId": "sub_xyz789"
+}
+
+// user:credits:{userId}
+{
+  "subscription": 10000,  // Reset le 1er
+  "addon": 5000,          // Persistent
+  "total": 15000
+}
+```
+
+---
+
+#### **10.2.3 Developer Users**
+
+**Stripe UNIQUEMENT** (API Usage)
+- Pay-as-you-go ou forfaits
+- Cartes bancaires principalement
+
+---
+
+### **10.3 RETRAITS (PAYOUTS) - Individual/Creator UNIQUEMENT**
+
+#### **10.3.1 FedaPay Payouts** (Afrique de l'Ouest) ✅ **RECOMMANDÉ**
+
+**Destinations:**
+- **Mobile Money** (Instantané ⚡): MTN, Moov, Orange, Wave, Togocel, Celtiis, Airtel
+- **Banques locales** (1-3 jours): Comptes UEMOA
+
+**Configuration:**
+- **Seuil minimum:** 1000 FCFA (~$1.50)
+- **Frais:** 1-2%
+- **Délais:** Instantané (mobile money) ou 1-3 jours (banque)
+
+**Flow:**
+```typescript
+// 1. Créer FedaPay Payout
+const payout = await FedaPay.Payout.create({
+  amount: withdrawAmount,
+  currency: { iso: 'XOF' },
+  mode: 'mtn_open', // ou 'moov', 'wave_sn', etc.
+  customer: {
+    email: creator.email,
+    phone_number: {
+      number: creator.phoneNumber,
+      country: creator.country
+    }
+  }
+});
+
+// 2. Démarrer le payout
+await FedaPay.Payout.start({ payouts: [{ id: payout.id }] });
+
+// 3. Mettre à jour balance
+balance.availableBalance -= withdrawAmount;
+balance.pendingPayout += withdrawAmount;
+await kv.set(`creator:balance:${userId}`, balance);
+```
+
+**Avantages:**
+- ✅ Retraits instantanés mobile money
+- ✅ Pas de compte bancaire obligatoire
+- ✅ Frais très bas (1-2%)
+- ✅ Seuil minimum très bas ($1.50)
+
+---
+
+#### **10.3.2 Stripe Connect Payouts** (International) ✅ **RECOMMANDÉ**
+
+**Destinations:**
+- **Virements bancaires:** SEPA (Europe), ACH (USA), Wire Transfer (International)
+- **Cartes de débit:** Instant payouts (USA uniquement)
+
+**Configuration:**
+- **Seuil minimum:** Variable ($25 USA, €25 Europe)
+- **Frais:** 0.25% - 2% (selon pays/méthode)
+- **Délais:** 2-7 jours (standard) ou instantané (USA)
+
+**Flow:**
+```typescript
+// 1. Créer/Récupérer Stripe Connect Account
+let stripeAccountId = creator.stripeConnectAccountId;
+
+if (!stripeAccountId) {
+  const account = await stripe.accounts.create({
+    type: 'express',
+    country: creator.country,
+    email: creator.email,
+    capabilities: { transfers: { requested: true } }
+  });
+  stripeAccountId = account.id;
+}
+
+// 2. Onboarding si nécessaire
+const account = await stripe.accounts.retrieve(stripeAccountId);
+if (!account.details_submitted) {
+  // Redirect to onboarding
+  const accountLink = await stripe.accountLinks.create({
+    account: stripeAccountId,
+    type: 'account_onboarding',
+    refresh_url: `${BASE_URL}/creator/payouts/onboarding/refresh`,
+    return_url: `${BASE_URL}/creator/payouts/onboarding/complete`
+  });
+  return { onboardingRequired: true, onboardingUrl: accountLink.url };
+}
+
+// 3. Créer Transfer + Payout
+const transfer = await stripe.transfers.create({
+  amount: withdrawAmount,
+  currency: getCurrencyByCountry(creator.country),
+  destination: stripeAccountId,
+  metadata: { userId, type: 'creator_payout' }
+});
+
+const payout = await stripe.payouts.create(
+  {
+    amount: withdrawAmount,
+    currency: getCurrencyByCountry(creator.country),
+    method: 'standard',
+    metadata: { userId, transferId: transfer.id }
+  },
+  { stripeAccount: stripeAccountId }
+);
+
+// 4. Mettre à jour balance
+balance.availableBalance -= withdrawAmount;
+balance.pendingPayout += withdrawAmount;
+await kv.set(`creator:balance:${userId}`, balance);
+```
+
+**Avantages:**
+- ✅ Couverture mondiale (50+ pays)
+- ✅ Multi-devises automatique
+- ✅ Tax compliance (1099, etc.)
+- ✅ Dashboard transparent
+- ✅ Instant payouts (USA)
+
+---
+
+### **10.4 Structure KV Store (Payouts)**
+
+```typescript
+// Balance Creator (Individual uniquement)
+interface CreatorBalance {
+  userId: string;
+  totalEarned: number;          // Total commissions accumulées
+  availableBalance: number;     // Solde disponible pour retrait
+  pendingPayout: number;        // Retrait en cours
+  totalWithdrawn: number;       // Total retiré historique
+  lastPayoutDate: string | null;
+  payoutHistory: PayoutRecord[];
+}
+
+// Configuration Payout
+interface PayoutConfig {
+  userId: string;
+  region: 'africa' | 'international';
+  preferredGateway: 'fedapay' | 'stripe';
+  
+  // FedaPay
+  fedapay?: {
+    method: 'mobile_money' | 'bank_account';
+    provider: 'mtn_open' | 'moov' | 'wave_sn' | etc;
+    phoneNumber?: string;
+    verified: boolean;
+  };
+  
+  // Stripe Connect
+  stripe?: {
+    accountId: string;
+    onboardingComplete: boolean;
+    method: 'bank_account' | 'debit_card';
+    verified: boolean;
+  };
+}
+
+// Clés KV
+// creator:balance:{userId}
+// payout:config:{userId}
+```
+
+---
+
+### **10.5 Tableau Comparatif**
+
+| Critère | FedaPay | Stripe |
+|---------|---------|--------|
+| **Géographie** | Afrique Ouest (8 pays) | Mondial (50+ pays) |
+| **Achats Credits** | ✅ Mobile Money + Cartes | ✅ Cartes + Wallets |
+| **Payouts** | ✅ Instantané (mobile money) | ✅ 2-7 jours (banque) |
+| **Frais Achats** | 2-3% | 2.9% + $0.30 |
+| **Frais Payouts** | 1-2% | 0.25% - 2% |
+| **Seuil Min Retrait** | 1000 FCFA (~$1.50) | Variable ($25+ USA) |
+| **Devises** | XOF, GNF | 135+ devises |
+| **UX Mobile** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+
+---
+
+### **10.6 Récapitulatif Stratégie**
+
+```yaml
+ACHATS DE CRÉDITS:
+  Individual:
+    - Afrique Ouest → FedaPay (mobile money natif)
+    - International → Stripe (couverture mondiale)
+  
+  Enterprise:
+    - Worldwide → Stripe UNIQUEMENT (subscriptions + add-ons)
+  
+  Developer:
+    - Worldwide → Stripe UNIQUEMENT (API usage)
+
+RETRAITS (PAYOUTS):
+  Individual/Creator:
+    - Afrique Ouest → FedaPay (instantané mobile money)
+    - International → Stripe Connect (banque internationale)
+  
+  Enterprise:
+    - ❌ PAS de retraits (pas de balance, crédits utilisés)
+  
+  Developer:
+    - ❌ PAS de retraits (API usage uniquement)
+```
+
+**Documentation complète:** [PAYMENT_ARCHITECTURE.md](./PAYMENT_ARCHITECTURE.md)
+
+---
+
 ## 🎯 RÉSUMÉ RAPIDE POUR DEV
 
 ### **Système de Crédits**
@@ -1084,3 +1392,4 @@ Pour toute question, référez-vous aux sections ci-dessus ou consultez les fich
 - `/supabase/functions/server/creator-routes.ts`
 - `/supabase/functions/server/referral-routes.ts`
 - `/supabase/functions/server/enterprise-subscription.ts`
+- `/supabase/functions/server/withdrawal-routes.ts`
