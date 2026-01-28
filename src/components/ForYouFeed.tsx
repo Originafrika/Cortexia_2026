@@ -1,26 +1,29 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Sparkles, TrendingUp, Crown, Award, Zap, Share2, Plus, ChevronLeft, Filter, Clock, Flame, ChevronDown, Bell, MoreVertical } from 'lucide-react';
+import { useNavigate } from 'react-router'; // ✅ FIX: Add missing import
+import { toast } from 'sonner@2.0.3'; // ✅ FIX: Add missing import
 import type { Screen } from '../App';
 import { PostCard } from './feed/PostCard';
 import { PostDetailModal } from './feed/PostDetailModal';
-import { CreatePromptModal } from './feed/CreatePromptModal';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { ImageWithFallback } from './figma/ImageWithFallback';
-import { toast } from 'sonner@2.0.3';
-import { PostOptionsSheet } from './PostOptionsSheet';
-import { CommentsSheet } from './CommentsSheet';
-import { FeedFilterMenu } from './FeedFilterMenu';
-import { RemixScreen } from './RemixScreen';
-import { SignupPromptModal } from './SignupPromptModal';
+import { CommentsSection } from './CommentsSection';
+import { ShareModal } from './ShareModal';
+import { RemixChainViewer } from './RemixChainViewer';
 import { UserProfile } from './UserProfile';
-import { RemixChainViewer } from './feed/RemixChainViewer';
-import { RemixCarousel } from './feed/RemixCarousel'; // ✅ NEW
-import { useAuth } from '../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
-import { getAvatarUrl, formatUsername } from '../utils/avatarHelpers'; // ✅ NEW: Avatar helpers
-import { useNavigate } from 'react-router'; // ✅ NEW: Import useNavigate
-import { downloadImageWithWatermark } from '../utils/watermarkHelpers'; // ✅ NEW: Watermark helper
-import { useCurrentUser } from '../lib/hooks/useCurrentUser'; // ✅ NEW: Get current user ID
+import { formatNumber } from '../utils/formatNumber';
+import { useAuth } from '../lib/contexts/AuthContext'; // ✅ NEW: Get auth context
+import { useTranslation } from '../lib/i18n'; // ✅ NEW: i18n hook
+import { LanguageSwitcher } from './LanguageSwitcher'; // ✅ NEW: Language switcher
+import { useCurrentUser } from '../lib/hooks/useCurrentUser'; // ✅ FIX: Add missing import
+import { ImageWithFallback } from './figma/ImageWithFallback'; // ✅ FIX: Add missing import
+import { RemixCarousel } from './feed/RemixCarousel'; // ✅ FIX: Add missing import
+import { FeedFilterMenu } from './FeedFilterMenu'; // ✅ FIX: Add missing import
+import { RemixScreen } from './RemixScreen'; // ✅ FIX: Add missing import
+import { SignupPromptModal } from './SignupPromptModal'; // ✅ FIX: Add missing import
+import { PostOptionsSheet } from './PostOptionsSheet'; // ✅ FIX: Add missing import
+import { projectId, publicAnonKey } from '../utils/supabase/info'; // ✅ FIX: Add missing import
+import { downloadImageWithWatermark } from '../utils/watermarkHelpers'; // ✅ FIX: Correct import path
+import { getAvatarUrl, formatUsername } from '../utils/avatarHelpers'; // ✅ FIX: Correct import path
 
 interface Post {
   id: string;
@@ -46,11 +49,18 @@ interface Post {
 
 interface ForYouFeedProps {
   onNavigate: (screen: Screen) => void;
-  isAuthenticated?: boolean;
-  onOpenRemix?: (imageUrl: string, prompt?: string, parentCreationId?: string) => void; // ✅ ADD: parentCreationId
+  onOpenCreate?: () => void;
+  onOpenRemixScreen?: (imageUrl: string, prompt?: string, parentCreationId?: string) => void; // ✅ ADD: parentCreationId
+  feedPosts?: Post[];
 }
 
-export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: ForYouFeedProps) {
+export function ForYouFeed({
+  onNavigate,
+  onOpenCreate,
+  onOpenRemixScreen,
+  feedPosts = []
+}: ForYouFeedProps) {
+  const { t } = useTranslation(); // ✅ NEW
   const { user } = useAuth(); // ✅ NEW: Get user from AuthContext
   const navigate = useNavigate(); // ✅ NEW: For redirecting
   const currentUserId = useCurrentUser(); // ✅ NEW: Get current user ID
@@ -320,13 +330,13 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
   }, [currentPostIndex, posts.length, fetchFeedPosts, isLoadingMore, hasMore]);
   
   const handleProtectedAction = useCallback((action: typeof signupPromptAction, callback: () => void) => {
-    if (!isAuthenticated) {
+    if (!user) {
       setSignupPromptAction(action);
       setShowSignupPrompt(true);
       return;
     }
     callback();
-  }, [isAuthenticated]);
+  }, [user]);
 
   const truncateCaption = (text: string) => {
     const words = text.split(' ');
@@ -639,9 +649,9 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
   }, [currentPost]);
 
   const filterLabels = {
-    'for-you': 'For You',
-    'following': 'Following',
-    'latest': 'Latest',
+    'for-you': t('feed.forYou'),
+    'following': t('feed.following'),
+    'latest': t('feed.new')
   };
 
   if (!currentPost || filteredPosts.length === 0) {
@@ -678,7 +688,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
       await downloadImageWithWatermark(
         displayMediaUrl,
         filename,
-        currentUserId.userId || null,
+        currentUserId.userId, // ✅ FIX: userId is already a string (never null)
         projectId,
         publicAnonKey
       );
@@ -900,8 +910,8 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
 
           <button 
             onClick={() => {
-              if (onOpenRemix) {
-                onOpenRemix(displayMediaUrl, currentPost.caption, currentPost.id); // ✅ FIX: Pass post.id as parent
+              if (onOpenRemixScreen) {
+                onOpenRemixScreen(displayMediaUrl, currentPost.caption, currentPost.id); // ✅ FIX: Pass post.id as parent
               } else {
                 setShowRemixScreen(true);
               }
@@ -1006,7 +1016,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
         )}
 
         {showCommentsSheet && currentPost && (
-          <CommentsSheet
+          <CommentsSection
             postId={currentPost.id}
             totalComments={parseInt(currentPost.comments) || 0}
             onClose={() => setShowCommentsSheet(false)}
@@ -1053,7 +1063,7 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
               setShowUserProfile(false);
             }
           }}
-          onOpenRemix={onOpenRemix}
+          onOpenRemix={onOpenRemixScreen}
         />
       )}
       
@@ -1083,8 +1093,8 @@ export function ForYouFeed({ onNavigate, isAuthenticated = true, onOpenRemix }: 
           }}
           onRemix={(imageUrl, prompt, parentId) => {
             setShowRemixChainViewer(false);
-            if (onOpenRemix) {
-              onOpenRemix(imageUrl, prompt, parentId);
+            if (onOpenRemixScreen) {
+              onOpenRemixScreen(imageUrl, prompt, parentId);
             }
           }}
         />

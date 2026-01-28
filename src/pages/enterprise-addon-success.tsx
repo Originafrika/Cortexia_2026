@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router'; // ✅ FIX: Changed from react-router-dom to react-router
 import { motion } from 'motion/react';
 import { CheckCircle, Loader, XCircle, Plus } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';

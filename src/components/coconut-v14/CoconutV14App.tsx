@@ -18,6 +18,8 @@ import {
   LayoutDashboard, Sparkles, Zap, Settings, Clock, User, Grid, History
 } from 'lucide-react';
 import { useCredits } from '../../lib/contexts/CreditsContext';
+import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
+import { LanguageSwitcher } from '../LanguageSwitcher'; // ✅ NEW: Language switcher
 import { useCurrentUser } from '../../lib/hooks/useCurrentUser'; // ✅ NEW: Get real user
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Get userType
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
@@ -57,11 +59,18 @@ import { DirectionSelectorPremium } from './DirectionSelectorPremium'; // 🆕 P
 import { TypeSelectorPremium } from './TypeSelectorPremium'; // 🆕 PREMIUM VERSION
 import { NavigationPremium } from './NavigationPremium'; // 🆕 NEW: Premium Navigation Sidebar
 import { CampaignWorkflow } from './CampaignWorkflow'; // 🆕 NEW: Campaign mode workflow
+import { EnterpriseTemplateSelector } from './EnterpriseTemplateSelector'; // 🆕 NEW: Enterprise templates
+import { BatchGenerationModal, type BatchConfig } from './BatchGenerationModal'; // ✅ NEW: Batch generation
+import { BatchResultsView, type BatchVariant } from './BatchResultsView'; // ✅ NEW: Batch results
+import { TeamDashboard } from './TeamDashboard'; // ✅ NEW: Team collaboration dashboard
+import { TeamInviteModal } from './TeamInviteModal'; // ✅ NEW: Team invite modal
+import { ClientPortal } from './ClientPortal'; // ✅ NEW: Client portal view
 
 // ✅ FIX: Import missing types and functions from correct locations
 import type { IntentData } from './IntentInput';
 import type { GeminiAnalysisResponse } from '../../lib/types/gemini';
 import { generateCreativeDirections, applyDirectionToAnalysis } from '../../lib/utils/creative-directions-generator';
+import { templateToIntentData, type EnterpriseTemplate } from '../../lib/data/enterprise-templates'; // 🆕 NEW: Template helper
 
 // ✅ FIX: Import CreativeDirection type from DirectionSelector
 import type { CreativeDirection } from './DirectionSelector';
@@ -74,6 +83,7 @@ type CoconutV14Screen =
   | 'dashboard'        // ✅ Point d'entrée
   | 'boards'           // ✅ Projects list
   | 'type-select'      // 🆕 NOUVEAU: Choix image/video/campaign (PHASE 1)
+  | 'template-select'  // 🆕 NEW: Enterprise template selection (PHASE 1.5)
   | 'intent-input'     // 🆕 New generation flow
   | 'analyzing'         // 🆕 Gemini analysis loading
   | 'direction-select'  // 🆕 NEW: Creative direction selection
@@ -85,33 +95,36 @@ type CoconutV14Screen =
   | 'settings' 
   | 'history' 
   | 'profile'
-  | 'video-flow';       // ✅ NEW: Video flow screen
+  | 'video-flow'       // ✅ NEW: Video flow screen
+  | 'team'             // 🆕 NEW: Team collaboration dashboard (Enterprise only)
+  | 'client-portal';   // 🆕 NEW: Client portal view (Client role only)
 
 // ============================================
 // PREMIUM SIDEBAR NAVIGATION
 // ============================================
 
-const Navigation = ({ 
-  currentScreen, 
+const CoconutV14Sidebar = ({
+  currentScreen,
   onNavigate,
   onToggleSidebar,
-  onBackToFeed
-}: { 
-  currentScreen: CoconutV14Screen; 
+  onBackToFeed,
+}: {
+  currentScreen: CoconutV14Screen;
   onNavigate: (screen: CoconutV14Screen) => void;
   onToggleSidebar: () => void;
   onBackToFeed?: () => void;
 }) => {
-  const { getCoconutCredits, refetchCredits } = useCredits();
+  const { getCoconutCredits, refetchCredits, credits } = useCredits(); // ✅ Added credits object
   const totalCredits = getCoconutCredits(); // ✅ Coconut V14 uses total credits (monthly + add-on for Enterprise)
   const { playClick, playWhoosh } = useSoundContext(); // 🔊 PHASE 2: Add sound
+  const { t } = useTranslation(); // ✅ NEW: i18n hook
   
   const menuItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard, color: 'from-[var(--coconut-shell)] to-[var(--coconut-palm)]' },
-    { id: 'boards' as const, label: 'Boards', icon: Grid, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
-    { id: 'history' as const, label: 'History', icon: History, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
-    { id: 'credits' as const, label: 'Credits', icon: Zap, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]' },
-    { id: 'settings' as const, label: 'Settings', icon: Settings, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]' },
+    { id: 'dashboard' as const, label: t('coconutV14.menu.dashboard'), icon: LayoutDashboard, color: 'from-[var(--coconut-shell)] to-[var(--coconut-palm)]' },
+    { id: 'boards' as const, label: t('coconutV14.menu.boards'), icon: Grid, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
+    { id: 'history' as const, label: t('coconutV14.menu.history'), icon: History, color: 'from-[var(--coconut-shell)] to-[var(--coconut-husk)]' },
+    { id: 'credits' as const, label: t('wallet.credits'), icon: Zap, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]' },
+    { id: 'settings' as const, label: t('coconutV14.menu.settings'), icon: Settings, color: 'from-[var(--coconut-husk)] to-[var(--coconut-shell)]' },
   ];
 
   return (
@@ -164,13 +177,19 @@ const Navigation = ({
               </div>
             </motion.div>
             
-            {/* Close button premium (mobile) - WARM */}
-            <button
-              onClick={onToggleSidebar}
-              className="lg:hidden w-10 h-10 rounded-xl bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-xl flex items-center justify-center text-[var(--coconut-shell)] hover:from-white/90 hover:to-white/70 hover:scale-110 transition-all duration-300 shadow-xl border border-white/50"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {/* Language Switcher + Close button container */}
+            <div className="flex items-center gap-2">
+              {/* Language Switcher */}
+              <LanguageSwitcher variant="compact" />
+              
+              {/* Close button premium (mobile) - WARM */}
+              <button
+                onClick={onToggleSidebar}
+                className="lg:hidden w-10 h-10 rounded-xl bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-xl flex items-center justify-center text-[var(--coconut-shell)] hover:from-white/90 hover:to-white/70 hover:scale-110 transition-all duration-300 shadow-xl border border-white/50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
         
@@ -210,6 +229,33 @@ const Navigation = ({
                 </div>
                 <span className="text-sm font-bold text-[var(--coconut-husk)]">cr</span>
               </div>
+              
+              {/* ✅ NEW: Enterprise credits breakdown */}
+              {credits.isEnterprise && (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {/* Monthly Credits */}
+                  <div className="bg-gradient-to-br from-[#F5EBE0]/20 to-[#E3D5CA]/20 rounded-lg p-2 border border-[#F5EBE0]/30">
+                    <p className="text-[#6B5D4F]/60 text-xs mb-1">Mensuels</p>
+                    <p className="text-[var(--coconut-dark)] text-lg font-semibold">
+                      {(credits.monthlyCreditsRemaining || 0).toLocaleString()}
+                    </p>
+                    {credits.nextResetDate && (
+                      <p className="text-[var(--coconut-husk)]/60 text-xs">
+                        Reset {new Date(credits.nextResetDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Add-on Credits */}
+                  <div className="bg-gradient-to-br from-purple-500/20 to-violet-500/20 rounded-lg p-2 border border-purple-500/30">
+                    <p className="text-purple-600 text-xs mb-1">Add-on</p>
+                    <p className="text-[var(--coconut-dark)] text-lg font-semibold">
+                      {(credits.addOnCredits || 0).toLocaleString()}
+                    </p>
+                    <p className="text-[var(--coconut-husk)]/60 text-xs">Jamais expirés</p>
+                  </div>
+                </div>
+              )}
               
               {/* Progress indicator WARM */}
               <div className="relative">
@@ -452,9 +498,119 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
   // ✅ NEW: Campaign editing
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   
+  // ✅ NEW: Batch Generation states
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchVariants, setBatchVariants] = useState<BatchVariant[]>([]);
+  const [showBatchResults, setShowBatchResults] = useState(false);
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  
+  // ✅ NEW: Team Collaboration states (Enterprise only)
+  const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]); // TeamMember[] from team-collaboration.tsx
+  const [showTeamInvite, setShowTeamInvite] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'editor' | 'viewer' | 'client'>('editor');
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+  
   const { getCoconutCredits, refetchCredits } = useCredits();
   const notify = useNotify();
   const navigate = useNavigate(); // ✅ Keep for other routes if needed
+  
+  // ✅ NEW: Define API_BASE before using it
+  const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+  
+  // ✅ NEW: Load team data on mount (Enterprise only)
+  useEffect(() => {
+    const loadTeamData = async () => {
+      // Only load team data for Enterprise users
+      if (!accessData?.isEnterprise) {
+        console.log('🚫 Not Enterprise - skipping team load');
+        return;
+      }
+      
+      try {
+        // Load user's primary team
+        const teamsResponse = await fetch(
+          `${API_BASE}/team/teams?userId=${userId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${publicAnonKey}`,
+              'Content-Type': 'application/json',
+            }
+          }
+        );
+        
+        if (!teamsResponse.ok) {
+          console.warn('⚠️ Failed to load teams');
+          return;
+        }
+        
+        const teamsData = await teamsResponse.json();
+        
+        if (teamsData.success && teamsData.data?.teams?.length > 0) {
+          const primaryTeam = teamsData.data.teams[0]; // Use first team
+          setCurrentTeamId(primaryTeam.id);
+          
+          // Load team members
+          const membersResponse = await fetch(
+            `${API_BASE}/team/teams/${primaryTeam.id}/members`,
+            {
+              headers: {
+                'Authorization': `Bearer ${publicAnonKey}`,
+                'Content-Type': 'application/json',
+              }
+            }
+          );
+          
+          if (membersResponse.ok) {
+            const membersData = await membersResponse.json();
+            if (membersData.success) {
+              setTeamMembers(membersData.data.members || []);
+              
+              // Find current user's role
+              const currentMember = membersData.data.members?.find(
+                (m: any) => m.userId === userId
+              );
+              if (currentMember) {
+                setUserRole(currentMember.role);
+              }
+              
+              console.log(`✅ Team loaded: ${primaryTeam.name} (${membersData.data.members?.length || 0} members)`);
+            }
+          }
+          
+          // Load pending approvals count
+          if (primaryTeam.id) {
+            const approvalsResponse = await fetch(
+              `${API_BASE}/team/teams/${primaryTeam.id}/approvals/pending?userId=${userId}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${publicAnonKey}`,
+                  'Content-Type': 'application/json',
+                }
+              }
+            );
+            
+            if (approvalsResponse.ok) {
+              const approvalsData = await approvalsResponse.json();
+              if (approvalsData.success) {
+                setPendingApprovalsCount(approvalsData.data?.count || 0);
+                console.log(`✅ Pending approvals: ${approvalsData.data?.count || 0}`);
+              }
+            }
+          }
+        } else {
+          console.log('ℹ️ No team found - user needs to create one');
+        }
+      } catch (error) {
+        console.error('❌ Error loading team data:', error);
+        // Don't show error to user - team features will simply be disabled
+      }
+    };
+    
+    if (userId && accessData) {
+      loadTeamData();
+    }
+  }, [userId, accessData]);
   
   // ✅ NEW: Access Control - Block unauthorized users
   useEffect(() => {
@@ -809,6 +965,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
           onNavigate={setCurrentScreen}
           onToggleSidebar={() => {}}
           onBackToFeed={onNavigate ? () => onNavigate('feed') : undefined}
+          pendingApprovalsCount={pendingApprovalsCount}
         />
       </div>
 
@@ -833,6 +990,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                 onNavigate={setCurrentScreen}
                 onToggleSidebar={() => setSidebarOpen(false)}
                 onBackToFeed={onNavigate ? () => onNavigate('feed') : undefined}
+                pendingApprovalsCount={pendingApprovalsCount}
               />
             </div>
           </>
@@ -864,7 +1022,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
             {currentScreen === 'cocoboard' && (
               <CocoBoardPremium 
                 projectId={currentProjectId || 'demo-project'} 
-                userId="demo-user"
+                userId={userId}
                 analysis={geminiAnalysis}
                 uploadedReferences={uploadedReferences}
                 onGenerationStart={(generationId: string) => {
@@ -873,6 +1031,10 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                   setCurrentGenerationId(generationId);
                   setCurrentScreen('generation');
                 }}
+                // ✅ NEW: Pass team collaboration props
+                teamId={currentTeamId || undefined}
+                teamMembers={teamMembers}
+                isEnterprise={accessData?.isEnterprise || false}
               />
             )}
             
@@ -998,6 +1160,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
               <TypeSelectorPremium
                 onSelectType={handleTypeSelect}
                 onBack={() => setCurrentScreen('dashboard')}
+                onBrowseTemplates={() => setCurrentScreen('template-select')} // ✅ NEW: Navigate to templates
                 coconutGenerationsRemaining={accessData?.remainingGenerations}
                 isEnterprise={accessData?.isEnterprise}
               />
@@ -1035,7 +1198,105 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                 existingCocoBoardId={editingCampaignId || undefined}
               />
             )}
+            
+            {currentScreen === 'template-select' && (
+              <EnterpriseTemplateSelector
+                selectedType={selectedType || 'image'} // ✅ Pass selected type (default to image)
+                onSelectTemplate={(template: EnterpriseTemplate) => {
+                  console.log('🎨 Template selected:', template);
+                  // ✅ Set the type from template before submitting
+                  setSelectedType(template.type as 'image' | 'video' | 'campaign');
+                  const intentData = templateToIntentData(template);
+                  handleIntentSubmit(intentData as IntentData);
+                }}
+                onSkip={() => {
+                  // ✅ Skip templates and go to intent input
+                  setCurrentScreen('intent-input');
+                }}
+                onBack={() => setCurrentScreen('type-select')}
+              />
+            )}
+            
+            {currentScreen === 'batch-generation' && (
+              <BatchGenerationModal
+                show={showBatchModal}
+                onClose={() => setShowBatchModal(false)}
+                onGenerate={async (config: BatchConfig) => {
+                  console.log('🎨 Batch generation config:', config);
+                  setIsBatchGenerating(true);
+                  
+                  // TODO: Call batch generation API
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                  
+                  // Simulate batch results
+                  const variants: BatchVariant[] = [
+                    { id: '1', name: 'Variant 1', preview: 'https://via.placeholder.com/150' },
+                    { id: '2', name: 'Variant 2', preview: 'https://via.placeholder.com/150' },
+                    { id: '3', name: 'Variant 3', preview: 'https://via.placeholder.com/150' },
+                  ];
+                  
+                  setBatchVariants(variants);
+                  setIsBatchGenerating(false);
+                  setShowBatchResults(true);
+                }}
+                isGenerating={isBatchGenerating}
+              />
+            )}
+            
+            {currentScreen === 'batch-results' && (
+              <BatchResultsView
+                show={showBatchResults}
+                onClose={() => setShowBatchResults(false)}
+                variants={batchVariants}
+                onDownload={(variantId: string) => {
+                  console.log('📥 Downloading variant:', variantId);
+                  // TODO: Call download API
+                  notify.success('Download started', 'Your file is being prepared for download');
+                }}
+              />
+            )}
+            
+            {currentScreen === 'team' && accessData?.isEnterprise && (
+              <TeamDashboard
+                userId={userId || 'demo-user'}
+                enterpriseAccountId={accessData?.enterpriseAccountId || 'demo-enterprise'}
+                onCreateTeam={() => {
+                  notify.info('Create Team', 'Team creation flow');
+                }}
+                onInviteMember={(teamId) => {
+                  setCurrentTeamId(teamId);
+                  setShowTeamInvite(true);
+                }}
+                onManageTeam={(teamId) => {
+                  console.log('Manage team:', teamId);
+                }}
+              />
+            )}
+            
+            {currentScreen === 'client-portal' && userRole === 'client' && currentTeamId && (
+              <ClientPortal
+                userId={userId || 'demo-user'}
+                userName={displayName || userName}
+                teamId={currentTeamId}
+                teamMembers={teamMembers}
+              />
+            )}
           </motion.div>
+        </AnimatePresence>
+        
+        {/* Team Invite Modal */}
+        <AnimatePresence>
+          {showTeamInvite && currentTeamId && (
+            <TeamInviteModal
+              isOpen={showTeamInvite}
+              onClose={() => setShowTeamInvite(false)}
+              teamId={currentTeamId}
+              invitedBy={userId || 'demo-user'}
+              onMemberInvited={() => {
+                notify.success('Member invited successfully');
+              }}
+            />
+          )}
         </AnimatePresence>
       </div>
     </div>

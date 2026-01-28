@@ -4,6 +4,7 @@
 /* IMPORT DESIGN TOKENS */
 /* ============================================ */
 @import './tokens.css';
+@import './design-tokens.css';
 
 /* Screen Reader Only - Visually hidden but accessible to screen readers */
 .sr-only {

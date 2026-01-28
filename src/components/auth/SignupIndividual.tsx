@@ -18,6 +18,7 @@ export function SignupIndividual({ onSuccess, onSwitchToLogin, onBack }: SignupI
     password: '',
     name: '',
     referralCode: '',
+    privacyConsent: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -232,6 +233,37 @@ export function SignupIndividual({ onSuccess, onSwitchToLogin, onBack }: SignupI
               <p className="text-sm text-red-400">{error}</p>
             </motion.div>
           )}
+
+          {/* ✅ RGPD: Privacy Policy & ToS Consent */}
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <input
+              type="checkbox"
+              id="privacy-consent"
+              checked={formData.privacyConsent || false}
+              onChange={(e) => setFormData({ ...formData, privacyConsent: e.target.checked })}
+              className="mt-1 w-4 h-4 rounded border-white/20 bg-white/10 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer"
+              required
+            />
+            <label htmlFor="privacy-consent" className="text-sm text-white/70 cursor-pointer">
+              J'accepte la{' '}
+              <button
+                type="button"
+                onClick={() => window.open('/privacy-policy', '_blank')}
+                className="text-purple-400 hover:text-purple-300 underline"
+              >
+                Politique de Confidentialité
+              </button>
+              {' '}et les{' '}
+              <button
+                type="button"
+                onClick={() => window.open('/terms-of-service', '_blank')}
+                className="text-purple-400 hover:text-purple-300 underline"
+              >
+                Conditions d'Utilisation
+              </button>
+              . *
+            </label>
+          </div>
 
           {/* Submit Button */}
           <button

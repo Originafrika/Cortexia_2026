@@ -10,13 +10,16 @@
  * - Error recovery & retry
  */
 
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import * as kv from './kv_store.tsx';
+import * as storage from './coconut-v14-storage.ts';
+import { analyzeWithRetry } from './coconut-v14-analyzer.ts';
+import * as assets from './coconut-v14-assets.ts';
 import * as gemini from './gemini-service.ts';
 import * as flux from './coconut-v14-flux.ts';
-import * as credits from './coconut-v14-credits.ts';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
 import * as cocoboard from './coconut-v14-cocoboard.ts';
-import * as storage from './coconut-v14-storage.ts';
+import { createClient } from 'npm:@supabase/supabase-js'; // ✅ FIX: Add missing import
 import type { 
   CocoBoard, 
   GenerationJob,
@@ -93,12 +96,7 @@ async function createGenerationJob(
   };
   
   // Store in KV
-  await supabase
-    .from('kv_store_e55aa214')
-    .upsert({
-      key: `generation_job:${jobId}`,
-      value: JSON.stringify(job)
-    });
+  await kv.set(`generation_job:${jobId}`, job);
   
   console.log(`✅ Generation job created: ${jobId} (${mode})`);
   
@@ -113,17 +111,11 @@ async function updateGenerationJob(
   updates: Partial<GenerationJob>
 ): Promise<void> {
   // Get current job
-  const { data } = await supabase
-    .from('kv_store_e55aa214')
-    .select('value')
-    .eq('key', `generation_job:${jobId}`)
-    .single();
+  const job = await kv.get<GenerationJob>(`generation_job:${jobId}`);
   
-  if (!data) {
+  if (!job) {
     throw new OrchestrationError(`Job not found: ${jobId}`);
   }
-  
-  const job = JSON.parse(data.value) as GenerationJob;
   
   // Merge updates
   const updatedJob: GenerationJob = {
@@ -133,12 +125,7 @@ async function updateGenerationJob(
   };
   
   // Update in KV
-  await supabase
-    .from('kv_store_e55aa214')
-    .update({
-      value: JSON.stringify(updatedJob)
-    })
-    .eq('key', `generation_job:${jobId}`);
+  await kv.set(`generation_job:${jobId}`, updatedJob);
   
   console.log(`✅ Job updated: ${jobId} (status: ${updatedJob.status})`);
 }
@@ -147,41 +134,27 @@ async function updateGenerationJob(
  * Add log entry to job
  */
 async function addJobLog(jobId: string, message: string): Promise<void> {
-  const { data } = await supabase
-    .from('kv_store_e55aa214')
-    .select('value')
-    .eq('key', `generation_job:${jobId}`)
-    .single();
+  const job = await kv.get<GenerationJob>(`generation_job:${jobId}`);
   
-  if (!data) return;
+  if (!job) return;
   
-  const job = JSON.parse(data.value) as GenerationJob;
   const logEntry = `[${new Date().toISOString()}] ${message}`;
   
   job.logs.push(logEntry);
   job.updatedAt = new Date();
   
-  await supabase
-    .from('kv_store_e55aa214')
-    .update({
-      value: JSON.stringify(job)
-    })
-    .eq('key', `generation_job:${jobId}`);
+  await kv.set(`generation_job:${jobId}`, job);
 }
 
 /**
  * Get generation job
  */
 export async function getGenerationJob(jobId: string): Promise<GenerationJob | null> {
-  const { data } = await supabase
-    .from('kv_store_e55aa214')
-    .select('value')
-    .eq('key', `generation_job:${jobId}`)
-    .single();
+  const job = await kv.get<GenerationJob>(`generation_job:${jobId}`);
   
-  if (!data) return null;
+  if (!job) return null;
   
-  return JSON.parse(data.value) as GenerationJob;
+  return job;
 }
 
 // ============================================
@@ -205,10 +178,10 @@ export async function singlePassGeneration(
   
   // 1. Check credits
   const totalCost = SINGLE_PASS_COST;
-  const hasCredits = await credits.checkCredits(userId, totalCost);
+  const hasCredits = await CreditsSystem.checkCredits(userId, totalCost);
   
   if (!hasCredits) {
-    const balance = await credits.getCreditBalance(userId);
+    const balance = await CreditsSystem.getCreditBalance(userId);
     throw new InsufficientCreditsError(totalCost, balance);
   }
   
@@ -223,7 +196,7 @@ export async function singlePassGeneration(
   
   try {
     // 3. Deduct credits upfront
-    await credits.deductCredits(
+    await CreditsSystem.deductCredits(
       userId,
       totalCost,
       `Single-pass generation - Project ${projectId}`,
@@ -347,7 +320,7 @@ export async function singlePassGeneration(
     // Refund credits (minus a small fee for processing)
     const refundAmount = Math.floor(totalCost * 0.8); // Refund 80%
     if (refundAmount > 0) {
-      await credits.addCredits(
+      await CreditsSystem.addCredits(
         userId,
         refundAmount,
         `Refund for failed generation - Job ${job.id}`
@@ -397,10 +370,10 @@ export async function multiPassGeneration(
   const totalCost = assetsCost + finalCost;
   
   // 3. Check credits
-  const hasCredits = await credits.checkCredits(userId, totalCost);
+  const hasCredits = await CreditsSystem.checkCredits(userId, totalCost);
   
   if (!hasCredits) {
-    const balance = await credits.getCreditBalance(userId);
+    const balance = await CreditsSystem.getCreditBalance(userId);
     throw new InsufficientCreditsError(totalCost, balance);
   }
   
@@ -415,7 +388,7 @@ export async function multiPassGeneration(
   
   try {
     // 5. Deduct credits upfront
-    await credits.deductCredits(
+    await CreditsSystem.deductCredits(
       userId,
       totalCost,
       `Multi-pass generation - Project ${projectId}`,
@@ -589,7 +562,7 @@ export async function multiPassGeneration(
     const refundAmount = Math.floor((totalCost - usedCredits) * 0.8); // 80% refund
     
     if (refundAmount > 0) {
-      await credits.addCredits(
+      await CreditsSystem.addCredits(
         userId,
         refundAmount,
         `Refund for failed multi-pass generation - Job ${job.id}`

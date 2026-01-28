@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useCredits } from '../lib/contexts/CreditsContext';
 import { useAuth } from '../lib/contexts/AuthContext'; // ✅ Import AuthContext
+import { useTranslation } from '../lib/i18n'; // ✅ NEW: i18n hook
+import { LanguageSwitcher } from './LanguageSwitcher'; // ✅ NEW: Language switcher
 
 // Icons inline
 const X = ({ className, size }: { className?: string; size?: number }) => (
@@ -93,6 +95,26 @@ const Video = ({ className, size }: { className?: string; size?: number }) => (
   </svg>
 );
 
+const Gift = ({ className, size }: { className?: string; size?: number }) => (
+  <svg 
+    width={size || 24} 
+    height={size || 24} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    className={className}
+  >
+    <polyline points="20 12 20 22 4 22 4 12"></polyline>
+    <rect x="2" y="7" width="20" height="5"></rect>
+    <line x1="12" y1="22" x2="12" y2="7"></line>
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+  </svg>
+);
+
 interface WalletProps {
   onNavigate: (screen: Screen) => void;
 }
@@ -114,12 +136,20 @@ const GENERATION_COSTS = [
 export function Wallet({ onNavigate }: WalletProps) {
   const { credits } = useCredits(); // ✅ Get real credits from context
   const { user } = useAuth(); // ✅ Get user from AuthContext
+  const { t, formatDate: i18nFormatDate } = useTranslation(); // ✅ NEW: i18n hook
   const [loading, setLoading] = useState(true);
   const [originsBalance, setOriginsBalance] = useState(0);
   const [creditTransactions, setCreditTransactions] = useState<any[]>([]);
   const [originsTransactions, setOriginsTransactions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'credits' | 'origins'>('credits');
   const [creditsExpiresAt, setCreditsExpiresAt] = useState<string | null>(null);
+  
+  // ✅ NEW: Referral data
+  const [referralCode, setReferralCode] = useState<string>('');
+  const [referralCount, setReferralCount] = useState<number>(0);
+  const [referralEarnings, setReferralEarnings] = useState<number>(0);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
 
   // ✅ Calculate total credits (free + paid)
   const totalCredits = typeof credits === 'object' && credits !== null
@@ -200,20 +230,31 @@ export function Wallet({ onNavigate }: WalletProps) {
         setCreditTransactions([]);
       }
 
+      // ✅ NEW: Load referral data
+      const referralRes = await fetch(`${apiUrl}/users/${userId}/referral-details`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      if (referralRes.ok) {
+        const data = await referralRes.json();
+        setReferralCode(data.referralCode || '');
+        setReferralCount(data.referralCount || 0);
+        setReferralEarnings(data.referralEarnings || 0);
+        setReferrals(data.referrals || []);
+        console.log('✅ [Wallet] Loaded referral data:', data);
+      } else {
+        console.error('❌ [Wallet] Failed to load referral data');
+        // Fallback to default values
+        setReferralCode('');
+        setReferralCount(0);
+        setReferralEarnings(0);
+        setReferrals([]);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Failed to load wallet:', error);
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
   };
 
   const formatTime = (dateString: string) => {
@@ -222,6 +263,26 @@ export function Wallet({ onNavigate }: WalletProps) {
       hour: '2-digit', 
       minute: '2-digit' 
     });
+  };
+
+  // ✅ NEW: Copy referral code handler
+  const copyReferralCode = async () => {
+    try {
+      await navigator.clipboard.writeText(referralCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = referralCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -248,10 +309,13 @@ export function Wallet({ onNavigate }: WalletProps) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-4">
-          <h1 className="text-white text-xl">Mon Portefeuille</h1>
-          <button onClick={() => onNavigate('profile')}>
-            <X className="text-white" size={24} />
-          </button>
+          <h1 className="text-white text-xl">{t('wallet.title')}</h1>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher variant="compact" />
+            <button onClick={() => onNavigate('profile')}>
+              <X className="text-white" size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content */}
@@ -270,10 +334,23 @@ export function Wallet({ onNavigate }: WalletProps) {
                     <Zap className="text-white" size={20} fill="white" />
                     <p className="text-white/80 text-sm">Credits</p>
                   </div>
-                  <h2 className="text-white text-3xl">{totalCredits}</h2>
+                  <h2 className="text-white text-3xl mb-2">{totalCredits}</h2>
+                  
+                  {/* ✅ NEW: Détail free vs paid */}
+                  <div className="flex items-center gap-3 text-xs mb-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                      <span className="text-white/60">{credits.free || 0} gratuits</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                      <span className="text-white/60">{credits.paid || 0} payants</span>
+                    </div>
+                  </div>
+                  
                   {creditsExpiresAt && (
                     <p className="text-white/60 text-xs mt-2">
-                      ⏰ Expire: {formatDate(creditsExpiresAt)}
+                      ⏰ Expire: {i18nFormatDate(creditsExpiresAt)}
                     </p>
                   )}
                 </div>
@@ -389,7 +466,7 @@ export function Wallet({ onNavigate }: WalletProps) {
                           <div key={idx} className="flex items-center justify-between p-4 bg-[#1A1A1A] rounded-lg">
                             <div>
                               <p className="text-white">{transaction.action}</p>
-                              <p className="text-gray-400 text-sm">{formatDate(transaction.date)}</p>
+                              <p className="text-gray-400 text-sm">{i18nFormatDate(transaction.date)}</p>
                             </div>
                             <span className={`${
                               transaction.credits > 0 ? 'text-green-500' : 'text-gray-400'
@@ -420,6 +497,92 @@ export function Wallet({ onNavigate }: WalletProps) {
                     </p>
                   </div>
 
+                  {/* ✅ NEW: Referral Section */}
+                  <div className="mb-6 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Gift className="text-green-400" size={20} />
+                        <h3 className="text-white">{t('wallet.referral.title')}</h3>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white/60 text-xs">{t('wallet.referral.commission')}</p>
+                        <p className="text-green-400 text-lg font-semibold">10%</p>
+                      </div>
+                    </div>
+                    
+                    {/* Mon Code */}
+                    <div className="mb-4">
+                      <label className="text-white/60 text-sm mb-2 block">{t('wallet.referral.myCode')}</label>
+                      <div className="flex gap-2">
+                        <input
+                          value={referralCode || 'LOADING...'}
+                          readOnly
+                          className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white text-center text-lg font-mono tracking-wider"
+                        />
+                        <button
+                          onClick={copyReferralCode}
+                          className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg text-white transition-colors"
+                        >
+                          {copied ? t('wallet.referral.copied') : t('wallet.referral.copy')}
+                        </button>
+                      </div>
+                      <p className="text-white/40 text-xs mt-2">
+                        {t('wallet.referral.shareToEarn')}
+                      </p>
+                    </div>
+                    
+                    {/* Mes Filleuls */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-white/80">{t('wallet.referral.myReferrals')}</p>
+                        <span className="bg-white/10 px-2 py-1 rounded text-white text-sm">
+                          {referralCount}
+                        </span>
+                      </div>
+                      
+                      {referrals.length > 0 ? (
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {referrals.map((ref, i) => (
+                            <div key={i} className="bg-white/5 rounded-lg p-3 flex items-center justify-between">
+                              <div>
+                                <p className="text-white text-sm">{ref.userName || 'User #' + (i+1)}</p>
+                                <p className="text-white/40 text-xs">
+                                  {t('wallet.referral.signedUp', { date: i18nFormatDate(ref.signupDate) })}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-green-400 text-sm font-semibold">
+                                  +${ref.commissionEarned.toFixed(2)}
+                                </p>
+                                <p className="text-white/40 text-xs">{t('wallet.referral.creditsSpent', { count: ref.totalCreditsSpent })}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 bg-white/5 rounded-lg">
+                          <p className="text-white/60 text-sm">{t('wallet.referral.noReferrals')}</p>
+                          <p className="text-white/40 text-xs mt-1">
+                            {t('wallet.referral.shareToEarn')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Total Earnings */}
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <div className="flex items-center justify-between">
+                        <p className="text-white/80">{t('wallet.referral.totalEarnings')}</p>
+                        <p className="text-green-400 text-xl font-semibold">
+                          ${referralEarnings.toFixed(2)}
+                        </p>
+                      </div>
+                      <p className="text-white/40 text-xs mt-1">
+                        {t('wallet.referral.autoConvert')}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Origins Transactions */}
                   <div className="mb-6">
                     <h3 className="text-white text-lg mb-4">Historique Origins</h3>
@@ -436,7 +599,7 @@ export function Wallet({ onNavigate }: WalletProps) {
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <p className="text-gray-400 text-sm">{formatDate(transaction.date)}</p>
+                              <p className="text-gray-400 text-sm">{i18nFormatDate(transaction.date)}</p>
                               <span className={`text-xs px-2 py-1 rounded-full ${
                                 transaction.status === 'completed'
                                   ? 'bg-green-500/20 text-green-400'

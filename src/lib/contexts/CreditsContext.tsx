@@ -69,17 +69,21 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
       
       console.log('📦 getUserCredits response:', response);
 
-      if (!response.success || !response.credits) {
+      // ✅ FIX: Even if backend fails, use fallback credits (success=true with fallback)
+      if (response.credits) {
+        setCredits(response.credits);
+        setDaysUntilReset(response.daysUntilReset || 30);
+        setIsLoading(false);
+        
+        // Show warning if using fallback
+        if (response.error) {
+          console.warn('⚠️ Using fallback credits due to backend error:', response.error);
+        } else {
+          console.log('✅ Credits fetched from backend:', response.credits);
+        }
+      } else {
         throw new Error(response.error || 'Failed to fetch credits');
       }
-
-      // ✅ CRITICAL: Only update if userId hasn't changed (prevent race condition)
-      // This prevents old demo-user credits from overwriting real user credits
-      setCredits(response.credits);
-      setDaysUntilReset(response.daysUntilReset || 30);
-      setIsLoading(false);
-
-      console.log('✅ Credits fetched from backend:', response.credits);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -88,8 +92,8 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
       setError(errorMessage);
       setIsLoading(false);
       
-      // ❌ Show error toast
-      toast.error('Unable to load credits. Please refresh the page.', {
+      // ❌ Show error toast (only if no fallback credits)
+      toast.error('Unable to load credits. Using default credits.', {
         description: errorMessage
       });
     }
@@ -113,15 +117,21 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
           return;
         }
 
-        if (!response.success || !response.credits) {
+        // ✅ FIX: Even if backend fails, use fallback credits (success=true with fallback)
+        if (response.credits) {
+          setCredits(response.credits);
+          setDaysUntilReset(response.daysUntilReset || 30);
+          setIsLoading(false);
+          
+          // Show warning if using fallback
+          if (response.error) {
+            console.warn('⚠️ Using fallback credits due to backend error:', response.error);
+          } else {
+            console.log('✅ Credits fetched from backend:', response.credits);
+          }
+        } else {
           throw new Error(response.error || 'Failed to fetch credits');
         }
-
-        setCredits(response.credits);
-        setDaysUntilReset(response.daysUntilReset || 30);
-        setIsLoading(false);
-
-        console.log('✅ Credits fetched from backend:', response.credits);
 
       } catch (err) {
         if (cancelled) return; // ✅ Ignore errors for cancelled fetches
@@ -131,7 +141,7 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         setError(errorMessage);
         setIsLoading(false);
         
-        toast.error('Unable to load credits. Please refresh the page.', {
+        toast.error('Unable to load credits. Using default credits.', {
           description: errorMessage
         });
       }
@@ -147,37 +157,46 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
   // Local deduction (optimistic update)
   // Backend handles actual deduction during generation
-  const deductCredits = useCallback((amount: number, type: 'free' | 'paid' = 'free'): boolean => {
-    const availableCredits = type === 'free' ? credits.free : credits.paid;
+  // Priority: PAID credits FIRST (premium models), then FREE credits (Pollinations)
+  const deductCredits = useCallback((amount: number, type: 'free' | 'paid' = 'paid'): boolean => {
+    const totalCredits = credits.free + credits.paid;
 
-    if (availableCredits < amount) {
-      const totalCredits = credits.free + credits.paid;
-      
-      if (totalCredits < amount) {
-        toast.error(`Not enough credits! You need ${amount} but have ${totalCredits} total`, {
-          description: 'Purchase more credits to continue creating'
-        });
-        return false;
-      }
-
-      // If preferred type doesn't have enough, suggest alternative
-      const alternativeType = type === 'free' ? 'paid' : 'free';
-      const alternativeCredits = type === 'free' ? credits.paid : credits.free;
-
-      if (alternativeCredits >= amount) {
-        toast.warning(`Not enough ${type} credits, but you have ${alternativeCredits} ${alternativeType} credits available`);
-      }
-
+    // Check if user has enough total credits
+    if (totalCredits < amount) {
+      toast.error(`Not enough credits! You need ${amount} but have ${totalCredits} total`, {
+        description: 'Purchase more credits to continue creating'
+      });
       return false;
+    }
+
+    // ✅ PRIORITY LOGIC: Use PAID credits first (premium models access)
+    let remaining = amount;
+    let paidUsed = 0;
+    let freeUsed = 0;
+
+    // 1. Use PAID credits first
+    if (credits.paid > 0) {
+      paidUsed = Math.min(remaining, credits.paid);
+      remaining -= paidUsed;
+    }
+
+    // 2. Use FREE credits as fallback
+    if (remaining > 0 && credits.free > 0) {
+      freeUsed = Math.min(remaining, credits.free);
+      remaining -= freeUsed;
     }
 
     // Optimistic update (backend will be source of truth)
     setCredits(prev => ({
       ...prev,
-      [type]: prev[type] - amount
+      paid: prev.paid - paidUsed,
+      free: prev.free - freeUsed,
+      total: prev.total - amount
     }));
 
-    console.log(`💎 Deducted ${amount} ${type} credits locally (optimistic)`);
+    console.log(`💎 Deducted ${amount} credits locally (optimistic):`);
+    console.log(`   - ${paidUsed} paid credits (premium models)`);
+    console.log(`   - ${freeUsed} free credits (Pollinations)`);
     return true;
 
   }, [credits]);

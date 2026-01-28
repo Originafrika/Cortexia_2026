@@ -5,7 +5,7 @@
 
 import { Hono } from 'npm:hono';
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import * as credits from './credits.tsx'; // ✅ FIX: Import credits system
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking
 
 const app = new Hono();

@@ -4,18 +4,12 @@
  */
 
 import { Hono } from 'npm:hono';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking generations
 import * as kieAIImage from './kie-ai-image.ts';
 import * as nanoBanana from './kie-ai-nanobanana.ts';
-import * as credits from './credits.tsx';
-import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking generations
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 
 const app = new Hono();
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-);
 
 /**
  * Generate image with Flux 2 Pro/Flex
@@ -73,7 +67,7 @@ app.post('/generate', async (c) => {
     console.log(`💰 Cost: ${cost} paid credits (${referenceImages.length} ref images)`);
 
     // Check credits (PAID credits only)
-    const userCredits = await credits.getUserCredits(userId);
+    const userCredits = await CreditsSystem.getUserCredits(userId);
     
     if (userCredits.paidCredits < cost) {
       return c.json({
@@ -90,7 +84,7 @@ app.post('/generate', async (c) => {
     }
 
     // Deduct credits BEFORE generation
-    const deductResult = await credits.deductCredits(userId, cost, 'paid');
+    const deductResult = await CreditsSystem.deductCredits(userId, cost, 'paid');
     if (!deductResult.success) {
       return c.json({
         success: false,
@@ -163,7 +157,7 @@ app.post('/generate', async (c) => {
       // Generation failed - refund credits
       console.error('❌ Generation failed, refunding credits:', genError);
       
-      await credits.refundCredits(userId, cost, 'paid');
+      await CreditsSystem.refundCredits(userId, cost, 'paid');
       
       throw genError; // Re-throw to outer catch
     }
@@ -272,7 +266,7 @@ app.post('/nano-banana', async (c) => {
     console.log(`💰 Cost: ${cost} paid credits (${imageInput.length} input images)`);
 
     // Check credits (PAID credits only)
-    const userCredits = await credits.getUserCredits(userId);
+    const userCredits = await CreditsSystem.getUserCredits(userId);
     
     if (userCredits.paidCredits < cost) {
       return c.json({
@@ -289,7 +283,7 @@ app.post('/nano-banana', async (c) => {
     }
 
     // Deduct credits BEFORE generation
-    const deductResult = await credits.deductCredits(userId, cost, 'paid');
+    const deductResult = await CreditsSystem.deductCredits(userId, cost, 'paid');
     if (!deductResult.success) {
       return c.json({
         success: false,
@@ -359,7 +353,7 @@ app.post('/nano-banana', async (c) => {
       // Generation failed - refund credits
       console.error('❌ Generation failed, refunding credits:', genError);
       
-      await credits.refundCredits(userId, cost, 'paid');
+      await CreditsSystem.refundCredits(userId, cost, 'paid');
       
       throw genError; // Re-throw to outer catch
     }

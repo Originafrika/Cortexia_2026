@@ -52,6 +52,7 @@ import { CreatorBenefitsPanel } from '../CreatorBenefitsPanel'; // ✅ NEW: Crea
 import { PurchaseCreditsModal } from '../providers/PurchaseCreditsModal'; // ✅ NEW: Purchase credits modal
 import { useCoconutAccess } from '../../lib/hooks/useCoconutAccess'; // ✅ NEW: Coconut access hook
 import { usePurchaseCredits } from '../../lib/hooks/usePurchaseCredits'; // ✅ NEW: Purchase credits hook
+import { PremiumAccessBadge, FreeCreditsWarning } from '../credits/PremiumAccessBadge'; // ✅ NEW: Premium badge
 import { GenerationQueue } from '../GenerationQueue';
 import { VoiceInput } from './VoiceInput';
 import { VideoSettingsControls } from './VideoSettingsControls';
@@ -1649,6 +1650,23 @@ export function CreateHubGlass({
       {/* Main Content - Responsive layout */}
       <main className="relative z-10 px-4 max-w-4xl mx-auto">
         <div className="py-3 md:py-3 space-y-3 md:space-y-3">
+          
+          {/* ✅ Premium Access Badge */}
+          {paidCredits > 0 && (
+            <PremiumAccessBadge 
+              paidCredits={paidCredits} 
+              variant="banner"
+              showCredits={true}
+            />
+          )}
+          
+          {/* ✅ Free Credits Warning (only if NO paid credits) */}
+          {paidCredits === 0 && freeCredits > 0 && (
+            <FreeCreditsWarning 
+              freeCredits={freeCredits}
+              onUpgrade={() => setShowPurchaseModal(true)}
+            />
+          )}
           
           {/* Mode Selector - Glass pills */}
           <div className="flex items-center justify-center gap-3">

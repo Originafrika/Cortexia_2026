@@ -86,17 +86,13 @@ export async function mockGenerate(
     cost += params.duration;
   }
   
-  // Check if user can afford
-  if (credits.total < cost) {
-    return {
-      success: false,
-      error: `Insufficient credits. Need ${cost}, have ${credits.total}`,
-      cost,
-      newBalance: credits
-    };
+  // Check sufficient credits
+  const total = credits.free + credits.paid;
+  if (total < cost) {
+    throw new Error(`Insufficient credits. Need ${cost}, have ${total}`);
   }
   
-  // Deduct credits (paid first)
+  // Deduct credits (PAID FIRST for premium models access)
   let paidUsed = Math.min(credits.paid, cost);
   let freeUsed = cost - paidUsed;
   

@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono';
-import * as credits from './credits.tsx';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as kv from './kv_store.tsx';
 import {
   createInfiniteTalkTask,
@@ -63,7 +63,7 @@ app.post('/infinitalk/start', async (c) => {
     const cost = calculateInfiniteTalkCost(resolution);
 
     // Get user credits
-    const userCredits = await credits.getUserCredits(userId);
+    const userCredits = await CreditsSystem.getUserCredits(userId);
     
     console.log('[InfiniteTalk API] User credits:', {
       userId,
@@ -85,7 +85,7 @@ app.post('/infinitalk/start', async (c) => {
     }
 
     // Deduct credits BEFORE generation
-    const deductResult = await credits.deductCredits(userId, cost, 'paid');
+    const deductResult = await CreditsSystem.deductCredits(userId, cost, 'paid');
     if (!deductResult.success) {
       return c.json({
         error: deductResult.error || 'Failed to deduct credits'
@@ -341,7 +341,7 @@ app.post('/infinitalk/callback', async (c) => {
       
       // Refund credits
       console.log('[InfiniteTalk Callback] 💰 Refunding', task.cost, 'credits to user:', task.userId);
-      await credits.refundCredits(task.userId, task.cost, 'paid');
+      await CreditsSystem.refundCredits(task.userId, task.cost, 'paid');
 
       // Update task status
       await kv.set(`infinitalk_task:${taskId}`, {

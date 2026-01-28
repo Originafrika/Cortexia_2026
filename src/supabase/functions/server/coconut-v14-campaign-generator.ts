@@ -8,7 +8,7 @@
 
 import type { Context } from 'npm:hono';
 import * as kv from './kv_store.tsx';
-import { deductCredits } from './credits-manager.ts'; // ✅ Import credits manager
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import type {
   GeminiCampaignAnalysisResponse,
   CampaignAsset,
@@ -192,7 +192,7 @@ async function generateAllAssets(
 
       // ✅ Deduct credits for successful generation
       if (result.status === 'completed' && result.actualCost) {
-        const deductResult = await deductCredits(
+        const deductResult = await CreditsSystem.deductCredits(
           userId, 
           result.actualCost,
           `Campaign Asset Generation: ${asset.type}`,

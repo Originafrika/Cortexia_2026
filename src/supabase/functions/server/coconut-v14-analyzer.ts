@@ -268,7 +268,7 @@ function buildGeminiSystemPrompt(userProfile?: any): string {
      - Write ONE natural language prompt that describes the complete scene
      - Include ALL visual elements: subject, action, setting, style, lighting, camera, typography, colors
      - Integrate everything into flowing, professional creative direction
-     - Example: "Chic model in flowing dress, mid-swirl amidst golden confetti, shot on Sony A7IV 85mm f/1.4, dramatic rim lighting, minimalist charcoal background. Bold text 'BRAND' top-center, '15% OFF' badge top-right golden glow. Color #0A0A0A for sophisticated depth, #FFD700 for festive shimmer."
+     - Example: "Chic model in flowing dress, mid-swirl amidst golden confetti, shot on Sony A7IV 85mm f/1.4, dramatic rim lighting, minimalist charcoal background. Bold text BRAND top-center, 15% OFF badge top-right golden glow. Color #0A0A0A for sophisticated depth, #FFD700 for festive shimmer."
   3. **CRITICAL: The finalPrompt string must be under 5000 characters**
      - This is a HARD LIMIT for the Flux 2 Pro API
      - ⛔ **DO NOT APPEND ANY EXTRA FIELDS AT THE END**
@@ -376,7 +376,7 @@ function buildGeminiSystemPrompt(userProfile?: any): string {
     {
       "description": "Nabo natural fruit juice bottle",
       "action": "Elegantly positioned at center, label clearly visible",
-      "details": "Modern glass bottle with condensation, 'Nabo' logo prominently featured, festive label design, natural juice color visible through glass",
+      "details": "Modern glass bottle with condensation, Nabo logo prominently featured, festive label design, natural juice color visible through glass",
       "position": "Center frame, Golden Ratio placement"
     },
     {
@@ -504,41 +504,31 @@ function buildGeminiSystemPrompt(userProfile?: any): string {
   **IF targetUsage = print/poster/affiche/OOH:**
   - Typography style: Elegant text overlays, NO clickable buttons
   - CTA approach: Text-based tagline instead of button
-  - Example: "Bold headline 'NABO CITRON' at top, elegant subheadline 'Fraîcheur Naturelle' below"
+  - Example: "Bold headline NABO CITRON at top, elegant subheadline Fraicheur Naturelle below"
 
   **IF targetUsage = web/banner/social media:**
   - Typography style: Can include button-style CTAs
   - CTA approach: Rounded rectangle button with action text
-  - Example: "Call-to-action button 'SHOP NOW' at bottom, white text on gradient background"
+  - Example: "Call-to-action button SHOP NOW at bottom, white text on gradient background"
 
   **STEP 5: INTEGRATE INTO finalPrompt.details**
 
   Include typographic instructions in the "details" field of finalPrompt:
 
   **ALBUM ART EXAMPLE:**
-  ```
-  "details": "Bold headline text 'SANTRINOS RAPHAEL' in upper portion, large sans-serif typography with golden glow effect. Album title 'STATE' below in elegant serif font, subtle opacity. NO call-to-action button."
-  ```
+  "details": "Bold headline text SANTRINOS RAPHAEL in upper portion, large sans-serif typography with golden glow effect. Album title STATE below in elegant serif font, subtle opacity. NO call-to-action button."
 
   **PROMOTION EXAMPLE (Print):**
-  ```
-  "details": "Circular badge top-right displaying '-20%' in bold white on red gradient. Bold headline 'NABO CITRON' with golden glow. Elegant tagline 'OFFRE LIMITÉE' below in accent color. NO button-style CTA."
-  ```
+  "details": "Circular badge top-right displaying -20% in bold white on red gradient. Bold headline NABO CITRON with golden glow. Elegant tagline OFFRE LIMITEE below in accent color. NO button-style CTA."
 
   **PROMOTION EXAMPLE (Digital):**
-  ```
-  "details": "Badge '-20%' top-right. Headline 'NABO CITRON' at top. Call-to-action button bottom-center: 'PROFITEZ-EN' white text on orange gradient, rounded rectangle, 30% width."
-  ```
+  "details": "Badge -20% top-right. Headline NABO CITRON at top. Call-to-action button bottom-center: PROFITEZ-EN white text on orange gradient, rounded rectangle, 30% width."
 
   **EVENT EXAMPLE:**
-  ```
-  "details": "Event name 'UCAO TOURNAMENT' top-center bold typography. Date panel right side: '3 JANVIER' large bold + '18H00' below + 'UCAO' with location icon. CTA button bottom: 'RÉSERVEZ' on vibrant gradient."
-  ```
+  "details": "Event name UCAO TOURNAMENT top-center bold typography. Date panel right side: 3 JANVIER large bold + 18H00 below + UCAO with location icon. CTA button bottom: RESERVEZ on vibrant gradient."
 
   **BRANDING EXAMPLE:**
-  ```
-  "details": "Minimal brand name 'ROLEX' bottom-center, clean sans-serif, white with subtle shadow. NO additional text, NO CTA. Sophisticated, breathing room."
-  ```
+  "details": "Minimal brand name ROLEX bottom-center, clean sans-serif, white with subtle shadow. NO additional text, NO CTA. Sophisticated, breathing room."
 
   **VALIDATION CHECKLIST:**
 

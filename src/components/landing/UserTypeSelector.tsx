@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Building2, Heart, Terminal, X, ArrowRight, Sparkles } from 'lucide-react';
+import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
 
 interface UserTypeSelectorProps {
   isOpen: boolean;
@@ -8,12 +9,14 @@ interface UserTypeSelectorProps {
 }
 
 export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelectorProps) {
+  const { t } = useTranslation(); // ✅ NEW: Translation hook
+  
   const userTypes = [
     {
       id: 'enterprise' as const,
       icon: Building2,
-      label: 'Team or Brand',
-      tag: 'Coconut V14',
+      label: t('landing.userTypeSelector.enterprise.label'),
+      tag: t('landing.userTypeSelector.enterprise.tag'),
       gradient: 'from-[#F5EBE0]/10 to-[#E3D5CA]/10',
       borderColor: 'border-[#F5EBE0]/20',
       accentColor: 'text-[#F5EBE0]',
@@ -22,8 +25,8 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
     {
       id: 'individual' as const,
       icon: Heart,
-      label: 'Solo Creator',
-      tag: '25 free credits/month',
+      label: t('landing.userTypeSelector.individual.label'),
+      tag: t('landing.userTypeSelector.individual.tag'),
       gradient: 'from-purple-500/10 to-violet-500/10',
       borderColor: 'border-purple-500/20',
       accentColor: 'text-purple-400',
@@ -32,8 +35,8 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
     {
       id: 'developer' as const,
       icon: Terminal,
-      label: 'Developer',
-      tag: 'API Access',
+      label: t('landing.userTypeSelector.developer.label'),
+      tag: t('landing.userTypeSelector.developer.tag'),
       gradient: 'from-blue-500/10 to-cyan-500/10',
       borderColor: 'border-blue-500/20',
       accentColor: 'text-blue-400',
@@ -103,30 +106,17 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                 >
-                  {/* Sparkle badge */}
-                  <motion.div
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(245,235,224,0.08) 0%, rgba(227,213,202,0.06) 100%)',
-                      border: '1px solid rgba(245,235,224,0.15)',
-                    }}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <Sparkles size={14} className="text-[#F5EBE0]" />
-                    <span className="text-xs font-medium text-[#F5EBE0]">
-                      Choose Your Path
-                    </span>
-                  </motion.div>
-
-                  <h2 className="text-3xl sm:text-4xl font-bold mb-2 leading-tight">
-                    <span className="bg-gradient-to-r from-[#F5EBE0] via-[#E3D5CA] to-[#D6C9BE] bg-clip-text text-transparent">
-                      I am a...
-                    </span>
+                  {/* Title - matching screenshot */}
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-2 leading-tight text-white">
+                    {t('landing.userTypeSelector.title')}
                   </h2>
+                  <h3 className="text-2xl sm:text-3xl font-bold mb-4 leading-tight">
+                    <span className="bg-gradient-to-r from-[#F5EBE0] via-[#E3D5CA] to-[#D6C9BE] bg-clip-text text-transparent">
+                      {t('landing.userTypeSelector.subtitle')}
+                    </span>
+                  </h3>
                   <p className="text-sm text-white/50">
-                    Select to continue
+                    {t('landing.userTypeSelector.tagline')}
                   </p>
                 </motion.div>
               </div>
@@ -205,7 +195,7 @@ export function UserTypeSelector({ isOpen, onClose, onSelect }: UserTypeSelector
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                 >
-                  You can switch anytime
+                  {t('landing.userTypeSelector.footer')}
                 </motion.p>
               </div>
             </motion.div>

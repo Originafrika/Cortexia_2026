@@ -54,6 +54,7 @@ export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signUp: (email: string, password: string, type: UserType, name?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signOut: () => Promise<void>;
+  logout: () => Promise<void>; // ✅ Alias for signOut (used by SettingsPage)
   
   // ✅ NEW: Update user from OAuth callback
   updateUserFromCallback: (user: User) => Promise<{ isNewUser: boolean }>;
@@ -631,13 +632,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ✅ Sign Out
   const signOut = async () => {
+    console.log('🚪 [AuthContext] Signing out...');
+    
     // ✅ Check if user is Auth0 user
     if (user?.provider === 'auth0') {
       await signOutAuth0();
     }
     
+    // ✅ Clear all auth-related state
     setUser(null);
+    setIsNewUser(false);
     clearSession();
+    
+    // ✅ Clear ALL sessionStorage and localStorage auth keys
+    sessionStorage.removeItem('cortexia_user_type');
+    sessionStorage.removeItem('cortexia_pending_user_type');
+    sessionStorage.removeItem('cortexia_user_id');
+    sessionStorage.removeItem('cortexia_access_token');
+    sessionStorage.removeItem('cortexia_referral_code');
+    
+    // ✅ Clear any other session data
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('cortexia_')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    
+    console.log('✅ [AuthContext] User logged out successfully');
+  };
+
+  // ✅ Alias for signOut (used by SettingsPage)
+  const logout = async () => {
+    await signOut();
   };
 
   // ✅ Check if route requires authentication
@@ -985,6 +1011,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signUp,
     signOut,
+    logout, // ✅ Alias for signOut (used by SettingsPage)
     updateUserFromCallback,
     updateUserProfile,
     completeOnboarding,

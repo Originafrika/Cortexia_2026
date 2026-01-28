@@ -1,6 +1,11 @@
 import { motion, useScroll, useTransform, useSpring } from 'motion/react';
 import { useRef } from 'react';
 import { ArrowRight, Sparkles, Check, Building2, Heart, Terminal, Zap, Layers, TrendingUp, Rocket } from 'lucide-react';
+import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
+import { LanguageSwitcher } from '../LanguageSwitcher'; // ✅ NEW: Language switcher
+import { TrustSignals } from '../shared/TrustSignals'; // ✅ BDS: Trust signals
+import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
+import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingScrollytellingProps {
   onGetStarted: () => void;
@@ -29,6 +34,13 @@ export function LandingScrollytelling({ onGetStarted, onLogin }: LandingScrollyt
       {/* Hero Section */}
       <HeroSection onGetStarted={onGetStarted} />
       
+      {/* ✅ BDS: Trust Signals (Stats + Social Proof) */}
+      <section className="py-20 px-6 relative">
+        <div className="max-w-7xl mx-auto">
+          <TrustSignals variant="stats" />
+        </div>
+      </section>
+      
       {/* Problem Section */}
       <ProblemSection progress={smoothProgress} />
       
@@ -52,6 +64,8 @@ export function LandingScrollytelling({ onGetStarted, onLogin }: LandingScrollyt
 // ============================================================================
 
 function FixedHeader({ onLogin }: { onLogin?: () => void }) {
+  const { t } = useTranslation(); // ✅ NEW
+  
   return (
     <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-black/50 border-b border-white/10">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -59,14 +73,17 @@ function FixedHeader({ onLogin }: { onLogin?: () => void }) {
           <Sparkles size={20} className="text-[#F5EBE0]" />
           <span className="text-lg font-medium text-white">Cortexia</span>
         </div>
-        {onLogin && (
-          <button
-            onClick={onLogin}
-            className="px-6 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm text-white"
-          >
-            Sign In
-          </button>
-        )}
+        <div className="flex items-center gap-4">
+          <LanguageSwitcher variant="compact" />
+          {onLogin && (
+            <button
+              onClick={onLogin}
+              className="px-6 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm text-white"
+            >
+              {t('landing.hero.login')}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -77,6 +94,8 @@ function FixedHeader({ onLogin }: { onLogin?: () => void }) {
 // ============================================================================
 
 function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
+  const { t } = useTranslation(); // ✅ NEW
+  
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Animated Liquid Background */}
@@ -137,17 +156,17 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
           >
             <Sparkles size={16} className="text-[#F5EBE0]" />
             <span className="text-sm font-medium bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA] bg-clip-text text-transparent">
-              The Fluid State of Creation
+              {t('landing.hero.eyebrow')}
             </span>
           </motion.div>
 
           {/* Main Headline */}
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.95]">
             <span className="block text-white mb-4">
-              Stop Creating.
+              {t('landing.hero.title1')}
             </span>
             <span className="block bg-gradient-to-r from-[#F5EBE0] via-[#E3D5CA] to-[#D6C9BE] bg-clip-text text-transparent">
-              Start Conducting.
+              {t('landing.hero.title2')}
             </span>
           </h1>
 
@@ -158,9 +177,9 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 0.6 }}
           >
-            What if you could <span className="text-[#F5EBE0]">think a campaign into existence</span>?
+            {t('landing.hero.subtitle')}
             <br className="hidden md:block" />
-            Cortexia orchestrates AI into flowing symphonies of creativity.
+            {t('landing.hero.subtitle2')}
           </motion.p>
 
           {/* CTA */}
@@ -169,31 +188,13 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
           >
-            <motion.button
+            <Button
               onClick={onGetStarted}
-              className="group relative px-10 py-5 rounded-2xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
-                boxShadow: '0 20px 60px rgba(245,235,224,0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
-              }}
-              whileHover={{ 
-                scale: 1.05,
-                boxShadow: '0 25px 80px rgba(245,235,224,0.4), inset 0 1px 0 rgba(255,255,255,0.6)'
-              }}
-              whileTap={{ scale: 0.98 }}
+              variant="primary"
+              size="lg"
             >
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"
-                initial={{ x: '-100%' }}
-                whileHover={{ x: '100%' }}
-                transition={{ duration: 0.6 }}
-              />
-              
-              <span className="relative flex items-center gap-3 text-lg font-semibold text-[#1A1A1A]">
-                Enter the Fluid State
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-              </span>
-            </motion.button>
+              {t('landing.hero.cta')}
+            </Button>
           </motion.div>
 
           {/* Trust Signal */}
@@ -203,7 +204,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1.2 }}
           >
-            Trusted by creative teams worldwide • 25 free credits every month
+            {t('landing.hero.trustSignal')}
           </motion.p>
         </motion.div>
       </div>
@@ -236,7 +237,13 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
 // ============================================================================
 
 function ProblemSection({ progress }: { progress: any }) {
+  const { t, locale } = useTranslation(); // ✅ Get locale
   const opacity = useTransform(progress, [0.05, 0.15, 0.25], [0, 1, 0]);
+  
+  // ✅ FIX: Import locales directly for arrays
+  const tools = locale === 'fr' 
+    ? ['Midjourney', 'RunwayML', 'ElevenLabs', 'ChatGPT', 'Figma', 'Canva', 'CapCut', 'Photoshop']
+    : ['Midjourney', 'RunwayML', 'ElevenLabs', 'ChatGPT', 'Figma', 'Canva', 'CapCut', 'Photoshop'];
 
   return (
     <motion.section 
@@ -245,24 +252,24 @@ function ProblemSection({ progress }: { progress: any }) {
     >
       <div className="max-w-5xl mx-auto text-center">
         <h2 className="text-5xl md:text-6xl font-bold text-white mb-8 leading-tight">
-          You're drowning in subscriptions.
+          {t('landing.problem.title')}
           <br />
           <span className="text-white/40">
-            Midjourney. Runway. ElevenLabs. ChatGPT.
+            {t('landing.problem.subtitle')}
           </span>
         </h2>
 
         <p className="text-xl md:text-2xl text-white/60 max-w-3xl mx-auto mb-12">
-          Five tabs open. Three logins. One exhausted creative.
+          {t('landing.problem.tagline')}
           <br />
           <span className="text-[#F5EBE0]">
-            There has to be a better way.
+            {t('landing.problem.conclusion')}
           </span>
         </p>
 
         {/* Tools Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-          {['Midjourney', 'RunwayML', 'ElevenLabs', 'ChatGPT', 'Figma', 'Canva', 'CapCut', 'Photoshop'].map((tool, i) => (
+          {tools.map((tool, i) => (
             <motion.div
               key={tool}
               className="p-6 rounded-2xl text-white/30 text-center"
@@ -289,6 +296,7 @@ function ProblemSection({ progress }: { progress: any }) {
 // ============================================================================
 
 function TransformationSection({ progress }: { progress: any }) {
+  const { t } = useTranslation(); // ✅ NEW
   const opacity = useTransform(progress, [0.25, 0.35, 0.45], [0, 1, 1]);
 
   return (
@@ -299,7 +307,7 @@ function TransformationSection({ progress }: { progress: any }) {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-20">
           <h2 className="text-5xl md:text-6xl font-bold text-white mb-8">
-            Imagine this instead.
+            {t('landing.transformation.title')}
           </h2>
         </div>
 
@@ -319,23 +327,23 @@ function TransformationSection({ progress }: { progress: any }) {
                 border: '1px solid rgba(255,255,255,0.05)'
               }}
             >
-              <div className="text-sm text-white/40 mb-4 uppercase tracking-wider">Before Cortexia</div>
+              <div className="text-sm text-white/40 mb-4 uppercase tracking-wider">{t('landing.transformation.before.label')}</div>
               <div className="space-y-3">
                 <div className="flex items-start gap-3 text-white/50">
                   <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-400/50" />
-                  <span>3 hours switching between tools</span>
+                  <span>{t('landing.transformation.before.pain1')}</span>
                 </div>
                 <div className="flex items-start gap-3 text-white/50">
                   <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-400/50" />
-                  <span>Inconsistent brand visuals</span>
+                  <span>{t('landing.transformation.before.pain2')}</span>
                 </div>
                 <div className="flex items-start gap-3 text-white/50">
                   <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-400/50" />
-                  <span>$400/month in subscriptions</span>
+                  <span>{t('landing.transformation.before.pain3')}</span>
                 </div>
                 <div className="flex items-start gap-3 text-white/50">
                   <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-400/50" />
-                  <span>Creative burnout by Friday</span>
+                  <span>{t('landing.transformation.before.pain4')}</span>
                 </div>
               </div>
             </div>
@@ -345,61 +353,37 @@ function TransformationSection({ progress }: { progress: any }) {
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
             <div 
-              className="p-8 rounded-3xl relative overflow-hidden"
+              className="p-8 rounded-3xl"
               style={{
                 background: 'linear-gradient(135deg, rgba(245,235,224,0.08) 0%, rgba(227,213,202,0.06) 100%)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(245,235,224,0.2)',
-                boxShadow: '0 20px 60px rgba(245,235,224,0.15)'
+                border: '1px solid rgba(245,235,224,0.15)'
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#F5EBE0]/10 to-transparent" />
-              
-              <div className="relative">
-                <div className="text-sm text-[#F5EBE0] mb-4 uppercase tracking-wider">With Cortexia</div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 text-white/90">
-                    <Check size={18} className="mt-0.5 text-[#F5EBE0]" />
-                    <span>One brief. One platform. One flow.</span>
-                  </div>
-                  <div className="flex items-start gap-3 text-white/90">
-                    <Check size={18} className="mt-0.5 text-[#F5EBE0]" />
-                    <span>Brand-perfect consistency</span>
-                  </div>
-                  <div className="flex items-start gap-3 text-white/90">
-                    <Check size={18} className="mt-0.5 text-[#F5EBE0]" />
-                    <span>Pay only for what you create</span>
-                  </div>
-                  <div className="flex items-start gap-3 text-white/90">
-                    <Check size={18} className="mt-0.5 text-[#F5EBE0]" />
-                    <span>Creative energy restored</span>
-                  </div>
+              <div className="text-sm text-[#F5EBE0] mb-4 uppercase tracking-wider">{t('landing.transformation.after.label')}</div>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 text-white">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
+                  <span>{t('landing.transformation.after.benefit1')}</span>
+                </div>
+                <div className="flex items-start gap-3 text-white">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
+                  <span>{t('landing.transformation.after.benefit2')}</span>
+                </div>
+                <div className="flex items-start gap-3 text-white">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
+                  <span>{t('landing.transformation.after.benefit3')}</span>
+                </div>
+                <div className="flex items-start gap-3 text-white">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
+                  <span>{t('landing.transformation.after.benefit4')}</span>
                 </div>
               </div>
             </div>
           </motion.div>
-
-          {/* Magic Arrow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
-            <motion.div
-              className="text-6xl"
-              animate={{
-                x: [0, 10, 0],
-                opacity: [0.3, 1, 0.3]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              ✨
-            </motion.div>
-          </div>
         </div>
       </div>
     </motion.section>
@@ -411,60 +395,62 @@ function TransformationSection({ progress }: { progress: any }) {
 // ============================================================================
 
 function ThreePathsSection({ progress, onGetStarted }: { progress: any, onGetStarted: () => void }) {
+  const { t } = useTranslation(); // ✅ NEW
+  
   const paths = [
     {
       type: 'enterprise',
       icon: <Building2 size={48} />,
-      eyebrow: "For Teams & Brands",
-      headline: "Launch campaigns that look like they cost $500k.",
-      subheadline: "In 6 minutes.",
-      dream: "Imagine briefing your team at 9am—and watching a complete 6-week campaign materialize by lunch. Instagram stories. TikTok ads. YouTube thumbnails. Email headers. All brand-perfect. All ready to launch.",
+      eyebrow: t('landing.threePaths.enterprise.badge'),
+      headline: t('landing.threePaths.enterprise.title'),
+      subheadline: t('landing.threePaths.enterprise.subtitle'),
+      dream: t('landing.threePaths.enterprise.description1'),
       outcomes: [
-        "From one brief to 50 assets across every channel",
-        "Brand consistency that feels effortless",
-        "Your creative team restored, not replaced"
+        t('landing.threePaths.enterprise.feature1'),
+        t('landing.threePaths.enterprise.feature2'),
+        t('landing.threePaths.enterprise.feature3')
       ],
-      reality: "→ This is Coconut V14. Enterprise orchestration.",
+      reality: t('landing.threePaths.enterprise.tagline'),
       gradient: "from-[#F5EBE0]/10 to-[#E3D5CA]/10",
       borderColor: "border-[#F5EBE0]/20",
       accentColor: "text-[#F5EBE0]",
-      cta: "See Enterprise Power"
+      cta: t('landing.threePaths.enterprise.cta')
     },
     {
       type: 'individual',
       icon: <Heart size={48} />,
-      eyebrow: "For Solo Creators",
-      headline: "Turn 'I wish I could...' into 'Look what I made.'",
-      subheadline: "Your ideas deserve to look this good.",
-      dream: "That campaign idea you sketched at 2am? The product photoshoot you can't afford? The avatar that brings your brand to life? Create it. Share it. Get discovered. Become a Top Creator and unlock the same tools the brands use.",
+      eyebrow: t('landing.threePaths.individual.badge'),
+      headline: t('landing.threePaths.individual.title'),
+      subheadline: t('landing.threePaths.individual.subtitle'),
+      dream: t('landing.threePaths.individual.description1'),
       outcomes: [
-        "Generate stunning images, videos, avatars",
-        "Share with a community that gets it",
-        "Earn rewards for creativity, not just followers"
+        t('landing.threePaths.individual.feature1'),
+        t('landing.threePaths.individual.feature2'),
+        t('landing.threePaths.individual.feature3')
       ],
-      reality: "→ 25 free credits every month. Forever.",
+      reality: t('landing.threePaths.individual.tagline'),
       gradient: "from-purple-500/10 to-violet-500/10",
       borderColor: "border-purple-500/20",
       accentColor: "text-purple-400",
-      cta: "Start Creating Free"
+      cta: t('landing.threePaths.individual.cta')
     },
     {
       type: 'developer',
       icon: <Terminal size={48} />,
-      eyebrow: "For Developers",
-      headline: "Stop building AI from scratch.",
-      subheadline: "Ship product features, not infrastructure.",
-      dream: "Your users want AI image generation. AI video. AI avatars. You want to ship next week—not spend 3 months wrangling APIs, handling rate limits, and debugging prompt engineering. Plug in Cortexia. Ship today.",
+      eyebrow: t('landing.threePaths.developer.badge'),
+      headline: t('landing.threePaths.developer.title'),
+      subheadline: t('landing.threePaths.developer.subtitle'),
+      dream: t('landing.threePaths.developer.description1'),
       outcomes: [
-        "REST API with webhooks and real-time updates",
-        "Multi-model orchestration out of the box",
-        "100 requests/min. No surprise rate limits."
+        t('landing.threePaths.developer.feature1'),
+        t('landing.threePaths.developer.feature2'),
+        t('landing.threePaths.developer.feature3')
       ],
-      reality: "→ Full docs. Multi-language SDKs. Live support.",
+      reality: t('landing.threePaths.developer.tagline'),
       gradient: "from-blue-500/10 to-cyan-500/10",
       borderColor: "border-blue-500/20",
       accentColor: "text-blue-400",
-      cta: "Explore API Docs"
+      cta: t('landing.threePaths.developer.cta')
     }
   ];
 
@@ -490,10 +476,10 @@ function ThreePathsSection({ progress, onGetStarted }: { progress: any, onGetSta
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            Three paths. One destination:
+            {t('landing.threePaths.eyebrow')} {t('landing.threePaths.title')}
             <br />
             <span className="bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA] bg-clip-text text-transparent">
-              Creative freedom.
+              {t('landing.threePaths.subtitle')}
             </span>
           </motion.h2>
         </div>
@@ -561,23 +547,14 @@ function ThreePathsSection({ progress, onGetStarted }: { progress: any, onGetSta
                 </div>
 
                 {/* CTA */}
-                <motion.button
+                <Button
                   onClick={onGetStarted}
-                  className={`px-8 py-4 rounded-xl font-medium ${path.accentColor} transition-all`}
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${path.borderColor.replace('border-', '').replace('/20', '/30')}`
-                  }}
-                  whileHover={{
-                    background: 'rgba(255,255,255,0.08)',
-                    scale: 1.02
-                  }}
+                  variant={path.profile === 'Enterprise' ? 'primary' : path.profile === 'Individual' ? 'purple' : 'blue'}
+                  size="md"
+                  icon={<ArrowRight size={18} />}
                 >
-                  <span className="flex items-center gap-2">
-                    {path.cta}
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </motion.button>
+                  {path.cta}
+                </Button>
               </div>
             </motion.div>
           ))}
@@ -592,7 +569,7 @@ function ThreePathsSection({ progress, onGetStarted }: { progress: any, onGetSta
           viewport={{ once: true }}
         >
           <p className="text-white/40 text-sm">
-            All paths start free • Choose yours in 60 seconds
+            {t('landing.threePaths.pathsNote')}
           </p>
         </motion.div>
       </div>
@@ -605,25 +582,27 @@ function ThreePathsSection({ progress, onGetStarted }: { progress: any, onGetSta
 // ============================================================================
 
 function TestimonialsSection({ progress }: { progress: any }) {
+  const { t } = useTranslation(); // ✅ NEW
+  
   const testimonials = [
     {
-      quote: "I used to spend 40 hours a week managing our social content pipeline. Now I spend 4. Cortexia doesn't just save time—it gave me my creativity back.",
-      author: "Sarah Chen",
-      role: "Creative Director, NovaTech",
+      quote: t('landing.testimonials.testimonial1.quote'),
+      author: t('landing.testimonials.testimonial1.author'),
+      role: t('landing.testimonials.testimonial1.role'),
       avatar: "SC",
       type: "enterprise"
     },
     {
-      quote: "The first time I saw my sketches turn into professional product shots, I actually teared up. Now I'm a Top Creator earning from my art.",
-      author: "Jordan Martinez",
-      role: "Product Designer & Creator",
+      quote: t('landing.testimonials.testimonial2.quote'),
+      author: t('landing.testimonials.testimonial2.author'),
+      role: t('landing.testimonials.testimonial2.role'),
       avatar: "JM",
       type: "individual"
     },
     {
-      quote: "We shipped AI avatars in our app in 3 days. Our users think we built it from scratch. The API is that good.",
-      author: "Dev Patel",
-      role: "CTO, Streamline Apps",
+      quote: t('landing.testimonials.testimonial3.quote'),
+      author: t('landing.testimonials.testimonial3.author'),
+      role: t('landing.testimonials.testimonial3.role'),
       avatar: "DP",
       type: "developer"
     }
@@ -650,14 +629,14 @@ function TestimonialsSection({ progress }: { progress: any }) {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            Loved by creators.
+            {t('landing.testimonials.title')}
             <br />
-            <span className="text-white/40">Trusted by teams. Built for developers.</span>
+            <span className="text-white/40">{t('landing.testimonials.subtitle')}</span>
           </motion.h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {testimonials.map((t, i) => (
+          {testimonials.map((testimonial, i) => (
             <motion.div
               key={i}
               className="p-8 rounded-3xl"
@@ -674,7 +653,7 @@ function TestimonialsSection({ progress }: { progress: any }) {
             >
               <div className="mb-6 text-5xl text-[#F5EBE0]/30">"</div>
               <p className="text-lg text-white/80 mb-8 leading-relaxed">
-                {t.quote}
+                {testimonial.quote}
               </p>
               <div className="flex items-center gap-4">
                 <div 
@@ -684,11 +663,11 @@ function TestimonialsSection({ progress }: { progress: any }) {
                     color: '#1A1A1A'
                   }}
                 >
-                  {t.avatar}
+                  {testimonial.avatar}
                 </div>
                 <div>
-                  <div className="font-semibold text-white">{t.author}</div>
-                  <div className="text-sm text-white/50">{t.role}</div>
+                  <div className="font-semibold text-white">{testimonial.author}</div>
+                  <div className="text-sm text-white/50">{testimonial.role}</div>
                 </div>
               </div>
             </motion.div>
@@ -704,6 +683,8 @@ function TestimonialsSection({ progress }: { progress: any }) {
 // ============================================================================
 
 function FinalCTA({ onGetStarted }: { onGetStarted: () => void }) {
+  const { t } = useTranslation(); // ✅ NEW
+  
   return (
     <section className="min-h-screen flex items-center justify-center px-6 py-32 relative overflow-hidden">
       {/* Animated background */}
@@ -733,55 +714,32 @@ function FinalCTA({ onGetStarted }: { onGetStarted: () => void }) {
           viewport={{ once: true }}
         >
           <h2 className="text-6xl md:text-7xl font-bold text-white mb-8 leading-tight">
-            Ready to conduct
+            {t('landing.finalCta.title')}
             <br />
             <span className="bg-gradient-to-r from-[#F5EBE0] via-[#E3D5CA] to-[#D6C9BE] bg-clip-text text-transparent">
-              your masterpiece?
+              {t('landing.finalCta.subtitle')}
             </span>
           </h2>
 
           <p className="text-xl md:text-2xl text-white/60 mb-12 max-w-3xl mx-auto">
-            Choose your path. Enter the fluid state.
+            {t('landing.finalCta.tagline').split('.')[0]}.
             <br />
-            <span className="text-white/80">Start free. Scale forever.</span>
+            <span className="text-white/80">{t('landing.finalCta.tagline').split('.')[1]}.</span>
           </p>
 
           {/* Main CTA */}
-          <motion.button
+          <Button
             onClick={onGetStarted}
-            className="group relative px-12 py-6 rounded-2xl overflow-hidden text-xl font-semibold"
-            style={{
-              background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
-              boxShadow: '0 30px 80px rgba(245,235,224,0.4), inset 0 1px 0 rgba(255,255,255,0.5)',
-              color: '#1A1A1A'
-            }}
-            whileHover={{ 
-              scale: 1.05,
-              boxShadow: '0 40px 100px rgba(245,235,224,0.5), inset 0 1px 0 rgba(255,255,255,0.7)'
-            }}
-            whileTap={{ scale: 0.98 }}
+            variant="primary"
+            size="lg"
+            icon={<ArrowRight size={24} />}
+            className="text-xl px-12 py-6"
           >
-            {/* Liquid shimmer effect */}
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0"
-              animate={{
-                x: ['-200%', '200%']
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-            
-            <span className="relative flex items-center gap-3">
-              Enter the Fluid State
-              <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
-            </span>
-          </motion.button>
+            {t('landing.finalCta.cta')}
+          </Button>
 
           <p className="mt-8 text-sm text-white/40">
-            No credit card required • 25 free credits every month • Choose your path in 60 seconds
+            {t('landing.finalCta.note')}
           </p>
         </motion.div>
       </div>

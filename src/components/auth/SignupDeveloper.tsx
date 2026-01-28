@@ -20,6 +20,7 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
     useCase: '',
     githubUsername: '',
     referralCode: '',
+    privacyConsent: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -293,6 +294,37 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
               <p className="text-sm text-red-400">{error}</p>
             </motion.div>
           )}
+
+          {/* ✅ RGPD: Privacy Policy & ToS Consent */}
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+            <input
+              type="checkbox"
+              id="privacy-consent-developer"
+              checked={formData.privacyConsent || false}
+              onChange={(e) => setFormData({ ...formData, privacyConsent: e.target.checked })}
+              className="mt-1 w-4 h-4 rounded border-white/20 bg-white/10 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0 cursor-pointer"
+              required
+            />
+            <label htmlFor="privacy-consent-developer" className="text-sm text-white/70 cursor-pointer">
+              J'accepte la{' '}
+              <button
+                type="button"
+                onClick={() => window.open('/privacy-policy', '_blank')}
+                className="text-cyan-400 hover:text-cyan-300 underline"
+              >
+                Politique de Confidentialité
+              </button>
+              {' '}et les{' '}
+              <button
+                type="button"
+                onClick={() => window.open('/terms-of-service', '_blank')}
+                className="text-cyan-400 hover:text-cyan-300 underline"
+              >
+                Conditions d'Utilisation
+              </button>
+              . *
+            </label>
+          </div>
 
           {/* Submit Button */}
           <button

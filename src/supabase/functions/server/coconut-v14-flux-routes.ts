@@ -4,9 +4,13 @@
  */
 
 import { Hono } from 'npm:hono';
+import { cors } from 'npm:hono/cors';
+import { logger } from 'npm:hono/logger';
+import * as storage from './coconut-v14-storage.ts';
+import * as analyzer from './coconut-v14-analyzer.ts';
 import * as cocoboard from './coconut-v14-cocoboard.ts';
 import * as flux from './coconut-v14-flux.ts';
-import * as credits from './coconut-v14-credits.ts';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
 import type { ApiResponse } from '../../../lib/types/coconut-v14.ts';
 
@@ -51,10 +55,10 @@ app.post('/coconut-v14/flux/text-to-image', async (c) => {
     
     // Check credits (15 crédits pour text-to-image)
     const generationCost = flux.FLUX_SERVICE_INFO.pricing.textToImage;
-    const hasCredits = await credits.checkCredits(userId, generationCost);
+    const hasCredits = await CreditsSystem.checkCredits(userId, generationCost);
     
     if (!hasCredits) {
-      const balance = await credits.getCreditBalance(userId);
+      const balance = await CreditsSystem.getCreditBalance(userId);
       return c.json<ApiResponse>({ 
         success: false,
         error: 'Insufficient credits',
@@ -67,7 +71,7 @@ app.post('/coconut-v14/flux/text-to-image', async (c) => {
     const taskId = await flux.createTextToImageTask(prompt, specs);
     
     // Deduct credits
-    await credits.deductCredits(
+    await CreditsSystem.deductCredits(
       userId,
       generationCost,
       'Flux 2 Pro text-to-image generation',
@@ -156,10 +160,10 @@ app.post('/coconut-v14/flux/image-to-image', async (c) => {
     
     // Check credits (20 crédits pour image-to-image)
     const generationCost = flux.FLUX_SERVICE_INFO.pricing.imageToImage;
-    const hasCredits = await credits.checkCredits(userId, generationCost);
+    const hasCredits = await CreditsSystem.checkCredits(userId, generationCost);
     
     if (!hasCredits) {
-      const balance = await credits.getCreditBalance(userId);
+      const balance = await CreditsSystem.getCreditBalance(userId);
       return c.json<ApiResponse>({ 
         success: false,
         error: 'Insufficient credits',
@@ -172,7 +176,7 @@ app.post('/coconut-v14/flux/image-to-image', async (c) => {
     const taskId = await flux.createImageToImageTask(prompt, references, specs);
     
     // Deduct credits
-    await credits.deductCredits(
+    await CreditsSystem.deductCredits(
       userId,
       generationCost,
       `Flux 2 Pro image-to-image (${references.length} refs)`,

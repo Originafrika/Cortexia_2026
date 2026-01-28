@@ -4,12 +4,11 @@
  */
 
 import { Hono } from 'npm:hono';
-import { cors } from 'npm:hono/cors';
-import { logger } from 'npm:hono/logger';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 import * as kv from './kv_store.tsx';
 import type { VideoShot, VideoAnalysisResponse } from './coconut-v14-video-analyzer.ts';
 import { handleAnalyzeVideoIntent } from './coconut-v14-video-analyzer.ts';
-import { getUserCredits, deductCredits } from './credits-manager.ts'; // ✅ Import credits manager
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import { sanitizePrompt, detectProblematicPatterns } from './coconut-v14-prompt-sanitizer.ts'; // ✅ Import sanitizer
 
 const app = new Hono().basePath('/coconut-v14/video'); // ✅ FIX: Add basePath
@@ -325,7 +324,7 @@ app.post('/generate', async (c) => {
     
     // ✅ USE CREDITS MANAGER instead of direct KV access
     console.log(`💳 Getting user credits for userId: ${userId}...`);
-    const userCredits = await getUserCredits(userId);
+    const userCredits = await CreditsSystem.getUserCredits(userId);
     
     console.log(`💳 User credits retrieved:`, userCredits);
     const availableBalance = userCredits.free + userCredits.paid;
@@ -344,7 +343,7 @@ app.post('/generate', async (c) => {
     }
     
     // ✅ DEDUCT CREDITS using credits manager
-    const deductResult = await deductCredits(userId, totalCost);
+    const deductResult = await CreditsSystem.deductCredits(userId, totalCost);
     
     if (!deductResult.success) {
       console.error(`❌ Failed to deduct credits:`, deductResult.error);

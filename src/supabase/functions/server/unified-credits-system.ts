@@ -1,111 +1,59 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * CORTEXIA UNIFIED CREDITS SYSTEM V3
+ * UNIFIED CREDITS SYSTEM
  * ═══════════════════════════════════════════════════════════════════════════
  * 
- * Single source of truth for ALL credit operations across Cortexia.
- * Handles Individual, Enterprise, and Developer users with consistent logic.
+ * Single source of truth for all credit operations across Cortexia.
+ * Handles Individual, Enterprise, and Developer accounts.
  * 
- * @author Cortexia Team
- * @version 3.0.0
- * @date 2026-01-20
+ * PRIORITY SYSTEM:
+ * - PAID credits first (premium models: Flux Pro, Replicate, etc.)
+ * - FREE credits second (Pollinations fallback only)
  */
 
 import * as kv from './kv_store.tsx';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TYPES & INTERFACES
+// TYPES
 // ═══════════════════════════════════════════════════════════════════════════
 
-/**
- * User type classification
- */
-export type UserType = 'individual' | 'enterprise' | 'developer';
-
-/**
- * Credit balance for all user types
- */
 export interface CreditBalance {
-  // Common fields
-  free: number;           // Free credits (0 for Enterprise)
-  paid: number;           // Paid credits (never expire)
-  total: number;          // Total available credits
-  
-  // Enterprise-specific fields (null for Individual/Developer)
+  free: number;
+  paid: number;
+  total: number;
   isEnterprise: boolean;
-  monthlyCredits?: number;              // 10,000 for Enterprise
-  monthlyCreditsRemaining?: number;     // Remaining this month
-  monthlyCreditsUsed?: number;          // Used this month
-  addOnCredits?: number;                // Add-on credits (paid)
-  nextResetDate?: string;               // ISO date of next reset
-  subscriptionStatus?: 'active' | 'past_due' | 'canceled' | 'unpaid';
+  enterpriseMonthly?: number;
+  enterpriseAddOn?: number;
+  nextResetDate?: string;
 }
 
-/**
- * Enterprise subscription data
- */
-interface EnterpriseSubscription {
+export interface Transaction {
   userId: string;
-  stripeSubscriptionId: string;
-  stripeCustomerId: string;
-  subscriptionStatus: 'active' | 'past_due' | 'canceled' | 'unpaid';
-  
-  // Monthly credits
-  monthlyCredits: number;                // Always 10,000
-  subscriptionCreditsUsed: number;       // Used this period
-  subscriptionCreditsRemaining: number;  // Remaining this period
-  
-  // Add-on credits (stored separately in credits:${userId}:paid)
-  addOnCredits: number;
-  
-  // Total
-  totalCredits: number;
-  
-  // Billing cycle
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  nextResetDate: string;
-  
-  // Metadata
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * Credit transaction log
- */
-interface CreditTransaction {
-  id: string;
-  userId: string;
-  type: 'usage' | 'purchase' | 'refund' | 'reset' | 'migration';
-  amount: number;           // Positive for add, negative for deduct
+  type: 'purchase' | 'usage' | 'refund' | 'grant' | 'reset';
+  amount: number;
   balanceBefore: number;
   balanceAfter: number;
   reason: string;
   metadata?: any;
-  timestamp: string;
+  timestamp: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// KV STORE KEYS (SINGLE SOURCE OF TRUTH)
+// STORAGE KEYS
 // ═══════════════════════════════════════════════════════════════════════════
 
 const KEYS = {
-  // NEW UNIFIED SYSTEM (use this everywhere)
   creditsFree: (userId: string) => `credits:${userId}:free`,
   creditsPaid: (userId: string) => `credits:${userId}:paid`,
-  creditsLastReset: (userId: string) => `credits:${userId}:lastReset`,
-  
-  // Enterprise subscription
   enterpriseSubscription: (userId: string) => `enterprise:subscription:${userId}`,
+  transaction: (userId: string, txId: string) => `credits:tx:${userId}:${txId}`,
+  transactionList: (userId: string) => `credits:tx:${userId}:list`,
   
-  // Transaction logs
-  transactionLog: (transactionId: string) => `credits:transaction:${transactionId}`,
-  userTransactions: (userId: string) => `credits:transactions:${userId}`,
-  
-  // LEGACY KEYS (for migration only, DO NOT USE)
-  legacyCredits: (userId: string) => `user:${userId}:credits`,
-} as const;
+  // Legacy keys for migration
+  legacyProfile: (userId: string) => `user:profile:${userId}`,
+  legacyCredits: (userId: string) => `user:credits:${userId}`,
+  legacyOldFormat: (userId: string) => `user:${userId}:credits`,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CORE FUNCTIONS
@@ -113,77 +61,59 @@ const KEYS = {
 
 /**
  * Get user credit balance
- * Handles both Individual/Developer and Enterprise users automatically
  */
 export async function getCredits(userId: string): Promise<CreditBalance> {
-  // Check if Enterprise user
-  const enterpriseSub = await getEnterpriseSubscription(userId);
+  // Get Individual/Developer credits
+  const free = Number(await kv.get(KEYS.creditsFree(userId)) || 0);
+  const paid = Number(await kv.get(KEYS.creditsPaid(userId)) || 0);
   
-  if (enterpriseSub) {
-    // Enterprise user
+  // Check Enterprise subscription
+  const enterpriseSub = await kv.get(KEYS.enterpriseSubscription(userId)) as any;
+  const isEnterprise = !!(enterpriseSub && enterpriseSub.status === 'active');
+  
+  let enterpriseMonthly = 0;
+  let enterpriseAddOn = 0;
+  let nextResetDate: string | undefined;
+  
+  if (isEnterprise && enterpriseSub) {
+    enterpriseMonthly = Number(enterpriseSub.monthlyCredits || 0);
+    enterpriseAddOn = Number(enterpriseSub.addOnCredits || 0);
+    nextResetDate = enterpriseSub.currentPeriodEnd;
+  }
+  
+  const total = free + paid + enterpriseMonthly + enterpriseAddOn;
+  
+  // Auto-initialize new users
+  if (total === 0 && !isEnterprise) {
+    await kv.set(KEYS.creditsFree(userId), 25); // ✅ FIXED: 25 free credits for new Individual users (monthly reset)
     return {
-      free: 0, // Enterprise users have no free credits
-      paid: enterpriseSub.addOnCredits,
-      total: enterpriseSub.totalCredits,
-      
-      isEnterprise: true,
-      monthlyCredits: enterpriseSub.monthlyCredits,
-      monthlyCreditsRemaining: enterpriseSub.subscriptionCreditsRemaining,
-      monthlyCreditsUsed: enterpriseSub.subscriptionCreditsUsed,
-      addOnCredits: enterpriseSub.addOnCredits,
-      nextResetDate: enterpriseSub.nextResetDate,
-      subscriptionStatus: enterpriseSub.subscriptionStatus,
+      free: 25,
+      paid: 0,
+      total: 25,
+      isEnterprise: false
     };
   }
   
-  // Individual/Developer user
-  const free = await kv.get(KEYS.creditsFree(userId)) || 0;
-  const paid = await kv.get(KEYS.creditsPaid(userId)) || 0;
-  
   return {
-    free: Number(free),
-    paid: Number(paid),
-    total: Number(free) + Number(paid),
-    isEnterprise: false,
+    free,
+    paid,
+    total,
+    isEnterprise,
+    enterpriseMonthly,
+    enterpriseAddOn,
+    nextResetDate
   };
 }
 
 /**
- * Deduct credits from user
- * Automatically handles Individual vs Enterprise logic
+ * Alias for getCredits() - for compatibility
  */
-export async function deductCredits(
-  userId: string,
-  amount: number,
-  reason: string,
-  metadata?: any
-): Promise<{ success: boolean; balance: CreditBalance; error?: string }> {
-  console.log(`💳 [Credits] Deduct ${amount} credits from ${userId}: ${reason}`);
-  
-  // Get current balance
-  const balance = await getCredits(userId);
-  
-  // Check sufficient credits
-  if (balance.total < amount) {
-    console.error(`❌ [Credits] Insufficient credits: ${balance.total} < ${amount}`);
-    return {
-      success: false,
-      balance,
-      error: `Insufficient credits. Required: ${amount}, Available: ${balance.total}`,
-    };
-  }
-  
-  // Deduct based on user type
-  if (balance.isEnterprise) {
-    return await deductEnterpriseCredits(userId, amount, reason, metadata);
-  } else {
-    return await deductIndividualCredits(userId, amount, reason, metadata);
-  }
+export async function getUserCredits(userId: string): Promise<CreditBalance> {
+  return getCredits(userId);
 }
 
 /**
- * Add paid credits to user
- * Used after Stripe purchase
+ * Add paid credits
  */
 export async function addPaidCredits(
   userId: string,
@@ -191,32 +121,241 @@ export async function addPaidCredits(
   reason: string,
   metadata?: any
 ): Promise<CreditBalance> {
-  console.log(`💰 [Credits] Add ${amount} paid credits to ${userId}: ${reason}`);
+  console.log(`💰 [Credits] Adding ${amount} PAID credits to ${userId}`);
   
-  const currentPaid = await kv.get(KEYS.creditsPaid(userId)) || 0;
-  const newPaid = Number(currentPaid) + amount;
+  const current = await getCredits(userId);
+  const newPaid = current.paid + amount;
   
+  await kv.set(KEYS.creditsPaid(userId), newPaid);
+  
+  await logTransaction({
+    userId,
+    type: 'purchase',
+    amount,
+    balanceBefore: current.total,
+    balanceAfter: current.total + amount,
+    reason,
+    metadata,
+    timestamp: Date.now()
+  });
+  
+  const newBalance = await getCredits(userId);
+  console.log(`✅ [Credits] Added: ${current.total} → ${newBalance.total}`);
+  
+  return newBalance;
+}
+
+/**
+ * Add free credits
+ */
+export async function addFreeCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  metadata?: any
+): Promise<CreditBalance> {
+  console.log(`🆓 [Credits] Adding ${amount} FREE credits to ${userId}`);
+  
+  const current = await getCredits(userId);
+  const newFree = current.free + amount;
+  
+  await kv.set(KEYS.creditsFree(userId), newFree);
+  
+  await logTransaction({
+    userId,
+    type: 'purchase',
+    amount,
+    balanceBefore: current.total,
+    balanceAfter: current.total + amount,
+    reason,
+    metadata,
+    timestamp: Date.now()
+  });
+  
+  const newBalance = await getCredits(userId);
+  console.log(`✅ [Credits] Added: ${current.total} → ${newBalance.total}`);
+  
+  return newBalance;
+}
+
+/**
+ * Deduct ONLY free credits
+ */
+export async function deductFreeCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  metadata?: any
+): Promise<{ success: boolean; balance: CreditBalance; error?: string }> {
+  console.log(`🆓 [Credits] Deducting ${amount} FREE credits from ${userId}: ${reason}`);
+  
+  const current = await getCredits(userId);
+  
+  // Check sufficient free credits
+  if (current.free < amount) {
+    console.error(`❌ [Credits] Insufficient FREE credits: need ${amount}, have ${current.free}`);
+    return {
+      success: false,
+      balance: current,
+      error: `Insufficient free credits. Need ${amount}, have ${current.free}.`
+    };
+  }
+  
+  // Deduct from free credits
+  const newFree = current.free - amount;
+  await kv.set(KEYS.creditsFree(userId), newFree);
+  
+  // Log transaction
+  await logTransaction({
+    userId,
+    type: 'usage',
+    amount: -amount,
+    balanceBefore: current.total,
+    balanceAfter: current.total - amount,
+    reason,
+    metadata: { ...metadata, creditType: 'free' },
+    timestamp: Date.now()
+  });
+  
+  const newBalance = await getCredits(userId);
+  console.log(`✅ [Credits] FREE deduction complete: ${current.total} → ${newBalance.total}`);
+  
+  return { success: true, balance: newBalance };
+}
+
+/**
+ * Deduct ONLY paid credits
+ */
+export async function deductPaidCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  metadata?: any
+): Promise<{ success: boolean; balance: CreditBalance; error?: string }> {
+  console.log(`💳 [Credits] Deducting ${amount} PAID credits from ${userId}: ${reason}`);
+  
+  const current = await getCredits(userId);
+  
+  // Check sufficient paid credits
+  if (current.paid < amount) {
+    console.error(`❌ [Credits] Insufficient PAID credits: need ${amount}, have ${current.paid}`);
+    return {
+      success: false,
+      balance: current,
+      error: `Insufficient paid credits. Need ${amount}, have ${current.paid}.`
+    };
+  }
+  
+  // Deduct from paid credits
+  const newPaid = current.paid - amount;
   await kv.set(KEYS.creditsPaid(userId), newPaid);
   
   // Log transaction
   await logTransaction({
     userId,
-    type: 'purchase',
-    amount,
-    balanceBefore: Number(currentPaid),
-    balanceAfter: newPaid,
+    type: 'usage',
+    amount: -amount,
+    balanceBefore: current.total,
+    balanceAfter: current.total - amount,
     reason,
-    metadata,
+    metadata: { ...metadata, creditType: 'paid' },
+    timestamp: Date.now()
   });
   
-  console.log(`✅ [Credits] Paid credits updated: ${currentPaid} → ${newPaid}`);
+  const newBalance = await getCredits(userId);
+  console.log(`✅ [Credits] PAID deduction complete: ${current.total} → ${newBalance.total}`);
   
-  return await getCredits(userId);
+  return { success: true, balance: newBalance };
 }
 
 /**
- * Refund credits to user
- * Used when generation fails
+ * Deduct credits with priority: PAID → FREE (or Enterprise)
+ */
+export async function deductCredits(
+  userId: string,
+  amount: number,
+  reason: string,
+  metadata?: any
+): Promise<{ success: boolean; balance: CreditBalance; error?: string }> {
+  console.log(`💳 [Credits] Deducting ${amount} from ${userId}: ${reason}`);
+  
+  const current = await getCredits(userId);
+  
+  // Check sufficient balance
+  if (current.total < amount) {
+    console.error(`❌ [Credits] Insufficient: need ${amount}, have ${current.total}`);
+    return {
+      success: false,
+      balance: current,
+      error: `Insufficient credits. Need ${amount}, have ${current.total}.`
+    };
+  }
+  
+  let remaining = amount;
+  const usage = { paid: 0, free: 0, enterpriseMonthly: 0, enterpriseAddOn: 0 };
+  
+  // Priority 1: PAID credits (premium models)
+  if (current.paid > 0 && remaining > 0) {
+    const take = Math.min(remaining, current.paid);
+    usage.paid = take;
+    remaining -= take;
+    await kv.set(KEYS.creditsPaid(userId), current.paid - take);
+    console.log(`💳 [Credits] Used ${take} PAID credits`);
+  }
+  
+  // Priority 2: FREE credits (Pollinations fallback)
+  if (current.free > 0 && remaining > 0) {
+    const take = Math.min(remaining, current.free);
+    usage.free = take;
+    remaining -= take;
+    await kv.set(KEYS.creditsFree(userId), current.free - take);
+    console.log(`🆓 [Credits] Used ${take} FREE credits`);
+  }
+  
+  // Priority 3: Enterprise add-on credits
+  if (current.isEnterprise && current.enterpriseAddOn && current.enterpriseAddOn > 0 && remaining > 0) {
+    const take = Math.min(remaining, current.enterpriseAddOn);
+    usage.enterpriseAddOn = take;
+    remaining -= take;
+    
+    const enterpriseSub = await kv.get(KEYS.enterpriseSubscription(userId)) as any;
+    enterpriseSub.addOnCredits = current.enterpriseAddOn - take;
+    await kv.set(KEYS.enterpriseSubscription(userId), enterpriseSub);
+    console.log(`💼 [Credits] Used ${take} ENTERPRISE ADD-ON credits`);
+  }
+  
+  // Priority 4: Enterprise monthly credits
+  if (current.isEnterprise && current.enterpriseMonthly && current.enterpriseMonthly > 0 && remaining > 0) {
+    const take = Math.min(remaining, current.enterpriseMonthly);
+    usage.enterpriseMonthly = take;
+    remaining -= take;
+    
+    const enterpriseSub = await kv.get(KEYS.enterpriseSubscription(userId)) as any;
+    enterpriseSub.monthlyCredits = current.enterpriseMonthly - take;
+    await kv.set(KEYS.enterpriseSubscription(userId), enterpriseSub);
+    console.log(`💼 [Credits] Used ${take} ENTERPRISE MONTHLY credits`);
+  }
+  
+  // Log transaction
+  await logTransaction({
+    userId,
+    type: 'usage',
+    amount: -amount,
+    balanceBefore: current.total,
+    balanceAfter: current.total - amount,
+    reason,
+    metadata: { ...metadata, usage },
+    timestamp: Date.now()
+  });
+  
+  const newBalance = await getCredits(userId);
+  console.log(`✅ [Credits] Deduction complete: ${current.total} → ${newBalance.total}`);
+  
+  return { success: true, balance: newBalance };
+}
+
+/**
+ * Refund credits (when generation fails)
  */
 export async function refundCredits(
   userId: string,
@@ -224,368 +363,33 @@ export async function refundCredits(
   reason: string,
   metadata?: any
 ): Promise<CreditBalance> {
-  console.log(`🔄 [Credits] Refund ${amount} credits to ${userId}: ${reason}`);
+  console.log(`🔄 [Credits] Refunding ${amount} credits to ${userId}`);
   
-  // For refunds, we add back to paid credits (most recent deduction)
-  const currentPaid = await kv.get(KEYS.creditsPaid(userId)) || 0;
-  const newPaid = Number(currentPaid) + amount;
+  const current = await getCredits(userId);
   
+  // Refund to paid credits (assumption: most refunds are from paid operations)
+  const newPaid = current.paid + amount;
   await kv.set(KEYS.creditsPaid(userId), newPaid);
   
   await logTransaction({
     userId,
     type: 'refund',
     amount,
-    balanceBefore: Number(currentPaid),
-    balanceAfter: newPaid,
+    balanceBefore: current.total,
+    balanceAfter: current.total + amount,
     reason,
     metadata,
+    timestamp: Date.now()
   });
   
-  console.log(`✅ [Credits] Refund completed: ${currentPaid} → ${newPaid}`);
+  const newBalance = await getCredits(userId);
+  console.log(`✅ [Credits] Refunded: ${current.total} → ${newBalance.total}`);
   
-  return await getCredits(userId);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// INDIVIDUAL/DEVELOPER FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Deduct credits from Individual/Developer user
- * Priority: Free credits first, then paid credits
- */
-async function deductIndividualCredits(
-  userId: string,
-  amount: number,
-  reason: string,
-  metadata?: any
-): Promise<{ success: boolean; balance: CreditBalance; error?: string }> {
-  const currentFree = await kv.get(KEYS.creditsFree(userId)) || 0;
-  const currentPaid = await kv.get(KEYS.creditsPaid(userId)) || 0;
-  
-  let remaining = amount;
-  let newFree = Number(currentFree);
-  let newPaid = Number(currentPaid);
-  
-  // 1. Use free credits first
-  if (newFree > 0) {
-    const takeFromFree = Math.min(remaining, newFree);
-    newFree -= takeFromFree;
-    remaining -= takeFromFree;
-  }
-  
-  // 2. Use paid credits
-  if (remaining > 0) {
-    newPaid -= remaining;
-  }
-  
-  // Save new balances
-  await kv.set(KEYS.creditsFree(userId), newFree);
-  await kv.set(KEYS.creditsPaid(userId), newPaid);
-  
-  // Log transaction
-  await logTransaction({
-    userId,
-    type: 'usage',
-    amount: -amount,
-    balanceBefore: Number(currentFree) + Number(currentPaid),
-    balanceAfter: newFree + newPaid,
-    reason,
-    metadata,
-  });
-  
-  console.log(`✅ [Credits] Individual deduction: ${Number(currentFree) + Number(currentPaid)} → ${newFree + newPaid}`);
-  
-  const balance = await getCredits(userId);
-  return { success: true, balance };
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ENTERPRISE FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Get Enterprise subscription
- * Returns null if user is not Enterprise
- */
-export async function getEnterpriseSubscription(
-  userId: string
-): Promise<EnterpriseSubscription | null> {
-  const sub = await kv.get(KEYS.enterpriseSubscription(userId));
-  
-  if (!sub) return null;
-  
-  // Read add-on credits (stored separately)
-  const addOnCredits = await kv.get(KEYS.creditsPaid(userId)) || 0;
-  (sub as any).addOnCredits = Number(addOnCredits);
-  
-  // Check if monthly reset is needed
-  const needsReset = await checkMonthlyReset(userId, sub as EnterpriseSubscription);
-  if (needsReset) {
-    // Refresh subscription data after reset
-    return await kv.get(KEYS.enterpriseSubscription(userId));
-  }
-  
-  // Recalculate totals
-  const subscription = sub as EnterpriseSubscription;
-  subscription.subscriptionCreditsRemaining = 10000 - subscription.subscriptionCreditsUsed;
-  subscription.totalCredits = subscription.subscriptionCreditsRemaining + subscription.addOnCredits;
-  
-  return subscription;
+  return newBalance;
 }
 
 /**
- * Check if monthly credits need reset
- */
-async function checkMonthlyReset(
-  userId: string,
-  subscription: EnterpriseSubscription
-): Promise<boolean> {
-  const now = new Date();
-  const resetDate = new Date(subscription.nextResetDate);
-  
-  if (now >= resetDate) {
-    console.log(`🔄 [Enterprise] Resetting monthly credits for ${userId}`);
-    
-    // Reset monthly credits
-    subscription.subscriptionCreditsUsed = 0;
-    subscription.subscriptionCreditsRemaining = 10000;
-    subscription.currentPeriodStart = now.toISOString();
-    subscription.currentPeriodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    subscription.nextResetDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    subscription.updatedAt = now.toISOString();
-    
-    await kv.set(KEYS.enterpriseSubscription(userId), subscription);
-    
-    await logTransaction({
-      userId,
-      type: 'reset',
-      amount: 10000,
-      balanceBefore: 0,
-      balanceAfter: 10000,
-      reason: 'Monthly credits reset',
-      metadata: { resetDate: now.toISOString() },
-    });
-    
-    console.log(`✅ [Enterprise] Monthly credits reset to 10,000`);
-    return true;
-  }
-  
-  return false;
-}
-
-/**
- * Deduct credits from Enterprise user
- * Priority: Monthly credits first, then add-on credits
- * SECURITY: Add-on credits can only be used if subscription is active
- */
-async function deductEnterpriseCredits(
-  userId: string,
-  amount: number,
-  reason: string,
-  metadata?: any
-): Promise<{ success: boolean; balance: CreditBalance; error?: string }> {
-  const subscription = await getEnterpriseSubscription(userId);
-  
-  if (!subscription) {
-    return {
-      success: false,
-      balance: await getCredits(userId),
-      error: 'No Enterprise subscription found',
-    };
-  }
-  
-  // SECURITY CHECK: Subscription must be active
-  if (subscription.subscriptionStatus !== 'active') {
-    return {
-      success: false,
-      balance: await getCredits(userId),
-      error: 'Subscription not active. Please update payment method.',
-    };
-  }
-  
-  let remaining = amount;
-  
-  // 1. Use monthly credits first
-  if (subscription.subscriptionCreditsRemaining > 0) {
-    const takeFromMonthly = Math.min(remaining, subscription.subscriptionCreditsRemaining);
-    subscription.subscriptionCreditsUsed += takeFromMonthly;
-    subscription.subscriptionCreditsRemaining -= takeFromMonthly;
-    remaining -= takeFromMonthly;
-  }
-  
-  // 2. Use add-on credits (only if subscription active)
-  if (remaining > 0) {
-    const currentAddOn = await kv.get(KEYS.creditsPaid(userId)) || 0;
-    const newAddOn = Number(currentAddOn) - remaining;
-    
-    if (newAddOn < 0) {
-      return {
-        success: false,
-        balance: await getCredits(userId),
-        error: 'Insufficient credits',
-      };
-    }
-    
-    await kv.set(KEYS.creditsPaid(userId), newAddOn);
-    subscription.addOnCredits = newAddOn;
-  }
-  
-  // Update subscription
-  subscription.totalCredits = subscription.subscriptionCreditsRemaining + subscription.addOnCredits;
-  subscription.updatedAt = new Date().toISOString();
-  
-  await kv.set(KEYS.enterpriseSubscription(userId), subscription);
-  
-  // Log transaction
-  await logTransaction({
-    userId,
-    type: 'usage',
-    amount: -amount,
-    balanceBefore: subscription.totalCredits + amount,
-    balanceAfter: subscription.totalCredits,
-    reason,
-    metadata,
-  });
-  
-  console.log(`✅ [Enterprise] Deduction: Monthly ${subscription.subscriptionCreditsRemaining}, Add-on ${subscription.addOnCredits}`);
-  
-  const balance = await getCredits(userId);
-  return { success: true, balance };
-}
-
-/**
- * Create Enterprise subscription
- * Called after successful Stripe subscription
- */
-export async function createEnterpriseSubscription(
-  userId: string,
-  stripeSubscriptionId: string,
-  stripeCustomerId: string
-): Promise<EnterpriseSubscription> {
-  const now = new Date();
-  const nextReset = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  
-  const subscription: EnterpriseSubscription = {
-    userId,
-    stripeSubscriptionId,
-    stripeCustomerId,
-    subscriptionStatus: 'active',
-    
-    monthlyCredits: 10000,
-    subscriptionCreditsUsed: 0,
-    subscriptionCreditsRemaining: 10000,
-    addOnCredits: 0,
-    totalCredits: 10000,
-    
-    currentPeriodStart: now.toISOString(),
-    currentPeriodEnd: nextReset.toISOString(),
-    nextResetDate: nextReset.toISOString(),
-    
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
-  
-  await kv.set(KEYS.enterpriseSubscription(userId), subscription);
-  
-  console.log(`✅ [Enterprise] Subscription created for ${userId}`);
-  
-  return subscription;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// MIGRATION & UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Migrate user from legacy system to new system
- * Automatically called when legacy data is detected
- */
-export async function migrateUserCredits(userId: string): Promise<boolean> {
-  const legacyCredits = await kv.get(KEYS.legacyCredits(userId));
-  
-  if (!legacyCredits) return false;
-  
-  const legacy = legacyCredits as any;
-  const free = Number(legacy.free || legacy.freeCredits || 0);
-  const paid = Number(legacy.paid || legacy.paidCredits || 0);
-  
-  if (free === 0 && paid === 0) return false;
-  
-  console.log(`🔄 [Migration] Migrating credits for ${userId}: free=${free}, paid=${paid}`);
-  
-  // Set new format
-  await kv.set(KEYS.creditsFree(userId), free);
-  await kv.set(KEYS.creditsPaid(userId), paid);
-  
-  // Log migration
-  await logTransaction({
-    userId,
-    type: 'migration',
-    amount: free + paid,
-    balanceBefore: 0,
-    balanceAfter: free + paid,
-    reason: 'Migrated from legacy system',
-    metadata: { legacy: legacyCredits },
-  });
-  
-  console.log(`✅ [Migration] Credits migrated successfully`);
-  
-  return true;
-}
-
-/**
- * Log credit transaction
- */
-async function logTransaction(data: Omit<CreditTransaction, 'id' | 'timestamp'>): Promise<void> {
-  const transaction: CreditTransaction = {
-    id: `txn-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    timestamp: new Date().toISOString(),
-    ...data,
-  };
-  
-  // Store transaction
-  await kv.set(KEYS.transactionLog(transaction.id), transaction);
-  
-  // Add to user's transaction list
-  const userTxns = await kv.get(KEYS.userTransactions(data.userId)) || [];
-  (userTxns as string[]).unshift(transaction.id);
-  
-  // Keep only last 100 transactions
-  if ((userTxns as string[]).length > 100) {
-    (userTxns as string[]).pop();
-  }
-  
-  await kv.set(KEYS.userTransactions(data.userId), userTxns);
-}
-
-/**
- * Get user transaction history
- */
-export async function getTransactionHistory(
-  userId: string,
-  limit: number = 20
-): Promise<CreditTransaction[]> {
-  const txnIds = await kv.get(KEYS.userTransactions(userId)) || [];
-  const limitedIds = (txnIds as string[]).slice(0, limit);
-  
-  const transactions: CreditTransaction[] = [];
-  for (const id of limitedIds) {
-    const txn = await kv.get(KEYS.transactionLog(id));
-    if (txn) transactions.push(txn as CreditTransaction);
-  }
-  
-  return transactions;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ADMIN FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Admin: Set user credits
- * For testing and support
+ * Admin: Set credits directly
  */
 export async function adminSetCredits(
   userId: string,
@@ -593,44 +397,86 @@ export async function adminSetCredits(
   paid: number,
   reason: string
 ): Promise<CreditBalance> {
-  console.log(`🔧 [Admin] Set credits for ${userId}: free=${free}, paid=${paid}`);
+  console.log(`🔧 [Credits] Admin setting credits for ${userId}: free=${free}, paid=${paid}`);
+  
+  const current = await getCredits(userId);
   
   await kv.set(KEYS.creditsFree(userId), free);
   await kv.set(KEYS.creditsPaid(userId), paid);
   
   await logTransaction({
     userId,
-    type: 'purchase',
-    amount: free + paid,
-    balanceBefore: 0,
-    balanceAfter: free + paid,
-    reason: `Admin: ${reason}`,
+    type: 'grant',
+    amount: (free + paid) - (current.free + current.paid),
+    balanceBefore: current.total,
+    balanceAfter: free + paid + (current.enterpriseMonthly || 0) + (current.enterpriseAddOn || 0),
+    reason,
     metadata: { admin: true },
+    timestamp: Date.now()
   });
   
   return await getCredits(userId);
 }
 
 /**
- * Export public API
+ * Get transaction history
  */
-export const CreditsSystem = {
-  // Core operations
-  getCredits,
-  deductCredits,
-  addPaidCredits,
-  refundCredits,
+export async function getTransactionHistory(
+  userId: string,
+  limit: number = 20
+): Promise<Transaction[]> {
+  const listKey = KEYS.transactionList(userId);
+  const txIds = (await kv.get(listKey) as string[]) || [];
   
-  // Enterprise
-  getEnterpriseSubscription,
-  createEnterpriseSubscription,
+  const recentTxIds = txIds.slice(-limit).reverse();
   
-  // Utilities
-  migrateUserCredits,
-  getTransactionHistory,
+  const transactions: Transaction[] = [];
+  for (const txId of recentTxIds) {
+    const tx = await kv.get(KEYS.transaction(userId, txId));
+    if (tx) {
+      transactions.push(tx as Transaction);
+    }
+  }
   
-  // Admin
-  adminSetCredits,
+  return transactions;
+}
+
+/**
+ * Log a transaction
+ */
+async function logTransaction(tx: Transaction): Promise<void> {
+  const txId = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Store transaction
+  await kv.set(KEYS.transaction(tx.userId, txId), tx);
+  
+  // Add to list
+  const listKey = KEYS.transactionList(tx.userId);
+  const existingList = (await kv.get(listKey) as string[]) || [];
+  existingList.push(txId);
+  
+  // Keep only last 100 transactions
+  if (existingList.length > 100) {
+    existingList.shift();
+  }
+  
+  await kv.set(listKey, existingList);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const CREDITS_SYSTEM_INFO = {
+  version: '3.0.0',
+  status: 'active',
+  features: {
+    individualCredits: true,
+    enterpriseCredits: true,
+    transactionHistory: true,
+    refunds: true,
+    adminTools: true
+  }
 };
 
-export default CreditsSystem;
+console.log('✅ Unified Credits System loaded (v3.0.0)');

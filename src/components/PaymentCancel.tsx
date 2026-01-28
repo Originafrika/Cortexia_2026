@@ -4,7 +4,7 @@
  */
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router'; // ✅ FIX: Changed from react-router-dom to react-router
 
 export function PaymentCancel() {
   const navigate = useNavigate();

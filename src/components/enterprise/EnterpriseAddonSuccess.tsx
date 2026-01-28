@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router'; // ✅ FIX: Changed from react-router-dom to react-router
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
 export function EnterpriseAddonSuccess() {

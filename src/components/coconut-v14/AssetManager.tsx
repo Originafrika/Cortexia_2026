@@ -1,15 +1,10 @@
 /**
- * COCONUT V14 - ASSET MANAGER
- * Beauty Design System - 7 Arts de Perfection Divine compliant
- * 
- * ✅ FIXED (Phase 5):
- * - AM-C1: Design tokens partout
- * - AM-C2: Couleurs via tokens
- * - AM-C3: Error handler intégré avec feedback
- * - AM-H1: Icon sizing standardisé
- * - AM-H2: Focus states complets
- * - AM-M1: Responsive grid
- * - AM-M2: EmptyState component
+ * COCONUT V14 - ASSET MANAGER - LIGHT THEME
+ * COCONUT PREMIUM DESIGN SYSTEM V3
+ * - Light theme with Warm Cream accents
+ * - Responsive grid layout
+ * - Status badges with clear states
+ * - Upload/Generate/Request workflows
  */
 
 import React, { useState } from 'react';
@@ -155,23 +150,23 @@ export function AssetManager({
   }
   
   return (
-    <div className={tokens.layout.sectionSpacing}>
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className={`text-2xl text-slate-900 flex items-center ${tokens.gap.tight}`}>
-            <Package className={`${tokens.iconSize.lg} text-[var(--coconut-shell)]`} />
+          <h2 className="text-2xl font-bold text-stone-900 flex items-center gap-3">
+            <Package className="w-7 h-7 text-cream-600" />
             <span>{WORKFLOW_LABELS.missingAssets}</span>
           </h2>
-          <p className="text-slate-600 mt-1">
+          <p className="text-stone-600 mt-1">
             {WORKFLOW_LABELS.manageAssets}
           </p>
         </div>
         
         {/* Progress */}
         <div className="text-right">
-          <div className="text-sm text-slate-600 mb-1">{WORKFLOW_LABELS.progression}</div>
-          <div className="text-2xl text-slate-900">
+          <div className="text-sm text-stone-500 mb-1 font-medium">{WORKFLOW_LABELS.progression}</div>
+          <div className="text-2xl font-bold text-stone-900">
             {stats.total - stats.pending}/{stats.total}
           </div>
         </div>
@@ -179,10 +174,10 @@ export function AssetManager({
       
       {/* Stats Bar - Responsive */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label={WORKFLOW_LABELS.total} value={stats.total} color="bg-slate-100 text-slate-900" />
-        <StatCard label={WORKFLOW_LABELS.generated} value={stats.generated} color="bg-[var(--coconut-palm)]/10 text-[var(--coconut-palm)]" />
-        <StatCard label={WORKFLOW_LABELS.uploaded} value={stats.uploaded} color="bg-[var(--coconut-husk)]/10 text-[var(--coconut-shell)]" />
-        <StatCard label={WORKFLOW_LABELS.skipped} value={stats.skipped} color="bg-slate-100 text-slate-600" />
+        <StatCard label={WORKFLOW_LABELS.total} value={stats.total} color="bg-stone-100 text-stone-900" />
+        <StatCard label={WORKFLOW_LABELS.generated} value={stats.generated} color="bg-green-100 text-green-700" />
+        <StatCard label={WORKFLOW_LABELS.uploaded} value={stats.uploaded} color="bg-cream-100 text-cream-700" />
+        <StatCard label={WORKFLOW_LABELS.skipped} value={stats.skipped} color="bg-stone-100 text-stone-600" />
       </div>
       
       {/* Assets List */}
@@ -227,17 +222,17 @@ export function AssetManager({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={TRANSITIONS.medium}
-          className={`bg-[var(--coconut-palm)]/10 ${tokens.borderColors.success} border ${tokens.radius.md} p-6 text-center`}
+          className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 text-center"
         >
-          <CheckCircle2 className={`${tokens.iconSize.xxl} ${tokens.textColors.success} mx-auto mb-3`} />
-          <h3 className="text-lg text-[var(--coconut-palm)] mb-2">{WORKFLOW_LABELS.allAssetsManaged}</h3>
-          <p className="text-[var(--coconut-shell)]">
+          <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-green-700 mb-2">{WORKFLOW_LABELS.allAssetsManaged}</h3>
+          <p className="text-green-600">
             {WORKFLOW_LABELS.continueToFinalGeneration}
           </p>
           {onComplete && (
             <button
               onClick={onComplete}
-              className={`mt-4 py-2 px-4 ${tokens.gradients.info} ${tokens.textColors.white} ${tokens.radius.md} hover:opacity-90 transition-all ${tokens.focus}`}
+              className="mt-4 py-2 px-4 bg-gradient-to-r from-cream-500 to-amber-500 text-white rounded-lg hover:from-cream-600 hover:to-amber-600 transition-all shadow-lg font-medium"
             >
               {WORKFLOW_LABELS.continueToCocoBoard}
             </button>

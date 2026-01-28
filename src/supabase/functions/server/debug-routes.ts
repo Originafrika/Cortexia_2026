@@ -5,7 +5,7 @@
 
 import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
-import { getUserCredits } from './credits-manager.ts';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 
 const app = new Hono();
 
@@ -32,7 +32,7 @@ app.post('/init-credits/:userId', async (c) => {
       lastReset: new Date().toISOString()
     });
     
-    const credits = await getUserCredits(userId);
+    const credits = await CreditsSystem.getUserCredits(userId);
     
     console.log(`✅ [Debug] Credits initialized: ${JSON.stringify(credits)}`);
     

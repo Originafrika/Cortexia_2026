@@ -31,6 +31,7 @@ import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
 import { useBreakpoint } from '../../lib/hooks/useBreakpoint';
 import { CocoBoardHeader } from './CocoBoardHeader';
 import { CocoBoardSidebarPremium } from './CocoBoardSidebarPremium';
+import { CocoBoardCollaborationPanel } from './CocoBoardCollaborationPanel'; // ✅ NEW: Team collaboration
 import { PromptEditor } from './PromptEditor';
 import { ReferencesManager } from './ReferencesManager';
 import { SpecsAdjuster } from './SpecsAdjuster';
@@ -109,6 +110,15 @@ interface CocoBoardPremiumProps {
     videos: Array<{ url: string; description?: string; filename: string }>;
   } | null;
   onGenerationStart?: (generationId: string) => void;
+  // ✅ NEW: Team collaboration props
+  teamId?: string;
+  teamMembers?: Array<{
+    userId: string;
+    email: string;
+    displayName: string;
+    role: 'admin' | 'editor' | 'viewer' | 'client';
+  }>;
+  isEnterprise?: boolean;
 }
 
 // ============================================
@@ -129,7 +139,10 @@ function CocoBoardPremiumContent({
   cocoBoardId, 
   analysis, 
   uploadedReferences, 
-  onGenerationStart 
+  onGenerationStart,
+  teamId,
+  teamMembers,
+  isEnterprise
 }: CocoBoardPremiumProps) {
   // 🔊 Sound context
   const { playClick, playWhoosh, playSuccess, playError, playHover, playPop } = useSoundContext();
@@ -492,15 +505,15 @@ function CocoBoardPremiumContent({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] to-[var(--coconut-white)]">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-full blur-2xl opacity-30 animate-pulse" />
-            <Loader2 className="relative w-16 h-16 text-[var(--coconut-shell)] animate-spin mx-auto" />
+            <div className="absolute inset-0 bg-gradient-to-br from-cream-400 to-amber-400 rounded-full blur-2xl opacity-30 animate-pulse" />
+            <Loader2 className="relative w-16 h-16 text-cream-600 animate-spin mx-auto" />
           </div>
           <p className="text-lg font-medium text-[var(--coconut-shell)]">Chargement du CocoBoard...</p>
           <p className="text-sm text-[var(--coconut-husk)] mt-2">Préparation de l'espace créatif</p>
@@ -896,7 +909,20 @@ function CocoBoardPremiumContent({
 
           {/* RIGHT: STICKY SIDEBAR (1/3) */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24">
+            <div className="sticky top-24 space-y-6">
+              {/* ✅ NEW: Team Collaboration Panel (Enterprise only) */}
+              {isEnterprise && teamId && teamMembers && (
+                <CocoBoardCollaborationPanel
+                  teamId={teamId}
+                  teamMembers={teamMembers}
+                  currentUserId={userId}
+                  currentUserName="User" // TODO: Get real user name
+                  boardId={currentBoard?.id}
+                  isEnterprise={isEnterprise}
+                />
+              )}
+              
+              {/* Standard Sidebar */}
               <CocoBoardSidebarPremium
                 board={currentBoard}
                 totalCredits={totalCredits}

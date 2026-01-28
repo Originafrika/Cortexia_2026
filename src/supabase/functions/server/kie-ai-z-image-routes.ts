@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono';
-import * as credits from './credits.tsx';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as kv from './kv_store.tsx';
 import {
   createZImageTask,
@@ -59,7 +59,7 @@ app.post('/start', async (c) => {
     }
 
     // Check user credits
-    const userCredits = await credits.getUserCredits(userId);
+    const userCredits = await CreditsSystem.getUserCredits(userId);
     const cost = calculateZImageCost(aspect_ratio);
 
     console.log('[Z-Image API] Credit check:', {
@@ -80,7 +80,7 @@ app.post('/start', async (c) => {
 
     // Deduct credits immediately
     console.log('[Z-Image API] 💰 Deducting', cost, 'paid credits from user:', userId);
-    const deductResult = await credits.deductCredits(userId, cost, 'paid');
+    const deductResult = await CreditsSystem.deductCredits(userId, cost, 'paid');
 
     if (!deductResult.success) {
       return c.json({
@@ -217,7 +217,7 @@ app.get('/status/:taskId', async (c) => {
         console.error('[Z-Image API] ❌ Task failed (detected via direct check)');
         
         // Refund credits
-        await credits.refundCredits(task.userId, task.cost, 'paid');
+        await CreditsSystem.refundCredits(task.userId, task.cost, 'paid');
 
         // Update KV store
         await kv.set(`z_image_task:${taskId}`, {
@@ -325,7 +325,7 @@ app.post('/callback', async (c) => {
       
       // Refund credits
       console.log('[Z-Image Callback] 💰 Refunding', task.cost, 'credits to user:', task.userId);
-      await credits.refundCredits(task.userId, task.cost, 'paid');
+      await CreditsSystem.refundCredits(task.userId, task.cost, 'paid');
 
       // Update task status
       await kv.set(`z_image_task:${taskId}`, {

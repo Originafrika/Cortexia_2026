@@ -23,7 +23,8 @@ import {
   ChevronRight,
   Plus,
   Building2,
-  ArrowLeft
+  ArrowLeft,
+  Users,
 } from 'lucide-react';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { useSoundContext } from './SoundProvider';
@@ -42,20 +43,24 @@ type CoconutScreen =
   | 'history'
   | 'credits'
   | 'settings'
-  | 'profile';
+  | 'profile'
+  | 'team'             // ✅ NEW: Team collaboration (Enterprise only)
+  | 'client-portal';   // ✅ NEW: Client portal (Client role)
 
 interface NavigationPremiumProps {
   currentScreen: CoconutScreen;
   onNavigate: (screen: CoconutScreen) => void;
   onToggleSidebar?: () => void;
   onBackToFeed?: () => void; // ✅ NEW: Allow navigation back to Feed
+  pendingApprovalsCount?: number; // ✅ NEW: Count for badge
 }
 
 export function NavigationPremium({
   currentScreen,
   onNavigate,
   onToggleSidebar,
-  onBackToFeed
+  onBackToFeed,
+  pendingApprovalsCount = 0
 }: NavigationPremiumProps) {
   const { credits, getCoconutCredits } = useCredits();
   const { playClick, playHover } = useSoundContext();
@@ -81,6 +86,15 @@ export function NavigationPremium({
       description: 'Créer une génération',
       highlight: true
     },
+    // ✅ NEW: Team button (Enterprise only)
+    ...(credits.isEnterprise ? [{
+      id: 'team' as CoconutScreen,
+      icon: Users,
+      label: 'Team',
+      description: 'Collaboration',
+      badge: pendingApprovalsCount || 0, // ✅ FIXED: Use real pending count
+      enterpriseOnly: true
+    }] : []),
     { 
       id: 'history' as CoconutScreen, 
       icon: Clock, 
@@ -293,7 +307,21 @@ export function NavigationPremium({
                   </div>
                 </div>
                 
-                {isActive && (
+                {/* ✅ NEW: Badge for Team pending items */}
+                {item.badge && item.badge > 0 && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="relative"
+                  >
+                    <div className="absolute inset-0 bg-red-500 rounded-full blur-sm animate-pulse" />
+                    <div className="relative min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shadow-lg">
+                      {item.badge}
+                    </div>
+                  </motion.div>
+                )}
+                
+                {isActive && !item.badge && (
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}

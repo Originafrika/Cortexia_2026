@@ -210,11 +210,14 @@ export function useCoconutAccess(userId: string | null) {
       setIsLoading(false);
       fetchInProgressRef.current = false;
     }
-  }, [userId]);
+  }, []); // ✅ FIX: Remove userId dependency to prevent infinite loop
 
+  // ✅ FIX: Use userId directly in useEffect dependencies instead of fetchAccessData
   useEffect(() => {
-    fetchAccessData();
-  }, [fetchAccessData]);
+    if (userId) {
+      fetchAccessData();
+    }
+  }, [userId]); // Only re-run when userId actually changes
 
   const trackGeneration = useCallback(async (generationType: 'image' | 'video' | 'campaign') => {
     if (!userId || !accessData?.hasAccess) return false;

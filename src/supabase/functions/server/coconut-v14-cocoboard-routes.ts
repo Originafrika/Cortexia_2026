@@ -755,4 +755,57 @@ app.get('/coconut/history/list', async (c) => {
   }
 });
 
+// ============================================
+// ✅ NEW: BATCH GENERATION (Enterprise Feature)
+// ============================================
+
+import { generateBatch, type BatchGenerationRequest } from './batch-generator.tsx';
+
+app.post('/coconut/batch-generate', async (c) => {
+  console.log('🎯 [Batch] POST /coconut/batch-generate');
+  
+  try {
+    const body = await c.req.json() as BatchGenerationRequest;
+    
+    console.log(`🔄 [Batch] Starting batch generation:`, {
+      userId: body.userId,
+      count: body.batchConfig.count,
+      type: body.batchConfig.variationType,
+    });
+    
+    // Generate batch
+    const result = await generateBatch(body);
+    
+    if (result.success) {
+      console.log(`✅ [Batch] Batch generation successful: ${result.batchId}`);
+      console.log(`   - Variants: ${result.variants.length}`);
+      console.log(`   - Cost: ${result.totalCost} credits`);
+      console.log(`   - Time: ${result.estimatedTime}s`);
+      
+      return c.json({
+        success: true,
+        data: {
+          batchId: result.batchId,
+          variants: result.variants,
+          totalCost: result.totalCost,
+          estimatedTime: result.estimatedTime,
+        }
+      });
+    } else {
+      console.error(`❌ [Batch] Batch generation failed: ${result.error}`);
+      return c.json({
+        success: false,
+        error: result.error || 'Batch generation failed'
+      }, 500);
+    }
+    
+  } catch (error) {
+    console.error('❌ [Batch] Error in batch generation:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 export default app;

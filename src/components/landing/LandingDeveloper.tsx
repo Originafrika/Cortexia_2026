@@ -1,5 +1,8 @@
 import { motion } from 'motion/react';
-import { ArrowRight, Check, Code, Zap, BookOpen, Sparkles, Video, User } from 'lucide-react';
+import { ArrowRight, Check, Code, Zap, BookOpen, Sparkles, Video, User, Book, Bell, Lock, BarChart3, MessageCircle } from 'lucide-react'; // ✅ BDS: Added icons
+import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
+import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
+import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingDeveloperProps {
   onGetStarted: () => void;
@@ -7,10 +10,12 @@ interface LandingDeveloperProps {
 }
 
 export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperProps) {
+  const { t } = useTranslation(); // ✅ NEW: Translation hook
+  
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       {/* Hero Section */}
-      <section className="relative py-24 sm:py-32 px-6 overflow-hidden">
+      <section className="relative py-32 px-6 overflow-hidden">{/* ✅ BDS: Hero spacing (128px) */}
         {/* Background Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div 
@@ -59,58 +64,50 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               }}
             >
               <Code size={16} className="text-blue-400" />
-              <span className="text-sm text-blue-400">Developer API</span>
+              <span className="text-sm text-blue-400">{t('landing.developer.hero.badge')}</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-white">One API call.</span>
+              <span className="text-white">{t('landing.developer.hero.title1')}</span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                Infinite creativity.
+                {t('landing.developer.hero.title2')}
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-white/70 mb-4 max-w-3xl mx-auto">
-              Ship AI-powered features in minutes, not months.
+              {t('landing.developer.hero.subtitle')}
             </p>
             <p className="text-lg sm:text-xl text-white/60 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Images, videos, avatars. One REST API. 
+              {t('landing.developer.hero.description')}
               <br className="hidden sm:block" />
-              Your users won't believe you built it this fast.
+              {t('landing.developer.hero.description2')}
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <motion.button
+              <Button
                 onClick={onGetStarted}
-                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.85) 100%)',
-                  boxShadow: '0 20px 60px rgba(59,130,246,0.35)',
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  boxShadow: '0 25px 80px rgba(59,130,246,0.45)'
-                }}
-                whileTap={{ scale: 0.98 }}
+                variant="blue"
+                size="lg"
               >
-                <span>Get API Key</span>
-                <ArrowRight size={20} />
-              </motion.button>
+                {t('landing.developer.hero.ctaPrimary')}
+              </Button>
 
-              <button
+              <Button
                 onClick={onViewDocs}
-                className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 transition-all hover:bg-white/10 inline-flex items-center gap-3 text-lg"
+                variant="secondary"
+                size="lg"
+                icon={<BookOpen size={20} />}
               >
-                <span>View Docs</span>
-                <BookOpen size={20} />
-              </button>
+                {t('landing.developer.hero.ctaSecondary')}
+              </Button>
             </div>
 
             <p className="text-sm text-white/40">
-              Pay per use • 5 free API calls • Full documentation ready
+              {t('landing.developer.hero.note')}
             </p>
           </motion.div>
         </div>
@@ -126,10 +123,10 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              From idea to production in one afternoon
+              {t('landing.developer.timeline.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              Real integration. Real timeline. Zero ML knowledge required.
+              {t('landing.developer.timeline.subtitle')}
             </p>
           </div>
 
@@ -137,21 +134,21 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                time: '15 minutes',
-                title: 'Get your API key',
-                description: 'Sign up, grab your key, copy the first example. Done.',
+                time: t('landing.developer.timeline.step1.time'),
+                title: t('landing.developer.timeline.step1.title'),
+                description: t('landing.developer.timeline.step1.description'),
                 icon: Code,
               },
               {
-                time: '1 hour',
-                title: 'First integration',
-                description: 'POST a prompt, get an image URL. Deploy to staging.',
+                time: t('landing.developer.timeline.step2.time'),
+                title: t('landing.developer.timeline.step2.title'),
+                description: t('landing.developer.timeline.step2.description'),
                 icon: Zap,
               },
               {
-                time: '2 hours',
-                title: 'Production ready',
-                description: 'Add webhooks, error handling, ship to users. They love it.',
+                time: t('landing.developer.timeline.step3.time'),
+                title: t('landing.developer.timeline.step3.title'),
+                description: t('landing.developer.timeline.step3.description'),
                 icon: Check,
               },
             ].map((step, idx) => (
@@ -195,10 +192,10 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              This simple. Really.
+              {t('landing.developer.codeExample.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              One request. One response. Your users see magic.
+              {t('landing.developer.codeExample.subtitle')}
             </p>
           </div>
 
@@ -215,7 +212,7 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Request */}
               <div>
-                <div className="text-sm text-white/60 mb-3 uppercase tracking-wider">Request</div>
+                <div className="text-sm text-white/60 mb-3 uppercase tracking-wider">{t('landing.developer.codeExample.requestLabel')}</div>
                 <div className="p-6 rounded-2xl bg-black/60 border border-white/10 overflow-x-auto">
                   <pre className="text-sm text-purple-300 leading-relaxed">
 {`curl -X POST \\
@@ -231,7 +228,7 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
 
               {/* Response */}
               <div>
-                <div className="text-sm text-white/60 mb-3 uppercase tracking-wider">Response (4s later)</div>
+                <div className="text-sm text-white/60 mb-3 uppercase tracking-wider">{t('landing.developer.codeExample.responseLabel')}</div>
                 <div className="p-6 rounded-2xl bg-black/60 border border-white/10 overflow-x-auto">
                   <pre className="text-sm text-green-300 leading-relaxed">
 {`{
@@ -258,10 +255,10 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              What your users will love
+              {t('landing.developer.useCases.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              Real use cases. Real impact. Real fast.
+              {t('landing.developer.useCases.subtitle')}
             </p>
           </div>
 
@@ -269,24 +266,24 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
             {[
               {
                 icon: Sparkles,
-                title: 'Image Generation',
-                useCase: 'Social media app with AI profile pics',
-                endpoint: '/v1/generate/image',
-                credits: '1-15 credits',
+                title: t('landing.developer.useCases.image.title'),
+                useCase: t('landing.developer.useCases.image.useCase'),
+                endpoint: t('landing.developer.useCases.image.endpoint'),
+                credits: t('landing.developer.useCases.image.credits'),
               },
               {
                 icon: Video,
-                title: 'Video Creation',
-                useCase: 'Marketing tool with instant video ads',
-                endpoint: '/v1/generate/video',
-                credits: '25-40 credits',
+                title: t('landing.developer.useCases.video.title'),
+                useCase: t('landing.developer.useCases.video.useCase'),
+                endpoint: t('landing.developer.useCases.video.endpoint'),
+                credits: t('landing.developer.useCases.video.credits'),
               },
               {
                 icon: User,
-                title: 'Avatar Mode',
-                useCase: 'Learning app with talking teachers',
-                endpoint: '/v1/generate/avatar',
-                credits: '30 credits',
+                title: t('landing.developer.useCases.avatar.title'),
+                useCase: t('landing.developer.useCases.avatar.useCase'),
+                endpoint: t('landing.developer.useCases.avatar.endpoint'),
+                credits: t('landing.developer.useCases.avatar.credits'),
               },
             ].map((item, idx) => (
               <motion.div
@@ -322,22 +319,24 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              Everything you need. Nothing you don't.
+              {t('landing.developer.features.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              Built by developers who hate bad DX
+              {t('landing.developer.features.subtitle')}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { emoji: '📖', title: 'Clear Docs', desc: 'Copy-paste examples that actually work' },
-              { emoji: '⚡', title: 'Sub-5s Response', desc: 'Fast generation, faster feedback loop' },
-              { emoji: '🔔', title: 'Webhooks', desc: 'Real-time updates when generation completes' },
-              { emoji: '🔒', title: 'Secure Keys', desc: 'Rotate keys, set rate limits, sleep well' },
-              { emoji: '📊', title: 'Usage Dashboard', desc: 'Track API calls, costs, performance' },
-              { emoji: '💬', title: 'Dev Support', desc: 'Discord, email, we actually respond' },
-            ].map((feature, idx) => (
+              { icon: Book, title: t('landing.developer.features.feature1Title'), desc: t('landing.developer.features.feature1Desc') }, // ✅ BDS: 📖 → Book
+              { icon: Zap, title: t('landing.developer.features.feature2Title'), desc: t('landing.developer.features.feature2Desc') }, // ✅ BDS: ⚡ → Zap
+              { icon: Bell, title: t('landing.developer.features.feature3Title'), desc: t('landing.developer.features.feature3Desc') }, // ✅ BDS: 🔔 → Bell
+              { icon: Lock, title: t('landing.developer.features.feature4Title'), desc: t('landing.developer.features.feature4Desc') }, // ✅ BDS: 🔒 → Lock
+              { icon: BarChart3, title: t('landing.developer.features.feature5Title'), desc: t('landing.developer.features.feature5Desc') }, // ✅ BDS: 📊 → BarChart3
+              { icon: MessageCircle, title: t('landing.developer.features.feature6Title'), desc: t('landing.developer.features.feature6Desc') }, // ✅ BDS: 💬 → MessageCircle
+            ].map((feature, idx) => {
+              const Icon = feature.icon; // ✅ BDS: Extract icon component
+              return (
               <motion.div
                 key={idx}
                 className="p-5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group"
@@ -346,11 +345,12 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.05 }}
               >
-                <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">{feature.emoji}</div>
+                <Icon className="text-blue-400 mb-3 group-hover:scale-110 transition-transform" size={24} /> {/* ✅ BDS: Icon component */}
                 <h4 className="text-base font-semibold mb-1 text-white">{feature.title}</h4>
                 <p className="text-sm text-white/60">{feature.desc}</p>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -365,10 +365,10 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              Pay per API call. That's it.
+              {t('landing.developer.pricing.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              No setup fees. No monthly minimums. Just usage.
+              {t('landing.developer.pricing.subtitle')}
             </p>
           </div>
 
@@ -385,39 +385,39 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
             <div className="text-center mb-8">
               <div className="text-5xl sm:text-6xl font-bold mb-2">
                 <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                  $0.10
+                  {t('landing.developer.pricing.price')}
                 </span>
-                <span className="text-2xl text-white/40">/credit</span>
+                <span className="text-2xl text-white/40">{t('landing.developer.pricing.unit')}</span>
               </div>
-              <p className="text-white/60">Pay as you go</p>
+              <p className="text-white/60">{t('landing.developer.pricing.payAsYouGo')}</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6 mb-8">
               <div>
-                <h4 className="text-sm text-blue-400 mb-3 uppercase tracking-wider">Example Costs</h4>
+                <h4 className="text-sm text-blue-400 mb-3 uppercase tracking-wider">{t('landing.developer.pricing.exampleCostsTitle')}</h4>
                 <div className="space-y-2 text-sm text-white/70">
                   <div className="flex justify-between">
-                    <span>Image generation:</span>
-                    <span className="text-blue-400">$0.10 - $1.50</span>
+                    <span>{t('landing.developer.pricing.imageGenLabel')}</span>
+                    <span className="text-blue-400">{t('landing.developer.pricing.imageGenPrice')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Video generation:</span>
-                    <span className="text-blue-400">$2.50 - $4.00</span>
+                    <span>{t('landing.developer.pricing.videoGenLabel')}</span>
+                    <span className="text-blue-400">{t('landing.developer.pricing.videoGenPrice')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Avatar generation:</span>
-                    <span className="text-blue-400">$3.00</span>
+                    <span>{t('landing.developer.pricing.avatarGenLabel')}</span>
+                    <span className="text-blue-400">{t('landing.developer.pricing.avatarGenPrice')}</span>
                   </div>
                 </div>
               </div>
               <div>
-                <h4 className="text-sm text-blue-400 mb-3 uppercase tracking-wider">Included</h4>
+                <h4 className="text-sm text-blue-400 mb-3 uppercase tracking-wider">{t('landing.developer.pricing.includedTitle')}</h4>
                 <ul className="space-y-2">
                   {[
-                    '5 free API calls to test',
-                    'Webhooks & real-time updates',
-                    'Full API documentation',
-                    'Developer dashboard',
+                    t('landing.developer.pricing.included1'),
+                    t('landing.developer.pricing.included2'),
+                    t('landing.developer.pricing.included3'),
+                    t('landing.developer.pricing.included4'),
                   ].map((item, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="text-blue-400 flex-shrink-0" size={16} />
@@ -436,13 +436,13 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
                   background: 'linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.85) 100%)',
                 }}
               >
-                Get API Key
+                {t('landing.developer.pricing.ctaPrimary')}
               </button>
               <button
                 onClick={onViewDocs}
                 className="flex-1 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                Read Docs
+                {t('landing.developer.pricing.ctaSecondary')}
               </button>
             </div>
           </motion.div>
@@ -458,32 +458,24 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
             viewport={{ once: true }}
           >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-              <span className="text-white">Ship AI features</span>
+              <span className="text-white">{t('landing.developer.finalCta.title1')}</span>
               <br />
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                this afternoon.
+                {t('landing.developer.finalCta.title2')}
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-white/60 mb-10">
-              Get your API key. 5 free calls. Full docs. Start in 15 minutes.
+              {t('landing.developer.finalCta.subtitle')}
             </p>
 
-            <motion.button
+            <Button
               onClick={onGetStarted}
-              className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
-              style={{
-                background: 'linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.85) 100%)',
-                boxShadow: '0 30px 80px rgba(59,130,246,0.4)',
-              }}
-              whileHover={{ 
-                scale: 1.05,
-                boxShadow: '0 40px 100px rgba(59,130,246,0.5)'
-              }}
-              whileTap={{ scale: 0.98 }}
+              variant="blue"
+              size="lg"
+              icon={<ArrowRight size={24} />}
             >
-              <span>Enter the Fluid State</span>
-              <ArrowRight size={24} />
-            </motion.button>
+              {t('landing.developer.finalCta.cta')}
+            </Button>
           </motion.div>
         </div>
       </section>

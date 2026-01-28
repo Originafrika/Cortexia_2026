@@ -1,16 +1,14 @@
 /**
- * DIRECTION SELECTOR ULTRA-PREMIUM - Choix de la direction créative
+ * DIRECTION SELECTOR ULTRA-PREMIUM - LIGHT THEME
  * Étape 3 du workflow: Analyzing → Direction Selector → Analysis View
  * 
- * Premium Features:
+ * COCONUT PREMIUM DESIGN SYSTEM V3
+ * - Light theme with Warm Cream accents
  * - Hero section avec résumé de l'analyse
  * - Layout asymétrique (Featured + Grid)
  * - Preview cards avec mood/palette/keywords
  * - Comparaison visuelle premium
- * - Palette Coconut Warm exclusive
- * - Animations sophistiquées
  * - BDS 7 Arts compliance
- * - Score cible: 98%+
  */
 
 import React, { useState } from 'react';
@@ -87,11 +85,11 @@ export function DirectionSelectorPremium({
   const recommendedDirection = availableDirections[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] relative overflow-hidden">
+    <div className="min-h-screen bg-white relative overflow-hidden">
       
-      {/* Premium ambient lights */}
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(212,165,116,0.12)_0%,transparent_40%)]" />
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(249,115,22,0.08)_0%,transparent_40%)]" />
+      {/* Premium ambient lights - Light theme */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,229,224,0.4)_0%,transparent_50%)]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(227,213,202,0.3)_0%,transparent_50%)]" />
       
       <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
@@ -103,19 +101,19 @@ export function DirectionSelectorPremium({
           className="space-y-4"
         >
           {/* Step indicator */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 backdrop-blur-xl border border-white/40">
-            <Sparkles className="w-4 h-4 text-[var(--coconut-shell)]" />
-            <span className="text-sm font-medium text-[var(--coconut-shell)]">Phase 3 • Direction créative</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cream-50 border border-cream-200">
+            <Sparkles className="w-4 h-4 text-cream-600" />
+            <span className="text-sm font-medium text-stone-700">Phase 3 • Direction créative</span>
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-palm)] to-[var(--coconut-shell)] bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-stone-900 via-cream-700 to-stone-900 bg-clip-text text-transparent">
             Choisissez votre direction créative
           </h1>
 
           {/* Subtitle with analysis summary */}
-          <p className="text-lg text-[var(--coconut-husk)] max-w-3xl">
-            Gemini a analysé votre projet et généré <span className="font-semibold text-[var(--coconut-shell)]">{availableDirections.length} directions créatives</span> optimisées. 
+          <p className="text-lg text-stone-600 max-w-3xl">
+            Gemini a analysé votre projet et généré <span className="font-semibold text-cream-700">{availableDirections.length} directions créatives</span> optimisées. 
             Sélectionnez celle qui correspond le mieux à votre vision.
           </p>
 
@@ -127,7 +125,7 @@ export function DirectionSelectorPremium({
                   playClick();
                   onEdit();
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/60 border border-white/40 text-[var(--coconut-husk)] hover:bg-white/80 hover:text-[var(--coconut-shell)] transition-all text-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900 hover:border-cream-300 transition-all text-sm font-medium"
               >
                 <Edit className="w-4 h-4" />
                 <span>Modifier l'intent</span>
@@ -139,7 +137,7 @@ export function DirectionSelectorPremium({
                   playClick();
                   onReanalyze();
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/60 border border-white/40 text-[var(--coconut-husk)] hover:bg-white/80 hover:text-[var(--coconut-shell)] transition-all text-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900 hover:border-cream-300 transition-all text-sm font-medium"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Ré-analyser</span>
@@ -153,26 +151,26 @@ export function DirectionSelectorPremium({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-gradient-to-br from-cyan-50 to-purple-50 rounded-2xl p-6 border border-cyan-100"
+          className="bg-gradient-to-br from-cream-50 to-amber-50 rounded-2xl p-6 border border-cream-200"
         >
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-br from-cream-400 to-amber-400 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
               <Eye className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-cyan-700 mb-2">Résumé de l'analyse Gemini</h3>
+              <h3 className="font-semibold text-stone-900 mb-2">Résumé de l'analyse Gemini</h3>
               <div className="grid sm:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-xs text-cyan-600 mb-1">Concept détecté</p>
-                  <p className="font-medium text-cyan-700">{analysis.concept?.direction || 'Créatif'}</p>
+                  <p className="text-xs text-stone-500 mb-1 font-medium">Concept détecté</p>
+                  <p className="font-semibold text-stone-800">{analysis.concept?.direction || 'Créatif'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-cyan-600 mb-1">Esthétique</p>
-                  <p className="font-medium text-cyan-700">{analysis.referenceAnalysis?.detectedStyle?.aesthetic || 'Moderne'}</p>
+                  <p className="text-xs text-stone-500 mb-1 font-medium">Esthétique</p>
+                  <p className="font-semibold text-stone-800">{analysis.referenceAnalysis?.detectedStyle?.aesthetic || 'Moderne'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-cyan-600 mb-1">Mood global</p>
-                  <p className="font-medium text-cyan-700">{analysis.concept?.mood || 'Inspirant'}</p>
+                  <p className="text-xs text-stone-500 mb-1 font-medium">Mood global</p>
+                  <p className="font-semibold text-stone-800">{analysis.concept?.mood || 'Inspirant'}</p>
                 </div>
               </div>
             </div>
@@ -188,7 +186,7 @@ export function DirectionSelectorPremium({
           >
             <div className="mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-semibold text-[var(--coconut-shell)]">Recommandé par l'IA</span>
+              <span className="text-sm font-semibold text-stone-900">Recommandé par l'IA</span>
             </div>
 
             <FeaturedDirectionCard
@@ -205,10 +203,10 @@ export function DirectionSelectorPremium({
         {availableDirections.length > 1 && (
           <div>
             <div className="mb-4">
-              <h2 className="text-xl font-semibold text-[var(--coconut-shell)]">
+              <h2 className="text-xl font-semibold text-stone-900">
                 Autres directions créatives
               </h2>
-              <p className="text-sm text-[var(--coconut-husk)]">
+              <p className="text-sm text-stone-600">
                 Explorez des alternatives pour votre projet
               </p>
             </div>
@@ -243,15 +241,15 @@ export function DirectionSelectorPremium({
               exit={{ opacity: 0, y: 20 }}
               className="sticky bottom-8 z-10"
             >
-              <div className="bg-white/80 backdrop-blur-2xl rounded-2xl p-6 border border-white/60 shadow-2xl">
+              <div className="bg-white/95 backdrop-blur-xl rounded-2xl p-6 border border-stone-200 shadow-2xl">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="w-8 h-8 text-[var(--coconut-palm)]" />
+                    <CheckCircle className="w-8 h-8 text-green-600" />
                     <div>
-                      <p className="font-semibold text-[var(--coconut-shell)]">
+                      <p className="font-semibold text-stone-900">
                         Direction sélectionnée
                       </p>
-                      <p className="text-sm text-[var(--coconut-husk)]">
+                      <p className="text-sm text-stone-600">
                         {availableDirections.find(d => d.id === selectedId)?.name}
                       </p>
                     </div>
@@ -259,7 +257,7 @@ export function DirectionSelectorPremium({
 
                   <button
                     onClick={handleConfirm}
-                    className="group relative px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                    className="group relative px-6 py-3 rounded-xl bg-gradient-to-r from-cream-500 to-amber-500 text-white font-semibold shadow-lg hover:shadow-xl hover:from-cream-600 hover:to-amber-600 transition-all flex items-center gap-2"
                   >
                     <span>Continuer</span>
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -295,17 +293,17 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
       whileHover={{ scale: 1.01, y: -4 }}
       whileTap={{ scale: 0.99 }}
       className={`group relative w-full text-left transition-all ${
-        isSelected ? 'ring-4 ring-[var(--coconut-shell)]/30' : ''
+        isSelected ? 'ring-4 ring-cream-400/40' : ''
       }`}
     >
       {/* Glow effect */}
-      <div className="absolute -inset-2 bg-gradient-to-br from-[var(--coconut-shell)]/20 via-[var(--coconut-palm)]/15 to-amber-500/10 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute -inset-2 bg-gradient-to-br from-cream-400/20 via-amber-400/15 to-amber-500/10 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
       {/* Card */}
-      <div className={`relative bg-white/80 backdrop-blur-2xl rounded-2xl shadow-2xl border overflow-hidden transition-all ${
+      <div className={`relative bg-white rounded-2xl shadow-2xl border overflow-hidden transition-all ${
         isSelected
-          ? 'border-[var(--coconut-shell)] shadow-[var(--coconut-shell)]/20'
-          : 'border-white/60 hover:border-white/80'
+          ? 'border-cream-400 shadow-cream-400/20'
+          : 'border-stone-200 hover:border-cream-300'
       }`}>
         
         {/* Badges */}
@@ -315,7 +313,7 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
             Recommandé
           </div>
           {isSelected && (
-            <div className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+            <div className="px-3 py-1.5 rounded-full bg-gradient-to-r from-cream-500 to-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg">
               <CheckCircle className="w-3 h-3" />
               Sélectionné
             </div>
@@ -328,39 +326,39 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
           <div className="space-y-6">
             {/* Icon */}
             <div className="relative inline-block">
-              <div className="absolute -inset-2 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-2xl blur-lg opacity-50" />
-              <div className="relative w-16 h-16 bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-2xl flex items-center justify-center shadow-xl">
+              <div className="absolute -inset-2 bg-gradient-to-br from-cream-400 to-amber-400 rounded-2xl blur-lg opacity-50" />
+              <div className="relative w-16 h-16 bg-gradient-to-br from-cream-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-xl">
                 <Palette className="w-8 h-8 text-white" />
               </div>
             </div>
 
             {/* Title */}
             <div>
-              <h3 className="text-3xl font-bold bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] bg-clip-text text-transparent mb-2">
+              <h3 className="text-3xl font-bold bg-gradient-to-r from-stone-900 via-cream-700 to-stone-900 bg-clip-text text-transparent mb-2">
                 {direction.name}
               </h3>
-              <p className="text-base text-[var(--coconut-husk)] leading-relaxed">
+              <p className="text-base text-stone-600 leading-relaxed">
                 {direction.description}
               </p>
             </div>
 
             {/* Mood */}
             <div>
-              <p className="text-xs font-semibold text-[var(--coconut-husk)] mb-2 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-stone-500 mb-2 uppercase tracking-wide">
                 Mood & Ambiance
               </p>
-              <p className="text-sm text-[var(--coconut-shell)] font-medium px-4 py-2 bg-gradient-to-br from-[var(--coconut-cream)] to-[var(--coconut-milk)] rounded-lg border border-white/40 inline-block">
+              <p className="text-sm text-stone-900 font-medium px-4 py-2 bg-gradient-to-br from-cream-50 to-amber-50 rounded-lg border border-cream-200 inline-block">
                 {direction.mood}
               </p>
             </div>
 
             {/* Reasoning */}
-            <div className="p-4 bg-gradient-to-br from-cyan-50 to-purple-50 rounded-xl border border-cyan-100">
+            <div className="p-4 bg-gradient-to-br from-cream-50 to-amber-50 rounded-xl border border-cream-200">
               <div className="flex items-start gap-2 mb-2">
-                <Info className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
-                <p className="text-xs font-semibold text-cyan-700 uppercase tracking-wide">Pourquoi cette direction ?</p>
+                <Info className="w-4 h-4 text-cream-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-stone-700 uppercase tracking-wide">Pourquoi cette direction ?</p>
               </div>
-              <p className="text-sm text-cyan-600 leading-relaxed">
+              <p className="text-sm text-stone-600 leading-relaxed">
                 {direction.reasoning}
               </p>
             </div>
@@ -371,7 +369,7 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
             
             {/* Color Palette */}
             <div>
-              <p className="text-xs font-semibold text-[var(--coconut-husk)] mb-3 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-stone-500 mb-3 uppercase tracking-wide">
                 Palette de couleurs
               </p>
               <div className="flex flex-wrap gap-3">
@@ -381,7 +379,7 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
                       className="w-12 h-12 rounded-xl shadow-lg border-2 border-white"
                       style={{ backgroundColor: color }}
                     />
-                    <span className="text-xs text-[var(--coconut-husk)] font-mono">
+                    <span className="text-xs text-stone-600 font-mono">
                       {color}
                     </span>
                   </div>
@@ -391,14 +389,14 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
 
             {/* Style Keywords */}
             <div>
-              <p className="text-xs font-semibold text-[var(--coconut-husk)] mb-3 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-stone-500 mb-3 uppercase tracking-wide">
                 Mots-clés stylistiques
               </p>
               <div className="flex flex-wrap gap-2">
                 {direction.styleKeywords.map((keyword, i) => (
                   <span
                     key={i}
-                    className="px-3 py-1.5 rounded-lg bg-white/60 text-sm text-[var(--coconut-shell)] border border-white/40 font-medium"
+                    className="px-3 py-1.5 rounded-lg bg-stone-50 text-sm text-stone-700 border border-stone-200 font-medium hover:bg-cream-50 hover:border-cream-300 transition-colors"
                   >
                     {keyword}
                   </span>
@@ -409,8 +407,8 @@ function FeaturedDirectionCard({ direction, isSelected, onSelect, onHover, onLea
             {/* CTA */}
             <div className="pt-4">
               <div className={`relative group/btn inline-block ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                <div className="absolute inset-0 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] rounded-xl blur opacity-50 group-hover/btn:opacity-100 transition-opacity" />
-                <div className="relative px-6 py-3 bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white rounded-xl font-semibold flex items-center gap-2 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-r from-cream-500 to-amber-500 rounded-xl blur opacity-50 group-hover/btn:opacity-100 transition-opacity" />
+                <div className="relative px-6 py-3 bg-gradient-to-r from-cream-500 to-amber-500 text-white rounded-xl font-semibold flex items-center gap-2 shadow-lg">
                   {isSelected ? (
                     <>
                       <CheckCircle className="w-5 h-5" />
@@ -453,21 +451,21 @@ function StandardDirectionCard({ direction, isSelected, onSelect, onHover, onLea
       whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
       className={`group relative w-full h-full text-left transition-all ${
-        isSelected ? 'ring-4 ring-[var(--coconut-shell)]/30' : ''
+        isSelected ? 'ring-4 ring-cream-400/40' : ''
       }`}
     >
       {/* Glow */}
-      <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-husk)]/20 via-[var(--coconut-shell)]/15 to-[var(--coconut-palm)]/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
+      <div className="absolute -inset-1 bg-gradient-to-br from-cream-300/20 via-amber-300/15 to-amber-400/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
       
       {/* Card */}
-      <div className={`relative h-full bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border overflow-hidden transition-all ${
+      <div className={`relative h-full bg-white rounded-2xl shadow-xl border overflow-hidden transition-all ${
         isSelected
-          ? 'border-[var(--coconut-shell)] shadow-[var(--coconut-shell)]/20'
-          : 'border-white/60 hover:border-white/80'
+          ? 'border-cream-400 shadow-cream-400/20'
+          : 'border-stone-200 hover:border-cream-300'
       }`}>
         
         {isSelected && (
-          <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)] text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg z-10">
+          <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-cream-500 to-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg z-10">
             <CheckCircle className="w-3 h-3" />
             Sélectionné
           </div>
@@ -478,17 +476,17 @@ function StandardDirectionCard({ direction, isSelected, onSelect, onHover, onLea
           {/* Icon & Title */}
           <div className="flex items-start gap-4">
             <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-br from-[var(--coconut-husk)] to-[var(--coconut-shell)] rounded-xl blur opacity-40" />
-              <div className="relative w-12 h-12 bg-gradient-to-br from-[var(--coconut-husk)] to-[var(--coconut-shell)] rounded-xl flex items-center justify-center shadow-lg">
+              <div className="absolute -inset-1 bg-gradient-to-br from-stone-300 to-cream-400 rounded-xl blur opacity-40" />
+              <div className="relative w-12 h-12 bg-gradient-to-br from-stone-400 to-cream-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Palette className="w-6 h-6 text-white" />
               </div>
             </div>
             
             <div className="flex-1 min-w-0">
-              <h4 className="text-xl font-bold text-[var(--coconut-shell)] mb-1">
+              <h4 className="text-xl font-bold text-stone-900 mb-1">
                 {direction.name}
               </h4>
-              <p className="text-sm text-[var(--coconut-husk)] line-clamp-2">
+              <p className="text-sm text-stone-600 line-clamp-2">
                 {direction.description}
               </p>
             </div>
@@ -496,13 +494,13 @@ function StandardDirectionCard({ direction, isSelected, onSelect, onHover, onLea
 
           {/* Mood */}
           <div>
-            <p className="text-xs text-[var(--coconut-husk)] mb-1">Mood</p>
-            <p className="text-sm font-medium text-[var(--coconut-shell)]">{direction.mood}</p>
+            <p className="text-xs text-stone-500 mb-1 font-medium">Mood</p>
+            <p className="text-sm font-semibold text-stone-800">{direction.mood}</p>
           </div>
 
           {/* Color Palette Preview */}
           <div>
-            <p className="text-xs text-[var(--coconut-husk)] mb-2">Palette</p>
+            <p className="text-xs text-stone-500 mb-2 font-medium">Palette</p>
             <div className="flex gap-2">
               {direction.colorPalette.slice(0, 4).map((color, i) => (
                 <div
@@ -516,12 +514,12 @@ function StandardDirectionCard({ direction, isSelected, onSelect, onHover, onLea
 
           {/* Keywords Preview */}
           <div>
-            <p className="text-xs text-[var(--coconut-husk)] mb-2">Mots-clés</p>
+            <p className="text-xs text-stone-500 mb-2 font-medium">Mots-clés</p>
             <div className="flex flex-wrap gap-2">
               {direction.styleKeywords.slice(0, 3).map((keyword, i) => (
                 <span
                   key={i}
-                  className="px-2 py-1 rounded-md bg-white/40 text-xs text-[var(--coconut-shell)] border border-white/40"
+                  className="px-2 py-1 rounded-md bg-stone-50 text-xs text-stone-700 border border-stone-200"
                 >
                   {keyword}
                 </span>
@@ -531,12 +529,12 @@ function StandardDirectionCard({ direction, isSelected, onSelect, onHover, onLea
 
           {/* CTA */}
           <div className="pt-2 flex items-center justify-between text-sm">
-            <span className="text-[var(--coconut-husk)] group-hover:text-[var(--coconut-shell)] transition-colors flex items-center gap-1.5">
+            <span className="text-stone-600 group-hover:text-stone-900 transition-colors flex items-center gap-1.5 font-medium">
               Sélectionner
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </span>
             <CheckCircle className={`w-5 h-5 transition-all ${
-              isSelected ? 'text-[var(--coconut-palm)] scale-110' : 'text-[var(--coconut-husk)]/30'
+              isSelected ? 'text-green-600 scale-110' : 'text-stone-300'
             }`} />
           </div>
         </div>

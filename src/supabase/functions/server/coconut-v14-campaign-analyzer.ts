@@ -14,7 +14,7 @@ import type { Context } from 'npm:hono';
 import { generateTextNative, analyzeImagesNative } from './gemini-native-service.ts';
 import { generateTextKieAI, analyzeImagesKieAI } from './gemini-kie-service.ts';
 import { parseJSONFromMarkdown } from './json-parser.ts';
-import { deductCredits, getUserCredits } from './credits-manager.ts'; // ✅ Import credits functions
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import type {
   CampaignBriefingInput,
   GeminiCampaignAnalysisResponse,
@@ -443,7 +443,7 @@ export async function handleAnalyzeCampaign(c: Context): Promise<Response> {
     }
 
     // Check user credits
-    const userCredits = await getUserCredits(briefing.userId);
+    const userCredits = await CreditsSystem.getUserCredits(briefing.userId);
     const totalAvailable = userCredits.free + userCredits.paid;
     
     if (totalAvailable < briefing.budgetCredits) {
@@ -461,7 +461,7 @@ export async function handleAnalyzeCampaign(c: Context): Promise<Response> {
 
     // ✅ Deduct ONLY analysis cost (100 credits), not full budget
     const analysisCost = 100;
-    const deductResult = await deductCredits(
+    const deductResult = await CreditsSystem.deductCredits(
       briefing.userId, 
       analysisCost,
       'Campaign Gemini Analysis',

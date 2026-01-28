@@ -1,5 +1,8 @@
-import { motion } from 'motion/react';
-import { ArrowRight, Check, Heart, Sparkles, Zap, Star, Award, TrendingUp } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'motion/react';
+import { ArrowRight, Check, Sparkles, Heart, MessageCircle, Award, Palette } from 'lucide-react'; // ✅ BDS: Added community icons
+import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
+import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
+import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingIndividualProps {
   onJoinCommunity: () => void;
@@ -7,10 +10,13 @@ interface LandingIndividualProps {
 }
 
 export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingIndividualProps) {
+  const { t } = useTranslation(); // ✅ NEW: Translation hook
+  const reducedMotion = useReducedMotion(); // ✅ A11y: Reduced motion
+  
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       {/* Hero Section */}
-      <section className="relative py-24 sm:py-32 px-6 overflow-hidden">
+      <section className="relative py-32 px-6 overflow-hidden">
         {/* Background Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div 
@@ -59,57 +65,49 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               }}
             >
               <Heart size={16} className="text-purple-400" />
-              <span className="text-sm text-purple-400">Join 10,000+ Creators</span>
+              <span className="text-sm text-purple-400">{t('landing.individual.hero.badge')}</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-white">That idea you had?</span>
+              <span className="text-white">{t('landing.individual.hero.title1')}</span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
-                Make it real. Today.
+                {t('landing.individual.hero.title2')}
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-white/70 mb-4 max-w-3xl mx-auto">
-              No design skills. No experience. Just your imagination.
+              {t('landing.individual.hero.subtitle')}
             </p>
             <p className="text-lg sm:text-xl text-white/60 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Turn "I wish I could..." into "Look what I made."
+              {t('landing.individual.hero.description')}
               <br className="hidden sm:block" />
-              Then share it, get discovered, and earn rewards.
+              {t('landing.individual.hero.description2')}
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <motion.button
+              <Button
                 onClick={onJoinCommunity}
-                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(168,85,247,0.9) 0%, rgba(139,92,246,0.85) 100%)',
-                  boxShadow: '0 20px 60px rgba(168,85,247,0.35)',
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  boxShadow: '0 25px 80px rgba(168,85,247,0.45)'
-                }}
-                whileTap={{ scale: 0.98 }}
+                variant="purple"
+                size="lg"
               >
-                <span>Start Creating Free</span>
-                <ArrowRight size={20} />
-              </motion.button>
+                {t('landing.individual.hero.ctaPrimary')}
+              </Button>
 
-              <button
+              <Button
                 onClick={onExploreFeed}
-                className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 transition-all hover:bg-white/10 inline-flex items-center gap-3 text-lg"
+                variant="secondary"
+                size="lg"
               >
-                <span>Explore Feed</span>
-              </button>
+                {t('landing.individual.hero.ctaSecondary')}
+              </Button>
             </div>
 
             <p className="text-sm text-white/40">
-              25 free credits every month • No credit card • No experience needed
+              {t('landing.individual.hero.note')}
             </p>
           </motion.div>
         </div>
@@ -125,10 +123,10 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              Your creative journey starts here
+              {t('landing.individual.journey.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              Three simple steps. Infinite possibilities.
+              {t('landing.individual.journey.subtitle')}
             </p>
           </div>
 
@@ -136,25 +134,22 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                number: '01',
-                title: 'Imagine',
-                description: 'Type what you see in your mind. A sunset over mountains. A fantasy character. Anything.',
+                number: t('landing.individual.journey.step1.number'),
+                title: t('landing.individual.journey.step1.title'),
+                description: t('landing.individual.journey.step1.description'),
                 icon: Sparkles,
-                color: 'purple',
               },
               {
-                number: '02',
-                title: 'Create',
-                description: 'AI brings it to life in seconds. Images, videos, avatars—all professional quality.',
-                icon: Zap,
-                color: 'violet',
+                number: t('landing.individual.journey.step2.number'),
+                title: t('landing.individual.journey.step2.title'),
+                description: t('landing.individual.journey.step2.description'),
+                icon: Heart,
               },
               {
-                number: '03',
-                title: 'Share & Earn',
-                description: 'Post to the community. Get likes. Become a Top Creator. Unlock premium tools.',
-                icon: Star,
-                color: 'pink',
+                number: t('landing.individual.journey.step3.number'),
+                title: t('landing.individual.journey.step3.title'),
+                description: t('landing.individual.journey.step3.description'),
+                icon: MessageCircle,
               },
             ].map((step, idx) => (
               <motion.div
@@ -197,32 +192,32 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              What will you create?
+              {t('landing.individual.creations.title')}
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              Real examples from our community
+              {t('landing.individual.creations.subtitle')}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                type: 'Images',
-                example: 'Posters, portraits, social media art',
-                cost: 'From 1 credit',
-                result: 'Professional quality in 30 seconds',
+                type: t('landing.individual.creations.images.type'),
+                example: t('landing.individual.creations.images.example'),
+                cost: t('landing.individual.creations.images.cost'),
+                result: t('landing.individual.creations.images.result'),
               },
               {
-                type: 'Videos',
-                example: 'Short films, animations, clips',
-                cost: '25-40 credits',
-                result: '4-8 second videos, cinema quality',
+                type: t('landing.individual.creations.videos.type'),
+                example: t('landing.individual.creations.videos.example'),
+                cost: t('landing.individual.creations.videos.cost'),
+                result: t('landing.individual.creations.videos.result'),
               },
               {
-                type: 'Avatars',
-                example: 'Talking portraits, animated selfies',
-                cost: '30 credits',
-                result: 'Your photo speaks with AI voice',
+                type: t('landing.individual.creations.avatars.type'),
+                example: t('landing.individual.creations.avatars.example'),
+                cost: t('landing.individual.creations.avatars.cost'),
+                result: t('landing.individual.creations.avatars.result'),
               },
             ].map((item, idx) => (
               <motion.div
@@ -255,24 +250,26 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               viewport={{ once: true }}
             >
               <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-                <span className="text-white">You're not creating alone.</span>
+                <span className="text-white">{t('landing.individual.community.title1')}</span>
                 <br />
                 <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Join the community.
+                  {t('landing.individual.community.title2')}
                 </span>
               </h2>
 
               <p className="text-lg sm:text-xl text-white/60 mb-8">
-                A TikTok-style feed of incredible AI art. Get inspired. Get discovered. Get rewarded.
+                {t('landing.individual.community.subtitle')}
               </p>
 
               <div className="space-y-4 mb-8">
                 {[
-                  { emoji: '❤️', text: 'Like amazing creations, save your favorites' },
-                  { emoji: '💬', text: 'Comment, connect with other creators' },
-                  { emoji: '✨', text: 'Remix others\' work with your own twist' },
-                  { emoji: '🏆', text: 'Top posts get featured, creators get rewards' },
-                ].map((item, idx) => (
+                  { icon: Heart, text: t('landing.individual.community.feature1') }, // ✅ BDS: ❤️ → Heart
+                  { icon: MessageCircle, text: t('landing.individual.community.feature2') }, // ✅ BDS: 💬 → MessageCircle
+                  { icon: Sparkles, text: t('landing.individual.community.feature3') }, // ✅ BDS: ✨ → Sparkles
+                  { icon: Award, text: t('landing.individual.community.feature4') }, // ✅ BDS: 🏆 → Award
+                ].map((item, idx) => {
+                  const Icon = item.icon; // ✅ BDS: Extract icon component
+                  return (
                   <motion.div
                     key={idx}
                     className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10"
@@ -281,22 +278,21 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.1 }}
                   >
-                    <span className="text-2xl">{item.emoji}</span>
+                    <Icon className="text-purple-400 mt-1" size={24} /> {/* ✅ BDS: Icon component */}
                     <span className="text-white/80 mt-1">{item.text}</span>
                   </motion.div>
-                ))}
+                  );
+                })}
               </div>
 
-              <button
+              <Button
                 onClick={onExploreFeed}
-                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 transition-all hover:scale-105 inline-flex items-center gap-3"
-                style={{
-                  boxShadow: '0 20px 60px rgba(168,85,247,0.3)'
-                }}
+                variant="purple"
+                size="lg"
+                icon={<ArrowRight size={20} />}
               >
-                <span>Explore Feed</span>
-                <ArrowRight size={20} />
-              </button>
+                {t('landing.individual.community.cta')}
+              </Button>
             </motion.div>
 
             <motion.div
@@ -307,16 +303,18 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
             >
               <div className="p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10">
                 <div className="text-center mb-6">
-                  <div className="text-4xl mb-2">🎨</div>
-                  <h3 className="text-2xl mb-2">Trending This Week</h3>
-                  <p className="text-sm text-white/60">Most loved by the community</p>
+                  <div className="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-3">
+                    <Palette className="text-purple-400" size={32} /> {/* ✅ BDS: 🎨 → Palette */}
+                  </div>
+                  <h3 className="text-2xl mb-2">{t('landing.individual.community.trending.title')}</h3>
+                  <p className="text-sm text-white/60">{t('landing.individual.community.trending.subtitle')}</p>
                 </div>
 
                 <div className="space-y-4">
                   {[
-                    { title: 'Cyberpunk cityscape', likes: 1247, author: '@nova' },
-                    { title: 'Fantasy portrait', likes: 892, author: '@stellar' },
-                    { title: 'Abstract dreamscape', likes: 756, author: '@pixel' },
+                    { title: t('landing.individual.community.trending.post1.title'), likes: t('landing.individual.community.trending.post1.likes'), author: t('landing.individual.community.trending.post1.author') },
+                    { title: t('landing.individual.community.trending.post2.title'), likes: t('landing.individual.community.trending.post2.likes'), author: t('landing.individual.community.trending.post2.author') },
+                    { title: t('landing.individual.community.trending.post3.title'), likes: t('landing.individual.community.trending.post3.likes'), author: t('landing.individual.community.trending.post3.author') },
                   ].map((item, idx) => (
                     <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10">
                       <div className="flex items-start justify-between mb-2">
@@ -349,8 +347,8 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
                 border: '1px solid rgba(34,197,94,0.25)',
               }}
             >
-              <TrendingUp size={16} className="text-green-400" />
-              <span className="text-sm text-green-400">Creator Economy</span>
+              <Award size={16} className="text-green-400" />
+              <span className="text-sm text-green-400">{t('landing.individual.creatorEconomy.badge')}</span>
             </div>
 
             <motion.h2 
@@ -359,15 +357,15 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <span className="text-white">Create great work.</span>
+              <span className="text-white">{t('landing.individual.creatorEconomy.title1')}</span>
               <br />
               <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-                Get rewarded for it.
+                {t('landing.individual.creatorEconomy.title2')}
               </span>
             </motion.h2>
 
             <p className="text-lg sm:text-xl text-white/60 max-w-3xl mx-auto">
-              Become a Top Creator: unlock premium tools & earn commissions
+              {t('landing.individual.creatorEconomy.subtitle')}
             </p>
           </div>
 
@@ -384,15 +382,15 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               viewport={{ once: true }}
             >
               <h3 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-                <Star className="text-purple-400" size={28} />
-                <span>Become a Top Creator</span>
+                <Award className="text-purple-400" size={28} />
+                <span>{t('landing.individual.creatorEconomy.become.title')}</span>
               </h3>
 
               <div className="space-y-4">
                 {[
-                  { label: 'Create 60 pieces', desc: 'Images, videos, or avatars per month' },
-                  { label: 'Post 5 to the feed', desc: 'Share your best work with the community' },
-                  { label: 'Get 5+ likes each', desc: 'Each post needs at least 5 likes' },
+                  { label: t('landing.individual.creatorEconomy.become.req1Label'), desc: t('landing.individual.creatorEconomy.become.req1Desc') },
+                  { label: t('landing.individual.creatorEconomy.become.req2Label'), desc: t('landing.individual.creatorEconomy.become.req2Desc') },
+                  { label: t('landing.individual.creatorEconomy.become.req3Label'), desc: t('landing.individual.creatorEconomy.become.req3Desc') },
                 ].map((req, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-white/5 border border-white/10">
                     <div className="flex items-center gap-3 mb-2">
@@ -418,7 +416,7 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
             >
               <h3 className="text-2xl font-semibold mb-6 flex items-center gap-3">
                 <Award className="text-[#F5EBE0]" size={28} />
-                <span>Your Rewards</span>
+                <span>{t('landing.individual.creatorEconomy.rewards.title')}</span>
               </h3>
 
               <div className="space-y-4">
@@ -426,9 +424,9 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
                   <div className="flex items-start gap-3 mb-2">
                     <Sparkles className="text-[#F5EBE0] mt-1" size={20} />
                     <div>
-                      <div className="font-semibold text-white mb-1">Creator Benefits Package</div>
+                      <div className="font-semibold text-white mb-1">{t('landing.individual.creatorEconomy.rewards.benefit1Title')}</div>
                       <p className="text-sm text-white/70">
-                        3 Coconut generations/month • Image & Video only • No watermark downloads
+                        {t('landing.individual.creatorEconomy.rewards.benefit1Desc')}
                       </p>
                     </div>
                   </div>
@@ -436,11 +434,11 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
 
                 <div className="p-5 rounded-xl bg-white/5 border border-white/10">
                   <div className="flex items-start gap-3 mb-2">
-                    <TrendingUp className="text-green-400 mt-1" size={20} />
+                    <Award className="text-green-400 mt-1" size={20} />
                     <div>
-                      <div className="font-semibold text-white mb-1">10-15% Monthly Commission</div>
+                      <div className="font-semibold text-white mb-1">{t('landing.individual.creatorEconomy.rewards.benefit2Title')}</div>
                       <p className="text-sm text-white/70">
-                        On all referral purchases made this month
+                        {t('landing.individual.creatorEconomy.rewards.benefit2Desc')}
                       </p>
                     </div>
                   </div>
@@ -460,10 +458,10 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            Pay only for what you create
+            {t('landing.individual.pricing.title')}
           </motion.h2>
           <p className="text-lg sm:text-xl text-white/60 mb-10">
-            No subscriptions. No hidden fees. Just creation.
+            {t('landing.individual.pricing.subtitle')}
           </p>
 
           <motion.div
@@ -478,40 +476,40 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
           >
             <div className="text-5xl sm:text-6xl font-bold mb-2">
               <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
-                $0.10
+                {t('landing.individual.pricing.price')}
               </span>
-              <span className="text-2xl text-white/40">/credit</span>
+              <span className="text-2xl text-white/40">{t('landing.individual.pricing.unit')}</span>
             </div>
-            <p className="text-white/60 mb-8">Pay as you go</p>
+            <p className="text-white/60 mb-8">{t('landing.individual.pricing.payAsYouGo')}</p>
 
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="text-2xl font-semibold mb-1">25 free credits</div>
-                <div className="text-sm text-white/60">Every single month</div>
+                <div className="text-2xl font-semibold mb-1">{t('landing.individual.pricing.freeCreditsLabel')}</div>
+                <div className="text-sm text-white/60">{t('landing.individual.pricing.freeCreditsDesc')}</div>
               </div>
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="text-2xl font-semibold mb-1">Unlock Coconut</div>
-                <div className="text-sm text-white/60">Become a Top Creator</div>
+                <div className="text-2xl font-semibold mb-1">{t('landing.individual.pricing.unlockCoconutLabel')}</div>
+                <div className="text-sm text-white/60">{t('landing.individual.pricing.unlockCoconutDesc')}</div>
               </div>
             </div>
 
             <div className="text-left max-w-sm mx-auto space-y-2 text-sm text-white/70">
               <div className="flex justify-between">
-                <span>Image:</span>
-                <span className="text-purple-400">From 1 credit</span>
+                <span>{t('landing.individual.pricing.imageLabel')}</span>
+                <span className="text-purple-400">{t('landing.individual.pricing.imagePrice')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Video:</span>
-                <span className="text-purple-400">25-40 credits</span>
+                <span>{t('landing.individual.pricing.videoLabel')}</span>
+                <span className="text-purple-400">{t('landing.individual.pricing.videoPrice')}</span>
               </div>
               <div className="flex justify-between">
-                <span>Avatar:</span>
-                <span className="text-purple-400">30 credits</span>
+                <span>{t('landing.individual.pricing.avatarLabel')}</span>
+                <span className="text-purple-400">{t('landing.individual.pricing.avatarPrice')}</span>
               </div>
             </div>
           </motion.div>
 
-          <button
+          <Button
             onClick={onJoinCommunity}
             className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
             style={{
@@ -519,9 +517,9 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               boxShadow: '0 30px 80px rgba(168,85,247,0.4)',
             }}
           >
-            <span>Start Creating Free</span>
+            <span>{t('landing.individual.pricing.cta')}</span>
             <ArrowRight size={24} />
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -534,14 +532,14 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
             viewport={{ once: true }}
           >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-              <span className="text-white">That idea?</span>
+              <span className="text-white">{t('landing.individual.finalCta.title1')}</span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
-                Make it real right now.
+                {t('landing.individual.finalCta.title2')}
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-white/60 mb-10">
-              25 free credits waiting. No credit card. Join in 30 seconds.
+              {t('landing.individual.finalCta.subtitle')}
             </p>
 
             <motion.button
@@ -557,7 +555,7 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <span>Enter the Fluid State</span>
+              <span>{t('landing.individual.finalCta.cta')}</span>
               <ArrowRight size={24} />
             </motion.button>
           </motion.div>

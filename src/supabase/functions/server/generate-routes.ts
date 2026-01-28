@@ -11,7 +11,7 @@
 
 import { Hono } from 'npm:hono';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import * as creditsManager from './credits-manager.ts'; // ✅ Use unified credits manager
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as kieAIImage from './kie-ai-image.ts'; // ✅ Kie AI image generation
 import * as pollinations from './pollinations.tsx'; // ✅ NEW: Pollinations Enterprise API
 import * as kv from './kv_store.tsx'; // ✅ FIX: Import KV store for tracking generations
@@ -113,7 +113,7 @@ app.post('/generate', async (c) => {
       });
 
       // Check free credits
-      const userCredits = await creditsManager.getUserCredits(userId);
+      const userCredits = await CreditsSystem.getUserCredits(userId);
 
       if (userCredits.free < cost) {
         return c.json({
@@ -123,7 +123,7 @@ app.post('/generate', async (c) => {
       }
 
       // Deduct FREE credits
-      const deductResult = await creditsManager.deductFreeCredits(userId, cost, `${model} image generation`);
+      const deductResult = await CreditsSystem.deductFreeCredits(userId, cost, `${model} image generation`);
       if (!deductResult.success) {
         return c.json({
           success: false,
@@ -149,7 +149,7 @@ app.post('/generate', async (c) => {
         if (!result.success || !result.url) {
           // Refund FREE credits on failure
           console.error('❌ Pollinations generation failed:', result.error);
-          await creditsManager.addFreeCredits(userId, cost, `Refund: Failed ${model} generation`);
+          await CreditsSystem.addFreeCredits(userId, cost, `Refund: Failed ${model} generation`);
           
           return c.json({
             success: false,
@@ -200,7 +200,7 @@ app.post('/generate', async (c) => {
       } catch (genError: any) {
         // Refund FREE credits on failure
         console.error('❌ Pollinations generation error:', genError);
-        await creditsManager.addFreeCredits(userId, cost, `Refund: Failed ${model} generation`);
+        await CreditsSystem.addFreeCredits(userId, cost, `Refund: Failed ${model} generation`);
         
         return c.json({
           success: false,
@@ -267,7 +267,7 @@ app.post('/generate', async (c) => {
       });
 
       // Check PAID credits
-      const userCredits = await creditsManager.getUserCredits(userId);
+      const userCredits = await CreditsSystem.getUserCredits(userId);
 
       if (userCredits.paid < cost) {
         return c.json({
@@ -277,7 +277,7 @@ app.post('/generate', async (c) => {
       }
 
       // Deduct PAID credits
-      const deductResult = await creditsManager.deductPaidCredits(userId, cost, `Kie AI ${kieAIModel} generation`);
+      const deductResult = await CreditsSystem.deductPaidCredits(userId, cost, `Kie AI ${kieAIModel} generation`);
       if (!deductResult.success) {
         return c.json({
           success: false,
@@ -305,7 +305,7 @@ app.post('/generate', async (c) => {
       } catch (genError: any) {
         // Refund PAID credits on failure
         console.error('❌ Kie AI generation failed:', genError);
-        await creditsManager.addPaidCredits(userId, cost, `Refund: Failed ${kieAIModel} generation`);
+        await CreditsSystem.addPaidCredits(userId, cost, `Refund: Failed ${kieAIModel} generation`);
         
         return c.json({
           success: false,

@@ -230,7 +230,8 @@ app.post('/monthly-reset', async (c) => {
       resetCount++;
     }
     
-    console.log(`✅ Feed Likes reset complete: ${resetCount} users processed`);\n    
+    console.log(`✅ Feed Likes reset complete: ${resetCount} users processed`);
+    
     return c.json({
       success: true,
       resetCount,

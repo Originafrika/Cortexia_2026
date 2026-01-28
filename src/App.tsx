@@ -9,6 +9,7 @@ import { ThemeProvider } from './lib/contexts/ThemeContext';
 import { CreditsProvider, useCredits } from './lib/contexts/CreditsContext';
 import { GenerationQueueProvider } from './lib/contexts/GenerationQueueContext';
 import { ProvidersProvider } from './lib/contexts/ProvidersContext';
+import { I18nProvider } from './lib/i18n'; // ✅ NEW: i18n Provider
 
 // Pages
 import { LandingPage } from './components/landing/LandingPage';
@@ -17,6 +18,8 @@ import { LoginPage } from './components/auth/LoginPage';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { Auth0CallbackPage } from './components/auth/Auth0CallbackPage';
 import { Auth0SetupHelper } from './components/auth/Auth0SetupHelper';
+import { PrivacyPolicy } from './components/legal/PrivacyPolicy'; // ✅ RGPD
+import { TermsOfService } from './components/legal/TermsOfService'; // ✅ RGPD
 import { ForYouFeed } from './components/ForYouFeed';
 import { Discovery } from './components/discovery/Discovery';
 import { Messages } from './components/messages/Messages';
@@ -24,9 +27,12 @@ import { Profile } from './components/Profile';
 import { CreateHubGlass } from './components/create/CreateHubGlass';
 import { TextToImageV3 } from './components/create/TextToImageV3';
 import { CoconutV14App } from './components/coconut-v14/CoconutV14App';
+import { CoconutV14AppEnterprise } from './components/coconut-v14/CoconutV14AppEnterprise'; // ✅ NEW: Enterprise edition
 import { CocoBoardDemo } from './components/coconut-v14/CocoBoardDemo';
-// ❌ REMOVED: CoconutPage doesn't exist in /components/coconut/
-// import { CoconutPage } from './components/coconut/CoconutPage';
+import { DeveloperDashboard } from './components/developer'; // ✅ NEW: Developer Dashboard
+import { CreatorSystem } from './components/creator'; // ✅ NEW: Creator System
+import { ReferralDashboard } from './components/referral'; // ✅ NEW: Referral System
+import { EnhancedFeed } from './components/feed'; // ✅ NEW: Enhanced Feed
 import { CreatorDashboard } from './components/CreatorDashboardNew'; // ✅ UPDATED: New dashboard with tabs
 import { Wallet } from './components/Wallet';
 import { Settings } from './components/Settings';
@@ -60,6 +66,8 @@ export type Screen =
   | 'login-developer'
   | 'onboarding'
   | 'auth-callback' // ✅ NEW: Auth0 callback
+  | 'privacy-policy' // ✅ RGPD: Privacy Policy page
+  | 'terms-of-service' // ✅ RGPD: Terms of Service page
   | 'feed' 
   | 'discovery' 
   | 'messages' 
@@ -70,6 +78,10 @@ export type Screen =
   | 'coconut-v14-cocoboard'
   | 'coconut-v14'
   | 'creator-dashboard'
+  | 'creator-system' // ✅ NEW: Creator System
+  | 'developer-dashboard' // ✅ NEW: Developer Dashboard
+  | 'referral' // ✅ NEW: Referral System
+  | 'enhanced-feed' // ✅ NEW: Enhanced Feed
   | 'wallet'
   | 'settings'
   | 'new-message'
@@ -79,40 +91,42 @@ export type Screen =
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider defaultTheme="purple">
-          {/* ✅ NEW: Wrapper to pass userId to CreditsProvider */}
-          <CreditsProviderWrapper>
-            <GenerationQueueProvider>
-              <LayoutGroup>
-                <Routes>
-                  {/* ✅ Generation View - Must be before /* */}
-                  <Route path="/generation/:generationId" element={<GenerationView />} />
-                  {/* ✅ Payment Success - Must be before /* */}
-                  <Route path="/payment-success" element={<PaymentSuccess />} />
-                  {/* ✅ Payment Cancel - Must be before /* */}
-                  <Route path="/payment-cancel" element={<PaymentCancel />} />
-                  {/* ✅ Enterprise Subscription Success - Must be before /* */}
-                  <Route path="/enterprise-subscription-success" element={<EnterpriseSubscriptionSuccess />} />
-                  {/* ✅ Enterprise Add-on Success - Must be before /* */}
-                  <Route path="/enterprise-addon-success" element={<EnterpriseAddonSuccess />} />
-                  {/* ✅ Admin Panel - Dev only */}
-                  <Route path="/admin" element={<AdminPanel />} />
-                  {/* ✅ Migration Panel - Admin only */}
-                  <Route path="/admin/migration" element={<MigrationPage />} />
-                  {/* ✅ Storage Cleanup Panel - Admin only */}
-                  <Route path="/admin/storage-cleanup" element={<StorageCleanupPage />} />
-                  {/* ✅ TEST: Campaign Page */}
-                  <Route path="/test" element={<TestCampaignPage />} />
-                  {/* All routes (including /create via AppContent) */}
-                  <Route path="/*" element={<AppContent />} />
-                </Routes>
-              </LayoutGroup>
-              <Toaster position="top-right" />
-            </GenerationQueueProvider>
-          </CreditsProviderWrapper>
-        </ThemeProvider>
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <ThemeProvider defaultTheme="purple">
+            {/* ✅ NEW: Wrapper to pass userId to CreditsProvider */}
+            <CreditsProviderWrapper>
+              <GenerationQueueProvider>
+                <LayoutGroup>
+                  <Routes>
+                    {/* ✅ Generation View - Must be before /* */}
+                    <Route path="/generation/:generationId" element={<GenerationView />} />
+                    {/* ✅ Payment Success - Must be before /* */}
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    {/* ✅ Payment Cancel - Must be before /* */}
+                    <Route path="/payment-cancel" element={<PaymentCancel />} />
+                    {/* ✅ Enterprise Subscription Success - Must be before /* */}
+                    <Route path="/enterprise-subscription-success" element={<EnterpriseSubscriptionSuccess />} />
+                    {/* ✅ Enterprise Add-on Success - Must be before /* */}
+                    <Route path="/enterprise-addon-success" element={<EnterpriseAddonSuccess />} />
+                    {/* ✅ Admin Panel - Dev only */}
+                    <Route path="/admin" element={<AdminPanel />} />
+                    {/* ✅ Migration Panel - Admin only */}
+                    <Route path="/admin/migration" element={<MigrationPage />} />
+                    {/* ✅ Storage Cleanup Panel - Admin only */}
+                    <Route path="/admin/storage-cleanup" element={<StorageCleanupPage />} />
+                    {/* ✅ TEST: Campaign Page */}
+                    <Route path="/test" element={<TestCampaignPage />} />
+                    {/* All routes (including /create via AppContent) */}
+                    <Route path="/*" element={<AppContent />} />
+                  </Routes>
+                </LayoutGroup>
+                <Toaster position="top-right" />
+              </GenerationQueueProvider>
+            </CreditsProviderWrapper>
+          </ThemeProvider>
+        </AuthProvider>
+      </I18nProvider>
     </BrowserRouter>
   );
 }
@@ -134,15 +148,20 @@ function CreditsProviderWrapper({ children }: { children: React.ReactNode }) {
         // User is authenticated - update to real userId
         console.log('🔐 [CreditsProviderWrapper] Setting stable userId:', user.id);
         setStableUserId(user.id);
-      } else if (!stableUserId) {
-        // No user and no stableUserId yet - use demo-user
-        console.log('🔐 [CreditsProviderWrapper] No user, using demo-user');
-        setStableUserId('demo-user');
+      } else if (!stableUserId || stableUserId !== 'demo-user') {
+        // ✅ FIX: When user logs out, reset to demo-user
+        // Check if stableUserId was a real user (not demo-user) and user is now null
+        if (stableUserId && stableUserId !== 'demo-user' && !user) {
+          console.log('🚪 [CreditsProviderWrapper] User logged out, resetting to demo-user');
+          setStableUserId('demo-user');
+        } else if (!stableUserId) {
+          // No user and no stableUserId yet - use demo-user
+          console.log('🔐 [CreditsProviderWrapper] No user, using demo-user');
+          setStableUserId('demo-user');
+        }
       }
-      // ✅ IMPORTANT: If stableUserId exists but user is null, DON'T change it
-      // This prevents losing the user during temporary auth refreshes
     }
-  }, [user, loading, stableUserId]);
+  }, [user, loading]);
   
   // ✅ Wait for initial userId to be set
   if (!stableUserId) {
@@ -226,6 +245,8 @@ function AppContent() {
       'login-developer': '/login-developer',
       'onboarding': '/onboarding',
       'auth-callback': '/callback',
+      'privacy-policy': '/privacy-policy',
+      'terms-of-service': '/terms-of-service',
       'feed': '/feed',
       'discovery': '/discovery',
       'messages': '/messages',
@@ -236,10 +257,15 @@ function AppContent() {
       'coconut-v14-cocoboard': '/coconut-v14-cocoboard',
       'coconut-v14': '/coconut-v14',
       'creator-dashboard': '/creator-dashboard',
+      'creator-system': '/creator-system', // ✅ NEW: Creator System
+      'developer-dashboard': '/developer-dashboard', // ✅ NEW: Developer Dashboard
+      'referral': '/referral', // ✅ NEW: Referral System
+      'enhanced-feed': '/enhanced-feed', // ✅ NEW: Enhanced Feed
       'wallet': '/wallet',
       'settings': '/settings',
       'new-message': '/new-message',
       'activity': '/activity',
+      'my-uploads': '/my-uploads',
     };
     
     const targetUrl = urlMap[screen] || '/';
@@ -264,6 +290,8 @@ function AppContent() {
       '/login-developer': 'login-developer',
       '/onboarding': 'onboarding',
       '/callback': 'auth-callback',
+      '/privacy-policy': 'privacy-policy',
+      '/terms-of-service': 'terms-of-service',
       '/feed': 'feed',
       '/discovery': 'discovery',
       '/messages': 'messages',
@@ -274,10 +302,15 @@ function AppContent() {
       '/coconut-v14-cocoboard': 'coconut-v14-cocoboard',
       '/coconut-v14': 'coconut-v14',
       '/creator-dashboard': 'creator-dashboard',
+      '/creator-system': 'creator-system', // ✅ NEW: Creator System
+      '/developer-dashboard': 'developer-dashboard', // ✅ NEW: Developer Dashboard
+      '/referral': 'referral', // ✅ NEW: Referral System
+      '/enhanced-feed': 'enhanced-feed', // ✅ NEW: Enhanced Feed
       '/wallet': 'wallet',
       '/settings': 'settings',
       '/new-message': 'new-message',
       '/activity': 'activity',
+      '/my-uploads': 'my-uploads',
     };
     
     const expectedScreen = screenMap[path];
@@ -552,6 +585,15 @@ function AppContent() {
       return <Auth0CallbackPage />;
     }
     
+    // ✅ RGPD: Privacy Policy & Terms of Service
+    if (currentScreen === 'privacy-policy') {
+      return <PrivacyPolicy onNavigate={handleNavigate} />;
+    }
+    
+    if (currentScreen === 'terms-of-service') {
+      return <TermsOfService onNavigate={handleNavigate} />;
+    }
+    
     // ✅ EXISTING: Main app screens
     switch (currentScreen) {
       case 'feed':
@@ -617,9 +659,24 @@ function AppContent() {
         return <CocoBoardDemo onNavigate={() => handleBackFromCoconut()} />;
       case 'coconut-v14':
         // ✅ COCONUT V14 - Ultra-Premium Full App
-        return <CoconutV14App onNavigate={handleNavigate} />;
+        // ✅ NEW: Feature flag to switch between old and new design
+        const useEnterpriseDesign = true; // 🎯 SET TO TRUE to use new Enterprise design
+        
+        return useEnterpriseDesign ? (
+          <CoconutV14AppEnterprise onNavigate={handleNavigate} />
+        ) : (
+          <CoconutV14App onNavigate={handleNavigate} />
+        );
       case 'creator-dashboard':
         return <CreatorDashboard onNavigate={handleNavigate} />;
+      case 'creator-system':
+        return <CreatorSystem onNavigate={handleNavigate} />;
+      case 'developer-dashboard':
+        return <DeveloperDashboard onNavigate={handleNavigate} />;
+      case 'referral':
+        return <ReferralDashboard onNavigate={handleNavigate} />;
+      case 'enhanced-feed':
+        return <EnhancedFeed onNavigate={handleNavigate} />;
       case 'wallet':
         return <Wallet onNavigate={handleNavigate} />;
       case 'settings':
@@ -635,7 +692,7 @@ function AppContent() {
     }
   };
 
-  const showTabBar = !['landing', 'signup-individual', 'signup-enterprise', 'signup-developer', 'login', 'login-individual', 'login-enterprise', 'login-developer', 'onboarding', 'auth-callback', 'create', 'create-v4', 'coconut-campaign', 'coconut-v14-cocoboard', 'coconut-v14', 'creator-dashboard', 'wallet', 'settings', 'new-message', 'activity', 'my-uploads'].includes(currentScreen);
+  const showTabBar = !['landing', 'signup-individual', 'signup-enterprise', 'signup-developer', 'login', 'login-individual', 'login-enterprise', 'login-developer', 'onboarding', 'auth-callback', 'create', 'create-v4', 'coconut-campaign', 'coconut-v14-cocoboard', 'coconut-v14', 'creator-dashboard', 'creator-system', 'developer-dashboard', 'referral', 'enhanced-feed', 'wallet', 'settings', 'new-message', 'activity', 'my-uploads'].includes(currentScreen);
 
   return (
     <ProvidersProvider

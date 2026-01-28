@@ -1,10 +1,9 @@
 // providers.tsx - Provider routing, model selection, and fallback logic
 
 import * as pollinations from "./pollinations.tsx";
-import * as together from "./together.tsx";
 import * as replicate from "./replicate.tsx";
 import * as enhancer from "./enhancer.tsx";
-import * as credits from "./credits.tsx";
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as pricing from "./pricing.tsx";
 
 export interface GenerationRequest {
@@ -97,13 +96,9 @@ export function selectModel(request: GenerationRequest): string {
 /**
  * Get provider for a model
  */
-function getProviderForModel(model: string): 'pollinations' | 'together' | 'replicate' {
+function getProviderForModel(model: string): 'pollinations' | 'replicate' {
   if (model === 'flux-2-pro' || model === 'imagen-4') {
     return 'replicate';
-  }
-  
-  if (model === 'flux-schnell') {
-    return 'together';
   }
   
   // seedream, nanobanana, kontext
@@ -141,7 +136,7 @@ export async function generateWithProvider(
     console.log(`   Breakdown: ${pricingResult.breakdown.base} base + ${pricingResult.breakdown.imagesCharge} images + ${pricingResult.breakdown.enhanceCharge} enhance + ${pricingResult.breakdown.premiumSurcharge} premium`);
     
     // 4. Check & deduct credits (ALWAYS use creditType from pricing calculation)
-    const deductionResult = await credits.deductCredits(
+    const deductionResult = await CreditsSystem.deductCredits(
       request.userId,
       pricingResult.cost,
       pricingResult.creditType  // ✅ Use backend-calculated creditType, not frontend choice
@@ -274,19 +269,6 @@ async function generateWithModel(
     };
   }
   
-  // Together AI (Flux Schnell)
-  if (model === 'flux-schnell') {
-    const result = await together.generateFluxSchnell(commonOptions);
-    
-    return {
-      success: result.success,
-      url: result.url,
-      error: result.error,
-      provider: 'together',
-      model
-    };
-  }
-  
   // Replicate (Premium)
   if (model === 'flux-2-pro' || model === 'imagen-4') {
     const result = await replicate.generatePremium({
@@ -321,12 +303,12 @@ async function refundCredits(
   creditType: 'free' | 'paid'
 ): Promise<void> {
   try {
-    const currentCredits = await credits.getUserCredits(userId);
+    const currentCredits = await CreditsSystem.getUserCredits(userId);
     const newAmount = creditType === 'free' 
       ? currentCredits.free + amount
       : currentCredits.paid + amount;
     
-    await credits.adminResetCredits(
+    await CreditsSystem.adminResetCredits(
       userId,
       creditType === 'free' ? newAmount : currentCredits.free,
       creditType === 'paid' ? newAmount : currentCredits.paid
@@ -342,7 +324,7 @@ async function refundCredits(
  * Get available models for user
  */
 export async function getAvailableModels(userId: string) {
-  const userCredits = await credits.getUserCredits(userId);
+  const userCredits = await CreditsSystem.getUserCredits(userId);
   
   return {
     standard: [

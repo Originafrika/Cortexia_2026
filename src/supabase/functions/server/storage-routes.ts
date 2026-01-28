@@ -100,6 +100,7 @@ app.post('/upload', async (c) => {
     });
     
     if (!imageData) {
+      console.error('❌ [STORAGE] No image data provided');
       return c.json({
         success: false,
         error: 'No image data provided'
@@ -108,6 +109,7 @@ app.post('/upload', async (c) => {
     
     // ✅ Validate userId
     if (!userId || userId === 'anonymous') {
+      console.error('❌ [STORAGE] Authentication required, userId:', userId);
       return c.json({
         success: false,
         error: 'Authentication required. Please sign in to upload images.'
@@ -117,9 +119,14 @@ app.post('/upload', async (c) => {
     // ✅ Fetch user profile to get accountType if not provided
     let userAccountType = accountType;
     if (!userAccountType) {
-      const profile = await kv.get(`user:profile:${userId}`);
-      userAccountType = profile?.accountType || 'individual';
-      console.log(`📋 User accountType: ${userAccountType}`);
+      try {
+        const profile = await kv.get(`user:profile:${userId}`);
+        userAccountType = profile?.accountType || 'individual';
+        console.log(`📋 User accountType: ${userAccountType}`);
+      } catch (profileError) {
+        console.error('⚠️ [STORAGE] Failed to fetch profile, using default:', profileError);
+        userAccountType = 'individual';
+      }
     }
     
     // Convert base64 to Blob
@@ -168,6 +175,14 @@ app.post('/upload', async (c) => {
     // ✅ Use provided projectId or create a default one
     const finalProjectId = projectId || `individual-uploads-${userId}`;
     
+    console.log(`🚀 [STORAGE] Calling uploadReference with:`, {
+      userId,
+      projectId: finalProjectId,
+      fileName: filename || 'image.png',
+      fileSize: blob.size,
+      accountType: userAccountType
+    });
+    
     // Upload using storage service
     const result = await uploadReference({
       userId: userId,
@@ -178,6 +193,12 @@ app.post('/upload', async (c) => {
       fileSize: blob.size,
       category: 'image',
       accountType: userAccountType // ✅ Pass accountType to select correct bucket
+    });
+    
+    console.log(`📦 [STORAGE] uploadReference result:`, {
+      success: result.success,
+      hasUrl: !!result.url,
+      error: result.error
     });
     
     if (result.success) {
@@ -210,18 +231,23 @@ app.post('/upload', async (c) => {
       };
       
       // Save to KV store
-      await kv.set(`upload:${userId}:${uploadId}`, metadata);
-      
-      // Also index by path for cleanup service
-      await kv.set(`upload:path:${result.path}`, {
-        uploadId,
-        userId,
-        accountType: userAccountType,
-        expiresAt
-      });
-      
-      console.log(`✅ [STORAGE] Upload metadata saved: ${uploadId}`);
-      console.log(`   Account: ${userAccountType}, Expires: ${expiresAt || 'NEVER'}`);
+      try {
+        await kv.set(`upload:${userId}:${uploadId}`, metadata);
+        
+        // Also index by path for cleanup service
+        await kv.set(`upload:path:${result.path}`, {
+          uploadId,
+          userId,
+          accountType: userAccountType,
+          expiresAt
+        });
+        
+        console.log(`✅ [STORAGE] Upload metadata saved: ${uploadId}`);
+        console.log(`   Account: ${userAccountType}, Expires: ${expiresAt || 'NEVER'}`);
+      } catch (kvError) {
+        console.error('⚠️ [STORAGE] Failed to save metadata to KV:', kvError);
+        // Don't fail the upload if KV save fails
+      }
       
       // Calculate new storage usage
       const newUsed = await getUserStorageUsed(userId);
@@ -244,6 +270,7 @@ app.post('/upload', async (c) => {
         }
       });
     } else {
+      console.error('❌ [STORAGE] Upload failed:', result.error);
       return c.json({
         success: false,
         error: result.error
@@ -252,9 +279,13 @@ app.post('/upload', async (c) => {
     
   } catch (error) {
     console.error('❌ [STORAGE] Upload error:', error);
+    console.error('   Error stack:', error.stack);
+    console.error('   Error name:', error.name);
+    console.error('   Error message:', error.message);
     return c.json({
       success: false,
-      error: error.message || 'Upload failed'
+      error: error.message || 'Upload failed',
+      details: error.stack // ✅ Include stack trace for debugging
     }, 500);
   }
 });

@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js';
 import { shouldLog } from './server-config.ts'; // ✅ NEW: Import logging config
 
 // ============================================
@@ -231,10 +231,13 @@ export async function uploadReference(
   params: UploadReferenceParams
 ): Promise<UploadReferenceResult> {
   try {
-    console.log(`📤 Uploading ${params.category} reference:`, {
+    console.log(`📤 [uploadReference] Starting upload:`, {
       fileName: params.fileName,
       size: `${(params.fileSize / 1024 / 1024).toFixed(2)}MB`,
-      projectId: params.projectId
+      projectId: params.projectId,
+      userId: params.userId,
+      category: params.category,
+      accountType: params.accountType
     });
     
     // Validate file
@@ -245,6 +248,7 @@ export async function uploadReference(
     }, params.category);
     
     if (!validation.valid) {
+      console.error(`❌ [uploadReference] Validation failed:`, validation.errors);
       return {
         success: false,
         error: `Validation failed: ${validation.errors.join(', ')}`
@@ -262,23 +266,32 @@ export async function uploadReference(
       .replace(/[^a-zA-Z0-9.-]/g, '_')
       .replace(/_{2,}/g, '_');
     
-    // ✅ FIX: Sanitize userId to remove invalid characters for storage paths
+    // ✅ FIX: Sanitize BOTH userId AND projectId to remove invalid characters for storage paths
     const sanitizedUserId = sanitizeUserId(params.userId);
-    const path = `${sanitizedUserId}/${params.projectId}/${timestamp}-${sanitizedName}`;
+    const sanitizedProjectId = sanitizeUserId(params.projectId); // ✅ NEW: Also sanitize projectId
+    const path = `${sanitizedUserId}/${sanitizedProjectId}/${timestamp}-${sanitizedName}`;
     
-    console.log(`📦 Uploading to bucket: ${getReferencesBucket(params.accountType)}`);
-    console.log(`📂 Path: ${path}`);
+    const bucketName = getReferencesBucket(params.accountType);
+    console.log(`📦 [uploadReference] Uploading to bucket: ${bucketName}`);
+    console.log(`📂 [uploadReference] Path: ${path}`);
     
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
-      .from(getReferencesBucket(params.accountType))
+      .from(bucketName)
       .upload(path, params.file, {
         contentType: params.fileType,
         upsert: false
       });
     
     if (error) {
-      console.error('❌ Upload error:', error);
+      console.error('❌ [uploadReference] Upload error:', {
+        message: error.message,
+        name: error.name,
+        statusCode: error.statusCode,
+        bucket: bucketName,
+        path,
+        error
+      });
       
       // ✅ Provide helpful error messages
       if (error.message.includes('Bucket not found') || error.message.includes('bucket')) {
@@ -294,23 +307,24 @@ export async function uploadReference(
       };
     }
     
-    console.log('✅ File uploaded:', data.path);
+    console.log('✅ [uploadReference] File uploaded:', data.path);
     
     // Generate signed URL for access (not needed for public bucket but keep for compatibility)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from(getReferencesBucket(params.accountType))
+      .from(bucketName)
       .createSignedUrl(data.path, SIGNED_URL_EXPIRY);
     
     if (signedUrlError) {
-      console.error('⚠️ Failed to create signed URL:', signedUrlError);
+      console.error('⚠️ [uploadReference] Failed to create signed URL:', signedUrlError);
     }
     
     // Get public URL (for metadata)
     const { data: publicUrlData } = supabase.storage
-      .from(getReferencesBucket(params.accountType))
+      .from(bucketName)
       .getPublicUrl(data.path);
     
-    console.log('✅ Public URL:', publicUrlData.publicUrl);
+    console.log('✅ [uploadReference] Public URL:', publicUrlData.publicUrl);
+    console.log('✅ [uploadReference] Upload complete');
     
     return {
       success: true,
@@ -320,7 +334,11 @@ export async function uploadReference(
     };
     
   } catch (error) {
-    console.error('❌ Upload exception:', error);
+    console.error('❌ [uploadReference] Exception:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return {
       success: false,
       error: error.message

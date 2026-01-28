@@ -1,0 +1,162 @@
+/**
+ * 🎨 BEAUTY DESIGN SYSTEM — Design Tokens
+ * Based on 7 Arts of Divine Perfection
+ */
+
+:root {
+  /* ============================================
+     📐 GÉOMÉTRIE — Spacing System (8pt Grid)
+     ============================================ */
+  
+  /* Base unit: 8px (divine proportion foundation) */
+  --spacing-1: 0.25rem;  /* 4px */
+  --spacing-2: 0.5rem;   /* 8px */
+  --spacing-3: 0.75rem;  /* 12px */
+  --spacing-4: 1rem;     /* 16px */
+  --spacing-5: 1.25rem;  /* 20px */
+  --spacing-6: 1.5rem;   /* 24px */
+  --spacing-8: 2rem;     /* 32px */
+  --spacing-10: 2.5rem;  /* 40px */
+  --spacing-12: 3rem;    /* 48px */
+  --spacing-16: 4rem;    /* 64px */
+  --spacing-20: 5rem;    /* 80px */
+  --spacing-24: 6rem;    /* 96px */
+  --spacing-32: 8rem;    /* 128px */
+  --spacing-40: 10rem;   /* 160px */
+  --spacing-48: 12rem;   /* 192px */
+  --spacing-64: 16rem;   /* 256px */
+
+  /* Section Spacing (Harmonized) */
+  --section-hero: var(--spacing-32);      /* 128px - Hero sections */
+  --section-major: var(--spacing-24);     /* 96px - Major sections */
+  --section-standard: var(--spacing-20);  /* 80px - Standard sections */
+  --section-minor: var(--spacing-16);     /* 64px - Minor sections */
+  
+  /* ============================================
+     🔢 ARITHMÉTIQUE — Border Radius (Golden Ratio)
+     ============================================ */
+  
+  /* Base: 8px, Multiplier: 1.618 (φ - Golden Ratio) */
+  --radius-sm: 0.5rem;    /* 8px */
+  --radius-md: 0.8125rem; /* 13px (8 × 1.618) */
+  --radius-lg: 1.3125rem; /* 21px (13 × 1.618) */
+  --radius-xl: 2.125rem;  /* 34px (21 × 1.618) */
+  --radius-2xl: 3.4375rem; /* 55px (34 × 1.618) */
+  --radius-full: 9999px;  /* Infinite radius */
+
+  /* ============================================
+     🎶 MUSIQUE — Motion Timings (Rhythm)
+     ============================================ */
+  
+  /* Easing curves inspired by musical tempo */
+  --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);      /* Fluid, natural */
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Playful */
+  --ease-sharp: cubic-bezier(0.4, 0, 0.2, 1);       /* Precise */
+  
+  /* Duration in seconds (musical note values) */
+  --duration-instant: 0.15s;  /* 16th note */
+  --duration-fast: 0.3s;      /* 8th note */
+  --duration-normal: 0.6s;    /* Quarter note */
+  --duration-slow: 0.9s;      /* Half note */
+  --duration-epic: 1.2s;      /* Whole note */
+  
+  /* Stagger delays for choreography */
+  --stagger-fast: 0.05s;
+  --stagger-normal: 0.08s;
+  --stagger-slow: 0.12s;
+
+  /* ============================================
+     🪶 GRAMMAIRE — Color Palette (Coconut Warm)
+     ============================================ */
+  
+  /* Coconut Warm Primary */
+  --color-coconut-50: rgb(250, 247, 244);
+  --color-coconut-100: rgb(245, 235, 224);
+  --color-coconut-200: rgb(238, 223, 207);
+  --color-coconut-300: rgb(227, 213, 202);
+  --color-coconut-400: rgb(214, 198, 184);
+  --color-coconut-500: rgb(198, 180, 164);
+  --color-coconut-600: rgb(180, 160, 142);
+  --color-coconut-700: rgb(158, 138, 120);
+  --color-coconut-800: rgb(132, 113, 97);
+  --color-coconut-900: rgb(105, 87, 72);
+
+  /* Purple Accent (Individual) */
+  --color-purple-400: rgb(168, 85, 247);
+  --color-purple-500: rgb(139, 92, 246);
+  --color-purple-600: rgb(124, 58, 237);
+
+  /* Blue Accent (Developer) */
+  --color-blue-400: rgb(59, 130, 246);
+  --color-blue-500: rgb(37, 99, 235);
+  --color-cyan-400: rgb(6, 182, 212);
+
+  /* Semantic Colors */
+  --color-success: rgb(34, 197, 94);
+  --color-warning: rgb(251, 146, 60);
+  --color-error: rgb(239, 68, 68);
+  --color-info: rgb(59, 130, 246);
+
+  /* ============================================
+     🗣 RHÉTORIQUE — Typography Scale (Modular)
+     ============================================ */
+  
+  /* Scale ratio: 1.25 (Major Third - Musical harmony) */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px (16 × 1.125) */
+  --text-xl: 1.25rem;     /* 20px (16 × 1.25) */
+  --text-2xl: 1.5rem;     /* 24px (20 × 1.2) */
+  --text-3xl: 1.875rem;   /* 30px (24 × 1.25) */
+  --text-4xl: 2.25rem;    /* 36px (30 × 1.2) */
+  --text-5xl: 3rem;       /* 48px (36 × 1.333) */
+  --text-6xl: 3.75rem;    /* 60px (48 × 1.25) */
+  --text-7xl: 4.5rem;     /* 72px (60 × 1.2) */
+  --text-8xl: 6rem;       /* 96px (72 × 1.333) */
+
+  /* Line Heights (Breathing space) */
+  --leading-tight: 1.2;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* ============================================
+     🔭 ASTRONOMIE — Z-Index Layers (Cosmic Order)
+     ============================================ */
+  
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-tooltip: 70;
+  --z-notification: 80;
+  --z-maximum: 99;
+
+  /* ============================================
+     💫 SPECIAL EFFECTS — Glass Morphism
+     ============================================ */
+  
+  --glass-blur: blur(20px);
+  --glass-blur-strong: blur(40px);
+  --glass-bg-light: rgba(255, 255, 255, 0.05);
+  --glass-bg-medium: rgba(255, 255, 255, 0.08);
+  --glass-bg-strong: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-strong: rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   📱 RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Following Tailwind convention for consistency */
+/* sm: 640px */
+/* md: 768px */
+/* lg: 1024px */
+/* xl: 1280px */
+/* 2xl: 1536px */

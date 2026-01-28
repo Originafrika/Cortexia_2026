@@ -1,177 +1,24 @@
+import React, { useState } from 'react';
+import { ArrowLeft, WalletIcon, Shield, Bell, HelpCircle, FileText, Info, LogOut, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 import type { Screen } from '../App';
-import { useAuth } from '../lib/contexts/AuthContext'; // ✅ Import AuthContext for logout
-
-// Icons inline
-const ArrowLeft = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <line x1="19" y1="12" x2="5" y2="12"></line>
-    <polyline points="12 19 5 12 12 5"></polyline>
-  </svg>
-);
-
-const ChevronRight = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <polyline points="9 18 15 12 9 6"></polyline>
-  </svg>
-);
-
-const WalletIcon = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
-    <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
-    <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path>
-  </svg>
-);
-
-const Shield = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-  </svg>
-);
-
-const Bell = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-  </svg>
-);
-
-const HelpCircle = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10"></circle>
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-  </svg>
-);
-
-const FileText = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-    <polyline points="14 2 14 8 20 8"></polyline>
-    <line x1="16" y1="13" x2="8" y2="13"></line>
-    <line x1="16" y1="17" x2="8" y2="17"></line>
-    <polyline points="10 9 9 9 8 9"></polyline>
-  </svg>
-);
-
-const Info = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="12" y1="16" x2="12" y2="12"></line>
-    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-  </svg>
-);
-
-const LogOut = ({ className, size }: { className?: string; size?: number }) => (
-  <svg 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-    <polyline points="16 17 21 12 16 7"></polyline>
-    <line x1="21" y1="12" x2="9" y2="12"></line>
-  </svg>
-);
+import { signOut } from '../utils/supabase/auth';
+import { useTranslation } from '../lib/i18n'; // ✅ i18n hook
+import { LanguageSwitcher } from './LanguageSwitcher'; // ✅ Language switcher
+import { useAuth } from '../lib/contexts/AuthContext'; // ✅ Auth context
+import { projectId, publicAnonKey } from '../utils/supabase/info'; // ✅ Supabase config
 
 interface SettingsProps {
   onNavigate: (screen: Screen) => void;
 }
 
 export function Settings({ onNavigate }: SettingsProps) {
-  // ✅ Get signOut function from AuthContext
-  const { signOut, user } = useAuth();
+  const { t } = useTranslation();
+  const { user } = useAuth(); // ✅ Get current user
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // ✅ Delete confirmation modal
+  const [deleteStep, setDeleteStep] = useState<'confirm' | 'password' | 'deleting'>('confirm'); // ✅ Multi-step deletion
+  const [password, setPassword] = useState(''); // ✅ Password for confirmation
+  const [deleteError, setDeleteError] = useState<string | null>(null); // ✅ Error handling
   
-  // ✅ DEBUG: Log component render
-  console.log('🔧 [Settings] Rendering component', user?.email);
-  
-  // ✅ Handle logout
   const handleLogout = async () => {
     console.log('🚪 [Settings] Logging out...');
     try {
@@ -182,14 +29,60 @@ export function Settings({ onNavigate }: SettingsProps) {
       console.error('❌ [Settings] Logout error:', error);
     }
   };
+
+  // ✅ NEW: Handle account deletion (production-ready, RGPD-compliant)
+  const handleDeleteAccount = async () => {
+    if (!user?.id) {
+      setDeleteError('User not authenticated');
+      return;
+    }
+
+    setDeleteStep('deleting');
+    setDeleteError(null);
+
+    try {
+      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      
+      console.log('🗑️ [Settings] Initiating account deletion for user:', user.id);
+      
+      const response = await fetch(`${apiUrl}/users/${user.id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          password: password || undefined, // Optional password confirmation
+          confirm: true,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete account');
+      }
+
+      console.log('✅ [Settings] Account deleted successfully');
+      
+      // Sign out and redirect
+      await signOut();
+      onNavigate('landing');
+      
+    } catch (error: any) {
+      console.error('❌ [Settings] Account deletion error:', error);
+      setDeleteError(error.message || 'Failed to delete account. Please try again.');
+      setDeleteStep('confirm');
+    }
+  };
   
   const sections = [
     {
-      title: 'ACCOUNT',
+      title: t('settings.account').toUpperCase(),
       items: [
-        { label: 'My Wallet', icon: WalletIcon, action: () => onNavigate('wallet') },
-        { label: 'Privacy & Security', icon: Shield, action: () => {} },
-        { label: 'Notifications', icon: Bell, action: () => {} },
+        { label: t('navigation.wallet'), icon: WalletIcon, action: () => onNavigate('wallet') },
+        { label: t('settings.privacy'), icon: Shield, action: () => {} },
+        { label: t('settings.notifications'), icon: Bell, action: () => {} },
       ],
     },
     {
@@ -223,16 +116,33 @@ export function Settings({ onNavigate }: SettingsProps) {
     <div className="w-full h-screen bg-black overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 bg-black z-10 px-4 pt-12 pb-4 border-b border-gray-800">
-        <div className="flex items-center gap-4">
-          <button onClick={() => onNavigate('profile')}>
-            <ArrowLeft className="text-white" size={24} />
-          </button>
-          <h1 className="text-white text-xl">Settings</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => onNavigate('profile')}>
+              <ArrowLeft className="text-white" size={24} />
+            </button>
+            <h1 className="text-white text-xl">{t('settings.title')}</h1>
+          </div>
+          <LanguageSwitcher variant="compact" />
         </div>
       </div>
 
       {/* Settings Sections */}
       <div className="p-4">
+        {/* Language Setting - Highlighted */}
+        <div className="mb-6">
+          <h2 className="text-white/40 text-xs font-medium mb-3">{t('settings.language').toUpperCase()}</h2>
+          <div className="bg-gray-900 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white font-medium">{t('settings.selectLanguage')}</p>
+                <p className="text-white/40 text-sm mt-1">{t('settings.languageDescription')}</p>
+              </div>
+              <LanguageSwitcher variant="default" />
+            </div>
+          </div>
+        </div>
+
         {sections.map((section, sectionIdx) => {
           // ✅ Protection: Skip invalid sections
           if (!section || !section.items) {
@@ -279,11 +189,98 @@ export function Settings({ onNavigate }: SettingsProps) {
         </div>
 
         {/* Logout Button */}
-        <button className="w-full py-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 flex items-center justify-center gap-2" onClick={handleLogout}>
+        <button 
+          className="w-full py-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors" 
+          onClick={handleLogout}
+        >
           <LogOut size={20} />
-          Log Out
+          {t('settings.logout')}
+        </button>
+
+        {/* Delete Account Button */}
+        <button 
+          className="w-full py-4 mt-4 bg-gray-900 border border-gray-700 rounded-lg text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-800 hover:text-red-400 hover:border-red-500/50 transition-colors" 
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          <Trash2 size={20} />
+          {t('settings.deleteAccount')}
         </button>
       </div>
+
+      {/* ✅ DELETE CONFIRMATION MODAL (RGPD-compliant) */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          
+          <div className="relative w-full max-w-md bg-gray-900 rounded-2xl p-6 border border-red-500/20">
+            {/* Warning Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="text-red-500" size={32} />
+              </div>
+            </div>
+
+            {/* Step 1: Confirmation */}
+            {deleteStep === 'confirm' && (
+              <>
+                <h2 className="text-white text-xl font-bold text-center mb-2">
+                  {t('settings.deleteConfirmTitle')}
+                </h2>
+                <p className="text-white/60 text-center mb-6">
+                  {t('settings.deleteConfirmMessage')}
+                </p>
+
+                {/* RGPD Warning */}
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
+                  <p className="text-red-400 text-sm font-medium mb-2">
+                    {t('settings.deleteWarningTitle')}
+                  </p>
+                  <ul className="text-red-400/80 text-sm space-y-1">
+                    <li>• {t('settings.deleteWarning1')}</li>
+                    <li>• {t('settings.deleteWarning2')}</li>
+                    <li>• {t('settings.deleteWarning3')}</li>
+                    <li>• {t('settings.deleteWarning4')}</li>
+                  </ul>
+                </div>
+
+                {deleteError && (
+                  <div className="bg-red-500/10 border border-red-500 rounded-lg p-3 mb-4">
+                    <p className="text-red-400 text-sm">{deleteError}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteError(null);
+                      setPassword('');
+                      setDeleteStep('confirm');
+                    }}
+                    className="flex-1 py-3 bg-gray-800 rounded-lg text-white hover:bg-gray-700 transition-colors"
+                  >
+                    {t('settings.cancel')}
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    className="flex-1 py-3 bg-red-500 rounded-lg text-white hover:bg-red-600 transition-colors font-medium"
+                  >
+                    {t('settings.deleteConfirm')}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: Deleting */}
+            {deleteStep === 'deleting' && (
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-white">{t('settings.deletingAccount')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

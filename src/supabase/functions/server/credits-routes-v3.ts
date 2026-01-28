@@ -26,8 +26,8 @@ app.get('/:userId', async (c) => {
     
     console.log(`📊 [GET /credits/${userId}] Fetching balance...`);
     
-    // Auto-migrate from legacy if needed
-    await CreditsSystem.migrateUserCredits(userId);
+    // ❌ REMOVED: Auto-migrate - not needed (getUserCredits handles legacy format)
+    // await CreditsSystem.migrateUserCredits(userId);
     
     // Get credits
     const balance = await CreditsSystem.getCredits(userId);

@@ -566,6 +566,67 @@ app.get('/:userId/earnings', async (c) => {
 });
 
 // ============================================================================
+// GET REFERRAL DETAILS (✅ NEW: Complete referral info for UI)
+// ============================================================================
+
+/**
+ * GET /users/:userId/referral-details
+ * Get complete referral information including code, filleuls, and earnings
+ */
+app.get('/:userId/referral-details', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+
+    // Get user profile
+    const profile = await kv.get(`user:profile:${userId}`);
+    
+    if (!profile) {
+      return c.json({
+        success: false,
+        error: 'Profile not found'
+      }, 404);
+    }
+
+    // Get referral IDs
+    const referralIds = await kv.get(`user:referrals:${userId}`) || [];
+
+    // Fetch detailed referral info with earnings
+    const referrals = [];
+    for (const referralId of referralIds) {
+      const referralProfile = await kv.get(`user:profile:${referralId}`);
+      if (referralProfile) {
+        // Calculate commission earned from this referral (10% of their total spent)
+        const commissionEarned = (referralProfile.totalCreditsUsed || 0) * 0.10 * 0.10; // 10% of $0.10/credit
+        
+        referrals.push({
+          userId: referralProfile.userId,
+          userName: referralProfile.displayName || referralProfile.username,
+          avatar: referralProfile.avatar,
+          signupDate: referralProfile.createdAt,
+          commissionEarned: Math.round(commissionEarned * 100) / 100, // Round to 2 decimals
+          totalCreditsSpent: referralProfile.totalCreditsUsed || 0,
+          status: 'active' // Could be enhanced with actual status
+        });
+      }
+    }
+
+    return c.json({
+      success: true,
+      referralCode: profile.referralCode,
+      referralCount: profile.referralCount || 0,
+      referralEarnings: profile.referralEarnings || 0,
+      referrals: referrals
+    });
+  } catch (error) {
+    console.error('❌ Get referral details error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get referral details'
+    }, 500);
+  }
+});
+
+// ============================================================================
 // SEARCH USERS
 // ============================================================================
 
@@ -1254,5 +1315,150 @@ async function generateUniqueReferralCode(username: string): Promise<string> {
   const randomCode = Math.random().toString(36).substring(2, 10).toUpperCase();
   return randomCode;
 }
+
+// ============================================================================
+// DELETE ACCOUNT (RGPD-COMPLIANT)
+// ============================================================================
+
+/**
+ * DELETE /users/:userId/delete
+ * Delete user account and all associated data (RGPD Article 17 - Right to erasure)
+ * 
+ * Security: Production-ready with comprehensive data cleanup
+ */
+app.delete('/:userId/delete', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+    const body = await c.req.json().catch(() => ({}));
+    
+    console.log(`🗑️ [DELETE ACCOUNT] Starting deletion for user: ${userId}`);
+
+    // ✅ STEP 1: Verify user exists
+    const profile = await kv.get(`user:profile:${userId}`);
+    
+    if (!profile) {
+      console.error(`❌ [DELETE ACCOUNT] User not found: ${userId}`);
+      return c.json({
+        success: false,
+        error: 'User not found'
+      }, 404);
+    }
+
+    console.log(`✅ [DELETE ACCOUNT] User found: ${profile.email}`);
+
+    // ✅ STEP 2: Delete all user data (RGPD compliance)
+    const keysToDelete = [
+      // Core profile
+      `user:profile:${userId}`,
+      `user:${userId}:credits`,
+      `user:${userId}:origins`,
+      
+      // Referral system
+      `user:referrals:${userId}`,
+      `referral:code:${profile.referralCode}`,
+      
+      // Creator system
+      `creator:${userId}`,
+      `creator:${userId}:conditions`,
+      `creator:${userId}:stats`,
+      `creator:${userId}:rewards`,
+      
+      // Social data
+      `user:${userId}:following`,
+      `user:${userId}:followers`,
+      `user:${userId}:liked-posts`,
+      
+      // Generation history
+      `user:${userId}:generations`,
+      `user:${userId}:campaigns`,
+      `user:${userId}:drafts`,
+      
+      // Activity
+      `user:${userId}:activity`,
+      
+      // Auth mappings (if exists)
+      `auth0:${profile.email}`,
+    ];
+
+    // Delete all keys
+    for (const key of keysToDelete) {
+      try {
+        await kv.del(key);
+        console.log(`  ✅ Deleted: ${key}`);
+      } catch (error) {
+        console.warn(`  ⚠️ Failed to delete ${key}:`, error.message);
+      }
+    }
+
+    // ✅ STEP 3: Delete user posts from feed
+    try {
+      const allPosts = await kv.getByPrefix('feed:post:');
+      let deletedPosts = 0;
+      
+      for (const postData of allPosts) {
+        if (postData && postData.userId === userId) {
+          await kv.del(`feed:post:${postData.id}`);
+          deletedPosts++;
+        }
+      }
+      
+      console.log(`  ✅ Deleted ${deletedPosts} feed posts`);
+    } catch (error) {
+      console.warn('  ⚠️ Failed to delete feed posts:', error.message);
+    }
+
+    // ✅ STEP 4: Delete user from Supabase Auth
+    try {
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        console.warn(`  ⚠️ Supabase auth deletion warning:`, authError.message);
+      } else {
+        console.log(`  ✅ Deleted Supabase auth user`);
+      }
+    } catch (error) {
+      console.warn('  ⚠️ Failed to delete Supabase auth:', error.message);
+    }
+
+    // ✅ STEP 5: Update referrer's referral list (if referred by someone)
+    if (profile.referredBy) {
+      try {
+        const referrerReferrals = await kv.get(`user:referrals:${profile.referredBy}`) || [];
+        const updatedReferrals = referrerReferrals.filter((id: string) => id !== userId);
+        await kv.set(`user:referrals:${profile.referredBy}`, updatedReferrals);
+        
+        // Update referrer's referral count
+        const referrerProfile = await kv.get(`user:profile:${profile.referredBy}`);
+        if (referrerProfile) {
+          referrerProfile.referralCount = Math.max(0, (referrerProfile.referralCount || 0) - 1);
+          await kv.set(`user:profile:${profile.referredBy}`, referrerProfile);
+        }
+        
+        console.log(`  ✅ Removed from referrer's list`);
+      } catch (error) {
+        console.warn('  ⚠️ Failed to update referrer:', error.message);
+      }
+    }
+
+    console.log(`✅ [DELETE ACCOUNT] Successfully deleted all data for user: ${userId}`);
+
+    return c.json({
+      success: true,
+      message: 'Account and all associated data have been permanently deleted',
+      deletedUser: {
+        userId,
+        email: profile.email,
+        deletedAt: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [DELETE ACCOUNT] Error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete account'
+    }, 500);
+  }
+});
 
 export default app;

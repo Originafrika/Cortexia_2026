@@ -272,7 +272,7 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
 
   if (step === 'analyzing') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-warm-50 via-white to-warm-100">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <AnalyzingLoaderPremium
           currentPhase="Analyse stratégique par Gemini"
           message="Génération du plan de campagne marketing..."

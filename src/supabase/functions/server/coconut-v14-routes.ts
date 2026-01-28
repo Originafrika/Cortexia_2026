@@ -2,7 +2,7 @@ import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import * as projectsUnified from './projects.tsx'; // ✅ MIGRATED: Use unified projects system
-import * as credits from './coconut-v14-credits.ts';
+import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import { analyzeWithRetry } from './coconut-v14-analyzer.ts';
 import { analyzeMissingAssets, calculateAssetGenerationCost } from './coconut-v14-assets.ts';
 import * as storage from './coconut-v14-storage.ts';
@@ -254,10 +254,10 @@ app.post('/coconut-v14/analyze-intent', async (c) => {
     
     // 1. Vérifier crédits AVANT l'analyse
     const analysisCost = 100;
-    const hasCredits = await credits.checkCredits(payload.userId, analysisCost);
+    const hasCredits = await CreditsSystem.checkCredits(payload.userId, analysisCost);
     
     if (!hasCredits) {
-      const balance = await credits.getCreditBalance(payload.userId);
+      const balance = await CreditsSystem.getCreditBalance(payload.userId);
       return c.json<ApiResponse>({ 
         success: false,
         error: 'Insufficient credits',
@@ -292,7 +292,7 @@ app.post('/coconut-v14/analyze-intent', async (c) => {
     
     // 5. Débiter crédits pour l'analyse (maintenant)
     // Assets et génération finale seront débitées plus tard
-    await credits.deductCredits(
+    await CreditsSystem.deductCredits(
       payload.userId,
       analysisCost,
       'Gemini analysis',
@@ -469,7 +469,7 @@ app.get('/credits/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
     
-    const balance = await credits.getCreditBalance(userId);
+    const balance = await CreditsSystem.getCreditBalance(userId);
     
     return c.json({ 
       success: true, 
@@ -479,7 +479,7 @@ app.get('/credits/:userId', async (c) => {
       },
       daysUntilReset: 30,
       balance,
-      formatted: credits.formatCredits(balance)
+      formatted: CreditsSystem.formatCredits(balance)
     });
     
   } catch (error) {
@@ -507,9 +507,9 @@ app.post('/credits/add-paid', async (c) => {
       }, 400);
     }
     
-    await credits.addCredits(userId, amount, 'Paid credits added');
+    await CreditsSystem.addCredits(userId, amount, 'Paid credits added');
     
-    const balance = await credits.getCreditBalance(userId);
+    const balance = await CreditsSystem.getCreditBalance(userId);
     
     return c.json({ 
       success: true, 
@@ -519,7 +519,7 @@ app.post('/credits/add-paid', async (c) => {
       },
       daysUntilReset: 30,
       balance,
-      formatted: credits.formatCredits(balance)
+      formatted: CreditsSystem.formatCredits(balance)
     });
     
   } catch (error) {
@@ -547,15 +547,15 @@ app.post('/credits/deduct', async (c) => {
       }, 400);
     }
     
-    await credits.deductCredits(userId, amount, `Credits deducted (${type})`);
+    await CreditsSystem.deductCredits(userId, amount, `Credits deducted (${type})`);
     
-    const newBalance = await credits.getCreditBalance(userId);
+    const newBalance = await CreditsSystem.getCreditBalance(userId);
     
     return c.json({ 
       success: true,
       newBalance,
       balance: newBalance,
-      formatted: credits.formatCredits(newBalance)
+      formatted: CreditsSystem.formatCredits(newBalance)
     });
     
   } catch (error) {
@@ -576,9 +576,9 @@ app.post('/coconut-v14/credits/add', async (c) => {
   try {
     const { userId, amount, reason } = await c.req.json();
     
-    await credits.addCredits(userId, amount, reason);
+    await CreditsSystem.addCredits(userId, amount, reason);
     
-    const newBalance = await credits.getCreditBalance(userId);
+    const newBalance = await CreditsSystem.getCreditBalance(userId);
     
     return c.json<ApiResponse>({ 
       success: true,
@@ -607,7 +607,7 @@ app.get('/coconut-v14/credits/:userId/transactions', async (c) => {
     const userId = c.req.param('userId');
     const limit = c.req.query('limit') ? parseInt(c.req.query('limit')!) : 10;
     
-    const transactions = await credits.getRecentTransactions(userId, limit);
+    const transactions = await CreditsSystem.getRecentTransactions(userId, limit);
     
     return c.json<ApiResponse>({ 
       success: true, 
@@ -636,7 +636,7 @@ app.get('/coconut-v14/credits/:userId/summary', async (c) => {
     const userId = c.req.param('userId');
     const days = c.req.query('days') ? parseInt(c.req.query('days')!) : undefined;
     
-    const summary = await credits.getSpendingSummary(userId, days);
+    const summary = await CreditsSystem.getSpendingSummary(userId, days);
     
     return c.json<ApiResponse>({ 
       success: true, 

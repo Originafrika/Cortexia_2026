@@ -342,4 +342,203 @@ app.get('/api/coconut-v14/cocoboard/:id/generations', async (c) => {
   }
 });
 
+// ============================================
+// COCONUT V14 ROUTES (NO /api PREFIX)
+// ============================================
+
+/**
+ * GET /coconut-v14/history
+ * Get all generations for a user (Enterprise frontend compatible)
+ */
+app.get('/coconut-v14/history', async (c) => {
+  try {
+    const userId = c.req.header('x-user-id');
+
+    console.log('📥 [History V14] Request for userId:', userId);
+
+    if (!userId) {
+      return c.json({ success: false, error: 'x-user-id header is required' }, 400);
+    }
+
+    // Get user's generation IDs
+    const userGenIds = await kv.get(`user:${userId}:generations`) || [];
+    console.log('🔍 [History V14] User generation IDs:', userGenIds.length);
+
+    if (userGenIds.length === 0) {
+      console.log('✅ [History V14] No generations found');
+      return c.json({
+        success: true,
+        data: { generations: [] }
+      });
+    }
+
+    // Fetch each generation
+    const generationsPromises = userGenIds.map((genId: string) => kv.get(`generation:${genId}`));
+    const allGenerations = (await Promise.all(generationsPromises)).filter(Boolean);
+    
+    console.log('📊 [History V14] Found generations:', allGenerations.length);
+
+    // Transform for frontend
+    const generations = allGenerations
+      .filter((gen: any) => gen.status === 'complete' || gen.status === 'completed' || gen.status === 'error')
+      .sort((a: any, b: any) => {
+        const aTime = new Date(a.createdAt || a.startTime || 0).getTime();
+        const bTime = new Date(b.createdAt || b.startTime || 0).getTime();
+        return bTime - aTime;
+      })
+      .map((gen: any) => ({
+        id: gen.id,
+        type: gen.type || 'image',
+        title: gen.prompt?.description || gen.prompt?.text || gen.prompt || 'Untitled',
+        timestamp: new Date(gen.createdAt || gen.startTime).toISOString(),
+        thumbnailUrl: gen.result?.imageUrl || gen.imageUrl || gen.videoUrl,
+        status: gen.status === 'complete' ? 'completed' : gen.status,
+      }));
+
+    console.log('✅ [History V14] Returning generations:', generations.length);
+
+    return c.json({
+      success: true,
+      items: generations
+    });
+
+  } catch (error) {
+    console.error('❌ [History V14] Error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to get history'
+    }, 500);
+  }
+});
+
+/**
+ * DELETE /coconut-v14/history/:id
+ * Delete a generation (Enterprise frontend compatible)
+ */
+app.delete('/coconut-v14/history/:id', async (c) => {
+  try {
+    const generationId = c.req.param('id');
+    const userId = c.req.header('x-user-id');
+
+    console.log('🗑️ [History V14] Delete request:', { generationId, userId });
+
+    if (!userId) {
+      return c.json({ success: false, error: 'x-user-id header is required' }, 400);
+    }
+
+    const generation = await kv.get(`generation:${generationId}`);
+    if (!generation) {
+      return c.json({ success: false, error: 'Generation not found' }, 404);
+    }
+
+    // Verify ownership
+    if (generation.userId !== userId) {
+      return c.json({ success: false, error: 'Unauthorized' }, 403);
+    }
+
+    // Delete from KV store
+    await kv.del(`generation:${generationId}`);
+
+    // Remove from user's generation list
+    const userGenIds = await kv.get(`user:${userId}:generations`) || [];
+    const updatedIds = userGenIds.filter((id: string) => id !== generationId);
+    await kv.set(`user:${userId}:generations`, updatedIds);
+
+    console.log('✅ [History V14] Generation deleted:', generationId);
+
+    return c.json({ success: true });
+
+  } catch (error) {
+    console.error('❌ [History V14] Delete error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to delete generation'
+    }, 500);
+  }
+});
+
+/**
+ * GET /coconut-v14/dashboard/stats
+ * Get dashboard statistics (Enterprise frontend compatible)
+ */
+app.get('/coconut-v14/dashboard/stats', async (c) => {
+  try {
+    const userId = c.req.header('x-user-id');
+
+    console.log('📊 [Dashboard Stats] Request for userId:', userId);
+
+    if (!userId) {
+      return c.json({ success: false, error: 'x-user-id header is required' }, 400);
+    }
+
+    // Get user's generation IDs
+    const userGenIds = await kv.get(`user:${userId}:generations`) || [];
+    
+    if (userGenIds.length === 0) {
+      console.log('✅ [Dashboard Stats] No generations found');
+      return c.json({
+        success: true,
+        stats: {
+          totalGenerations: 0,
+          thisWeek: 0,
+          weekChange: 0,
+          creditsUsed: 0,
+          creditsRemaining: 10000, // Default for enterprise
+        }
+      });
+    }
+
+    // Fetch each generation
+    const generationsPromises = userGenIds.map((genId: string) => kv.get(`generation:${genId}`));
+    const allGenerations = (await Promise.all(generationsPromises)).filter(Boolean);
+
+    // Calculate stats
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const twoWeeksAgo = now - 14 * 24 * 60 * 60 * 1000;
+
+    const thisWeek = allGenerations.filter((g: any) => {
+      const genTime = new Date(g.createdAt || g.startTime).getTime();
+      return genTime >= weekAgo;
+    }).length;
+
+    const lastWeek = allGenerations.filter((g: any) => {
+      const genTime = new Date(g.createdAt || g.startTime).getTime();
+      return genTime >= twoWeeksAgo && genTime < weekAgo;
+    }).length;
+
+    const weekChange = lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek) * 100 : 0;
+
+    const creditsUsed = allGenerations.reduce((sum: number, g: any) => {
+      return sum + (g.result?.cost || g.credits || 0);
+    }, 0);
+
+    console.log('✅ [Dashboard Stats] Calculated:', { 
+      total: allGenerations.length, 
+      thisWeek, 
+      lastWeek, 
+      weekChange,
+      creditsUsed 
+    });
+
+    return c.json({
+      success: true,
+      stats: {
+        totalGenerations: allGenerations.length,
+        thisWeek,
+        weekChange: Math.round(weekChange),
+        creditsUsed,
+        creditsRemaining: 10000 - creditsUsed, // Enterprise gets 10k credits
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [Dashboard Stats] Error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to get stats'
+    }, 500);
+  }
+});
+
 export default app;

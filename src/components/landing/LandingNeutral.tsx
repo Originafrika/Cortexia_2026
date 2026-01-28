@@ -1,5 +1,7 @@
 import { motion } from 'motion/react';
 import { ArrowRight, Sparkles, Play } from 'lucide-react';
+import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
+import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingNeutralProps {
   onGetStarted: () => void;
@@ -120,49 +122,22 @@ export function LandingNeutral({ onGetStarted, onLogin }: LandingNeutralProps) {
               transition={{ duration: 0.8, delay: 0.8 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <motion.button
+              <Button
                 onClick={onGetStarted}
-                className="group relative px-10 py-5 rounded-2xl overflow-hidden"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
-                  boxShadow: '0 20px 60px rgba(245,235,224,0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  boxShadow: '0 25px 80px rgba(245,235,224,0.4), inset 0 1px 0 rgba(255,255,255,0.6)'
-                }}
-                whileTap={{ scale: 0.98 }}
+                variant="primary"
+                size="lg"
               >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: '100%' }}
-                  transition={{ duration: 0.6 }}
-                />
-                
-                <span className="relative flex items-center gap-3 text-lg font-semibold text-[#1A1A1A]">
-                  Enter the Fluid State
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                </span>
-              </motion.button>
+                Enter the Fluid State
+              </Button>
 
-              <motion.button
-                className="px-10 py-5 rounded-2xl text-lg font-medium text-white/80 hover:text-white transition-colors"
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }}
-                whileHover={{ 
-                  background: 'rgba(255,255,255,0.08)',
-                  borderColor: 'rgba(255,255,255,0.2)'
-                }}
+              <Button
+                variant="secondary"
+                size="lg"
+                icon={<Play size={18} />}
+                iconPosition="left"
               >
-                <span className="flex items-center gap-2">
-                  <Play size={18} />
-                  See the Magic
-                </span>
-              </motion.button>
+                See the Magic
+              </Button>
             </motion.div>
 
             {/* Trust Signal */}

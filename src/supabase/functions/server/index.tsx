@@ -20,10 +20,10 @@ import authRoutes from './auth-routes.tsx';
 import feedRoutes from './feed-routes.ts'; // ✅ NEW: Feed routes
 import creatorRoutes from './creator-routes.ts'; // ✅ NEW: Creator routes
 import userRoutes from './user-routes.ts'; // ✅ NEW: User profiles
-import referralRoutes from './referral-routes.ts'; // ✅ NEW: Referral system
+import referralSystemRoutes from './referral-system-routes.ts'; // ✅ NEW: Referral system dashboard
 import originsRoutes from './origins-routes.ts'; // ✅ NEW: Origins currency
 import compensationRoutes from './creator-compensation-routes.ts'; // ✅ NEW: Creator compensation
-import creatorSystemRoutes from './creator-system.ts'; // ✅ NEW: Complete Creator system with streaks
+// ❌ REMOVED: import creatorSystemRoutes from './creator-system.ts'; // File is incomplete, features already in creator-routes.ts
 import feedLikesTrackerRoutes from './feed-likes-tracker.ts'; // ✅ NEW: Feed likes tracker for Creator conditions
 import withdrawalRoutes from './withdrawal-routes.ts'; // ✅ NEW: Withdrawal system
 import creditsCronRoutes from './credits-cron.ts'; // ✅ NEW: Monthly credits reset cron
@@ -45,8 +45,14 @@ import storageCleanupRoutes from './storage-cleanup-routes.ts'; // ✅ NEW: Stor
 import userStatsRoutes from './user-stats-routes.ts'; // ✅ NEW: User stats & analytics
 import avatarRoutes from './avatar-routes.ts'; // ✅ NEW: Avatar upload/delete
 import enterpriseRoutes from './enterprise-routes.ts'; // ✅ NEW: Enterprise subscription
+import teamRoutes from './team-routes.ts'; // ✅ NEW: Team collaboration
+import developerRoutes from './developer-routes.ts'; // ✅ NEW: Developer dashboard
+import creatorSystemRoutes from './creator-system-routes.ts'; // ✅ NEW: Creator system
+import enhancedFeedRoutes from './enhanced-feed-routes.ts'; // ✅ NEW: Enhanced feed
+import notificationsRoutes from './notifications-routes.ts'; // ✅ NEW: Notifications
 import { initializeStorageBuckets } from './coconut-v14-storage.ts';
 import { initializeFeedBucket } from './feed-storage.ts'; // ✅ NEW: Feed storage
+import { initializeMockData } from './mock-data-init.ts'; // ✅ NEW: Mock data initializer
 import * as kv from './kv_store.tsx'; // ✅ Import KV store for expiration check
 import { logStartup, logVerbose, showStartupBanner, shouldLog } from './server-config.ts'; // ✅ NEW: Server config
 
@@ -66,13 +72,14 @@ app.route('/auth', authRoutes); // ✅ FIXED: No double prefix (basePath already
 app.route('/feed', feedRoutes); // ✅ NEW: Feed routes
 app.route('/creators', creatorRoutes); // ✅ NEW: Creator routes
 app.route('/users', userRoutes); // ✅ NEW: User profiles
-app.route('/referral', referralRoutes); // ✅ NEW: Referral system
+app.route('/referral', referralSystemRoutes); // ✅ NEW: Referral system dashboard
 app.route('/origins', originsRoutes); // ✅ NEW: Origins currency
 app.route('/compensation', compensationRoutes); // ✅ NEW: Creator compensation
-app.route('/creator-system', creatorSystemRoutes); // ✅ NEW: Complete Creator system with streaks
+// ❌ REMOVED: app.route('/creator-system', creatorSystemRoutes); // File is incomplete, features already in creator-routes.ts
 app.route('/feed-likes', feedLikesTrackerRoutes); // ✅ NEW: Feed likes tracker for Creator conditions
 app.route('/withdrawal', withdrawalRoutes); // ✅ NEW: Withdrawal system
 app.route('/enterprise', enterpriseRoutes); // ✅ NEW: Enterprise subscription
+app.route('/team', teamRoutes); // ✅ NEW: Team collaboration
 app.route('/activity', activityRoutes); // ✅ NEW: Activity feed
 app.route('/projects', projectsRoutes); // ✅ NEW: Projects management
 app.route('/campaign', campaignRoutes); // ✅ NEW: Campaign mode routes
@@ -96,6 +103,10 @@ app.route('/storage', storageRoutes); // ✅ FIXED: Mount under /storage prefix
 app.route('/storage-cleanup', storageCleanupRoutes); // ✅ NEW: Storage cleanup cron
 app.route('/user-stats', userStatsRoutes); // ✅ NEW: User stats & analytics
 app.route('/avatar', avatarRoutes); // ✅ NEW: Avatar upload/delete
+app.route('/developer', developerRoutes); // ✅ NEW: Developer dashboard
+app.route('/creator-system', creatorSystemRoutes); // ✅ NEW: Creator system
+app.route('/enhanced-feed', enhancedFeedRoutes); // ✅ NEW: Enhanced feed
+app.route('/notifications', notificationsRoutes); // ✅ NEW: Notifications
 
 if (shouldLog('normal')) {
   console.log('✅ All routes mounted successfully - FULL CREATOR ECONOMY');
@@ -185,6 +196,9 @@ initializeFeedWithRetry()
       console.error('⚠️ Critical error in feed bucket initialization:', error);
     }
   });
+
+// ✅ NEW: Mock data initialization
+initializeMockData();
 
 // ============================================
 // CHECK EXPIRED CREDITS ON STARTUP
