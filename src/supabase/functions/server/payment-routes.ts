@@ -78,19 +78,70 @@ async function generateFedaPayToken(transactionId: string) {
   return await response.json();
 }
 
-function verifyFedaPayWebhookSignature(payload: string, signature: string, secret: string): boolean {
+async function verifyFedaPayWebhookSignature(payload: string, signature: string, secret: string): Promise<boolean> {
   // FedaPay uses HMAC SHA256 for webhook signatures
-  const crypto = globalThis.crypto.subtle;
+  // Format: hmac-sha256=<signature>
   
-  // For now, we'll skip signature verification in development
-  // In production, implement proper HMAC verification
   if (!signature || !secret) {
     console.warn('⚠️ FedaPay webhook signature verification skipped (missing signature or secret)');
-    return true;
+    return false;
   }
-  
-  // TODO: Implement proper HMAC SHA256 verification
-  return true;
+
+  try {
+    // Extract signature from header (format: "hmac-sha256=<hex>")
+    const parts = signature.split('=');
+    if (parts.length !== 2 || parts[0] !== 'hmac-sha256') {
+      console.error('❌ Invalid FedaPay signature format');
+      return false;
+    }
+    
+    const receivedSignature = parts[1];
+    
+    // Compute HMAC SHA256
+    const encoder = new TextEncoder();
+    const secretKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      secretKey,
+      encoder.encode(payload)
+    );
+    
+    // Convert to hex string
+    const computedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Constant-time comparison to prevent timing attacks
+    if (computedSignature.length !== receivedSignature.length) {
+      console.error('❌ FedaPay signature length mismatch');
+      return false;
+    }
+    
+    let isValid = true;
+    for (let i = 0; i < computedSignature.length; i++) {
+      if (computedSignature[i] !== receivedSignature[i]) {
+        isValid = false;
+      }
+    }
+    
+    if (isValid) {
+      console.log('✅ FedaPay webhook signature verified');
+    } else {
+      console.error('❌ FedaPay webhook signature verification failed');
+    }
+    
+    return isValid;
+  } catch (err) {
+    console.error('❌ FedaPay signature verification error:', err);
+    return false;
+  }
 }
 
 // ========================================
@@ -531,6 +582,83 @@ app.get('/purchases/:userId', async (c) => {
     return c.json({ purchases });
   } catch (error) {
     console.error('Get purchases error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Détecter région utilisateur
+app.get('/credits/detect-region', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get user from auth token
+    const token = authHeader.replace('Bearer ', '');
+    const userId = c.get('userId'); // This should be set by auth middleware
+
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userProfile = await kv.get(`user:profile:${userId}`);
+    if (!userProfile) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    const userCountry = userProfile.country || 'US';
+    const region = isFedaPayRegion(userCountry) ? 'africa' : 'international';
+
+    return c.json({
+      success: true,
+      region,
+      country: userCountry,
+      currency: getCurrencyByCountry(userCountry),
+    });
+  } catch (error) {
+    console.error('Detect region error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
+// Récupérer historique d'achats pour frontend
+app.get('/credits/purchase-history', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userId = c.get('userId');
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const userPurchases = await kv.get(`purchase:user:${userId}`) || [];
+    const history = [];
+
+    for (const purchaseId of userPurchases.slice(0, 10)) {
+      const purchase = await kv.get(`purchase:log:${purchaseId}`);
+      if (purchase && purchase.status === 'completed') {
+        history.push({
+          id: purchase.id,
+          date: purchase.completedAt || purchase.createdAt,
+          credits: purchase.creditsAmount,
+          amount: purchase.amount,
+          currency: purchase.currency,
+          gateway: purchase.gateway,
+          status: purchase.status,
+        });
+      }
+    }
+
+    return c.json({
+      success: true,
+      history,
+    });
+  } catch (error) {
+    console.error('Get purchase history error:', error);
     return c.json({ error: 'Internal server error' }, 500);
   }
 });
