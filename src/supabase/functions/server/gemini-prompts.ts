@@ -3,7 +3,14 @@
 // ============================================
 // System instruction et templates de prompts pour Gemini 2.5 Flash
 
-import type { IntentInput, ReferenceUrls } from '../../../lib/types/coconut-v14.ts';
+import type { ReferenceUrls } from '../../../lib/types/coconut-v14.ts';
+
+type IntentInput = {
+  description: string;
+  format: string;
+  resolution: string;
+  targetUsage: string;
+};
 
 // ============================================
 // SYSTEM INSTRUCTION
@@ -95,9 +102,9 @@ Le champ **finalPrompt** DOIT être un **STRING TEXTE SIMPLE**.
 **LIMITE ABSOLUE: MAX 5000 CARACTÈRES**
 
 Exemple de format correct:
-```
+\`\`\`
 Hyper-realistic advertising poster featuring [product] as the hero element, shot on [camera] [lens] f/[aperture]. [Subject details]. [Action/dynamic elements]. The text '[EXACT_TEXT]' in [style], [position]. Lighting: [lighting description]. Background: [background details]. Mood: [mood]. Camera: [camera angle and settings]. Composition: [composition rules].
-```
+\`\`\`
 
 **RÈGLES:**
 - ❌ PAS de structure JSON

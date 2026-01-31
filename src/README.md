@@ -23,14 +23,31 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 
 ---
 
-## 📚 DOCUMENTATION PRINCIPALE
+## � HUB CENTRAL DE DOCUMENTATION
+
+> 🎯 **POINT D'ENTRÉE UNIQUE** pour toute la documentation  
+> ⏱️ **5 minutes** pour démarrer  
+> 🚀 **Guides par rôle** (Dev/PM/Designer) & **par domaine** (Architecture/API/Design/etc)
+
+### **→ [INDEX_CENTRAL_DOCUMENTATION.md](./INDEX_CENTRAL_DOCUMENTATION.md)** 🌟
+
+**Le seul fichier à consulter pour naviguer toute la documentation!**
+- Quick start (5 min)
+- 3 guides par rôle (Développeur / Product Manager / Designer)
+- 8 guides par domaine (Architecture, API, Design, Pricing, etc)
+- Table complète des 42 documents actifs
+- Glossaire + checklist onboarding
+
+---
+
+## �📚 DOCUMENTATION PRINCIPALE
 
 ### **🔥 DOCUMENTS ESSENTIELS** (À lire en priorité)
 
 | Document | Description | Audience |
 |----------|-------------|----------|
-| **[CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md)** | 📖 **Document système complet** : Types de comptes, crédits, Creator system, parrainage, accès Coconut, KV Store, restrictions, flux techniques, storage cleanup | **Tous développeurs** |
-| **[Guidelines.md](./guidelines/Guidelines.md)** | 🎨 Beauty Design System (BDS) + Framework R→T→C→R→O→S (obligatoire pour tous les prompts) | Designers, Développeurs frontend |
+| **[DOCS_REFERENCE/CORTEXIA_SYSTEM_REFERENCE.md](./DOCS_REFERENCE/CORTEXIA_SYSTEM_REFERENCE.md)** | 📖 **Document système complet** : Types de comptes, crédits, Creator system, parrainage, accès Coconut, KV Store, restrictions, flux techniques, storage cleanup | **Tous développeurs** |
+| **[guidelines/Guidelines.md](./guidelines/Guidelines.md)** | 🎨 Beauty Design System (BDS) + Framework R→T→C→R→O→S (obligatoire pour tous les prompts) | Designers, Développeurs frontend |
 | **[QUICK_START.md](./QUICK_START.md)** | ⚡ Guide démarrage rapide (5 min) | Nouveaux développeurs |
 
 ---
@@ -40,7 +57,7 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 | Document | Description |
 |----------|-------------|
 | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Architecture technique globale (frontend, backend, AI providers) |
-| **[STORAGE_ARCHITECTURE.md](./STORAGE_ARCHITECTURE.md)** | Architecture Supabase Storage (buckets, cleanup, protected files) |
+| **[ARCHITECTURE/STORAGE_ARCHITECTURE.md](./ARCHITECTURE/STORAGE_ARCHITECTURE.md)** | Architecture Supabase Storage (buckets, cleanup, protected files) |
 | **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Guide de déploiement production (Supabase, Stripe, Auth0) |
 
 ---
@@ -49,7 +66,7 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 
 | Document | Description |
 |----------|-------------|
-| **[AUTH0_MASTER_SETUP.md](./AUTH0_MASTER_SETUP.md)** | Configuration Auth0 complète (OAuth, callback URLs, branding) |
+| **[SECURITY/AUTH0_MASTER_SETUP.md](./SECURITY/AUTH0_MASTER_SETUP.md)** | Configuration Auth0 complète (OAuth, callback URLs, branding) |
 
 ---
 
@@ -57,10 +74,9 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 
 | Document | Description |
 |----------|-------------|
-| **[DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)** | Design system détaillé (tokens, components, animations) |
+| **[DESIGN_SYSTEM/DESIGN_SYSTEM.md](./DESIGN_SYSTEM/DESIGN_SYSTEM.md)** | Design system détaillé (tokens, components, animations) |
 | **[NAVIGATION_GUIDE.md](./NAVIGATION_GUIDE.md)** | Guide navigation UI/UX (sidebar, topbar, routing) |
-| **[ENTERPRISE_DESIGN_HARMONIZATION.md](./ENTERPRISE_DESIGN_HARMONIZATION.md)** | Harmonisation design Enterprise (light theme, cream palette) |
-| **[COCONUT_PREMIUM_DESIGN_SYSTEM.md](./COCONUT_PREMIUM_DESIGN_SYSTEM.md)** | Design system premium Coconut V14 |
+| **[DESIGN_SYSTEM/COCONUT_PREMIUM_DESIGN_SYSTEM.md](./DESIGN_SYSTEM/COCONUT_PREMIUM_DESIGN_SYSTEM.md)** | Design system premium Coconut V14 |
 
 ---
 
@@ -68,8 +84,9 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 
 | Document | Description |
 |----------|-------------|
-| **[CAHIER_DES_CHARGES_CORTEXIA.md](./CAHIER_DES_CHARGES_CORTEXIA.md)** | Cahier des charges complet (features, user stories, specs) |
-| **[CORTEXIA_COMPLETE_DESCRIPTION.md](./CORTEXIA_COMPLETE_DESCRIPTION.md)** | Description complète du produit (vision, positionnement) |
+| **[DOCS_REFERENCE/CAHIER_DES_CHARGES_CORTEXIA.md](./DOCS_REFERENCE/CAHIER_DES_CHARGES_CORTEXIA.md)** | Cahier des charges complet (features, user stories, specs) |
+| **[DOCS_REFERENCE/CORTEXIA_COMPLETE_DESCRIPTION.md](./DOCS_REFERENCE/CORTEXIA_COMPLETE_DESCRIPTION.md)** | Description complète du produit (vision, positionnement) |
+| **[PRODUCT_SPECS/](./PRODUCT_SPECS/)** | 📁 **Spécifications Coconut V14 complètes** (8 documents détaillés) |
 
 ---
 
@@ -77,12 +94,10 @@ Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative mu
 
 | Document | Description |
 |----------|-------------|
-| **[PAYMENT_ARCHITECTURE.md](./PAYMENT_ARCHITECTURE.md)** | 🏗️ Architecture hybride complète FedaPay + Stripe (achats, retraits, wireframes UI) 🆕 |
-| **[PAYMENT_IMPLEMENTATION_COMPLETE.md](./PAYMENT_IMPLEMENTATION_COMPLETE.md)** | ✅ Statut implémentation paiements & checklist déploiement 🆕 |
-| **[PAYMENT_ROUTES_FIXES.md](./PAYMENT_ROUTES_FIXES.md)** | 🔧 Corrections FedaPay (migration vers API REST) 🆕 |
+| **[PRICING/PAYMENT_ARCHITECTURE.md](./PRICING/PAYMENT_ARCHITECTURE.md)** | 🏗️ Architecture hybride complète FedaPay + Stripe (achats, retraits, wireframes UI) |
+| **[PAYMENT_IMPLEMENTATION_COMPLETE.md](./PAYMENT_IMPLEMENTATION_COMPLETE.md)** | ✅ Statut implémentation paiements & checklist déploiement |
+| **[PAYMENT_ROUTES_FIXES.md](./PAYMENT_ROUTES_FIXES.md)** | 🔧 Corrections FedaPay (migration vers API REST) |
 | **[README_STRIPE.md](./README_STRIPE.md)** | Configuration Stripe (checkout, webhooks, subscriptions) |
-| **[stripe.md](./stripe.md)** | 📚 Documentation complète Stripe API (payments, billing, checkout, connect, etc.) |
-| **[fedapay.md](./fedapay.md)** | 📚 Documentation complète FedaPay API (paiements mobile money Afrique de l'Ouest) |
 
 ---
 
@@ -291,14 +306,87 @@ Commission = Montant d'achat × 10% × Streak Multiplier
 ├── guidelines/
 │   └── Guidelines.md             # BDS + Framework R→T→C→R→O→S
 
-└── [docs]                        # Documentation (MD files)
-    ├── README.md                           # Ce fichier
-    ├── CORTEXIA_SYSTEM_REFERENCE.md        # 🔥 Document système complet
-    ├── Guidelines.md                       # BDS + Framework
-    ├── ARCHITECTURE.md                     # Architecture technique
-    ├── DEPLOYMENT_GUIDE.md                 # Guide déploiement
-    └── [40+ autres docs...]
+└── 📁 DOCUMENTATION (Structure réorganisée)
+    ├── INDEX_CENTRAL_DOCUMENTATION.md        # 🌟 HUB CENTRAL (START HERE!)
+    ├── README.md                             # Ce fichier
+    ├── QUICK_START.md                        # Guide 5 min
+    ├── ARCHITECTURE.md                       # Architecture technique
+    ├── DEPLOYMENT_GUIDE.md                   # Guide déploiement
+    │
+    ├── 📂 DOCS_REFERENCE/ (5 docs)
+    │   ├── CORTEXIA_SYSTEM_REFERENCE.md     # Document système complet 🔥
+    │   ├── CAHIER_DES_CHARGES_CORTEXIA.md   # Cahier des charges
+    │   ├── CORTEXIA_COMPLETE_DESCRIPTION.md # Description produit
+    │   ├── CHEATSHEET.md                    # Cheatsheet développeurs
+    │   └── PROMPT_COMPLET_CORTEXIA.md       # Prompts système
+    │
+    ├── 📂 PRODUCT_SPECS/ (8 docs Coconut V14)
+    │   ├── COCONUT_V14_ENHANCED_SPECIFICATION.md
+    │   ├── COCONUT_V14_UI_WIREFRAME_PREMIUM.md
+    │   ├── COCONUT_V14_CAMPAIGN_COMPLETE_GUIDE.md
+    │   ├── COCONUT_V14_IMPLEMENTATION_GUIDE.md
+    │   ├── COCONUT_V14_INTERACTION_FLOWS.md
+    │   ├── COCONUT_V14_WIREFRAME_GALLERY.md
+    │   ├── COCONUT_V14_MASTER_INDEX.md
+    │   └── COCONUT_V14_DOCUMENTATION_COMPLETE.md
+    │
+    ├── 📂 DESIGN_SYSTEM/ (3 docs)
+    │   ├── DESIGN_SYSTEM.md                 # Design system BDS
+    │   ├── DESIGN_SYSTEM_DARK_THEME_2026_03_15.md
+    │   └── COCONUT_PREMIUM_DESIGN_SYSTEM.md
+    │
+    ├── 📂 ARCHITECTURE/ (3 docs)
+    │   ├── STORAGE_ARCHITECTURE.md          # Architecture Storage
+    │   ├── ARCHITECTURE_FEED_GENERATIONS.md
+    │   └── ARCHITECTURE_STOCKAGE_DONNEES.md
+    │
+    ├── 📂 API/ (3 docs)
+    │   ├── API_INTEGRATION_EXAMPLES_2026_03_15.md
+    │   ├── API_DASHBOARD_SPEC.md
+    │   └── BACKEND_CAPABILITY_AUDIT_2026_03_15.md
+    │
+    ├── 📂 PRICING/ (3 docs)
+    │   ├── PAYMENT_ARCHITECTURE.md          # Architecture paiements
+    │   ├── COST_CALCULATOR_GUIDE_2026_03_15.md
+    │   └── QUICK_REFERENCE_CHEAT_SHEETS_2026_03_15.md
+    │
+    ├── 📂 SECURITY/ (3 docs)
+    │   ├── AUTH0_MASTER_SETUP.md            # Configuration Auth0
+    │   ├── SUPABASE_RLS_POLICY_SETUP.md
+    │   └── RGPD_IMPLEMENTATION_STATUS.md
+    │
+    ├── 📂 SESSION_HISTORY/ (3 docs)
+    │   ├── OPTION_A_FINAL_COMPLETION_REPORT_2026_03_15.md
+    │   ├── EXECUTIVE_SUMMARY_OPTION_A_2026_03_15.md
+    │   └── FILES_INDEX_OPTION_A_SESSION_2026_03_15.md
+    │
+    ├── 📂 DOCS_ARCHIVE/ (52 docs + README)
+    │   ├── README.md                        # Guide archive
+    │   ├── SESSION_FINALE.md
+    │   ├── PHASE_1_CLEANUP_COMPLETE.md
+    │   ├── [... 49 autres documents archivés ...]
+    │
+    ├── PAYMENT_IMPLEMENTATION_COMPLETE.md   # Paiements statut
+    ├── PAYMENT_ROUTES_FIXES.md             # Corrections FedaPay
+    ├── README_STRIPE.md                    # Configuration Stripe
+    └── NAVIGATION_GUIDE.md                 # Guide UI/UX
 ```
+
+---
+
+## 📊 GUIDE DE NAVIGATION
+
+### **Pour les développeurs :**
+👉 **[INDEX_CENTRAL_DOCUMENTATION.md](./INDEX_CENTRAL_DOCUMENTATION.md)** → Section "Guides par rôle" → "Développeur"
+
+### **Pour les product managers :**
+👉 **[INDEX_CENTRAL_DOCUMENTATION.md](./INDEX_CENTRAL_DOCUMENTATION.md)** → Section "Guides par rôle" → "Product Manager"
+
+### **Pour les designers :**
+👉 **[INDEX_CENTRAL_DOCUMENTATION.md](./INDEX_CENTRAL_DOCUMENTATION.md)** → Section "Guides par rôle" → "Designer"
+
+### **Pour les cas spécifiques :**
+👉 **[INDEX_CENTRAL_DOCUMENTATION.md](./INDEX_CENTRAL_DOCUMENTATION.md)** → Section "Guides par domaine" (Architecture, API, Design, Pricing, etc)
 
 ---
 

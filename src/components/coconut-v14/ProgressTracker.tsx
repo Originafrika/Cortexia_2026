@@ -117,17 +117,35 @@ export function ProgressTracker({
             <div key={step.id} className="relative">
               {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div 
-                  className={`absolute left-5 top-12 w-0.5 h-8 ${\n                    isPast ? 'bg-[var(--coconut-palm)]' : 'bg-slate-200'\n                  }`}
+                <div
+                  className={`absolute left-5 top-12 w-0.5 h-8 ${
+                    isPast ? 'bg-[var(--coconut-palm)]' : 'bg-slate-200'
+                  }`}
                 />
               )}
 
               {/* Step Card */}
-              <div 
-                className={`relative flex items-start space-x-4 p-4 rounded-xl border-2 transition-all ${\n                  isActive \n                    ? 'border-[var(--coconut-palm)] bg-[var(--coconut-cream)] shadow-md' \n                    : isPast \n                      ? 'border-[var(--coconut-palm)]/30 bg-[var(--coconut-palm)]/5' \n                      : hasError\n                        ? 'border-[var(--coconut-shell)]/30 bg-[var(--coconut-shell)]/5'\n                        : 'border-slate-200 bg-white'\n                }`}
+              <div
+                className={`relative flex items-start space-x-4 p-4 rounded-xl border-2 transition-all ${
+                  isActive
+                    ? 'border-[var(--coconut-palm)] bg-[var(--coconut-cream)] shadow-md'
+                    : isPast
+                      ? 'border-[var(--coconut-palm)]/30 bg-[var(--coconut-palm)]/5'
+                      : hasError
+                        ? 'border-[var(--coconut-shell)]/30 bg-[var(--coconut-shell)]/5'
+                        : 'border-slate-200 bg-white'
+                }`}
               >
                 {/* Icon */}
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${\n                  isPast \n                    ? 'bg-[var(--coconut-palm)]' \n                    : isActive \n                      ? 'bg-[var(--coconut-palm)]' \n                      : hasError\n                        ? 'bg-[var(--coconut-shell)]'\n                        : 'bg-slate-200'\n                }`}>
+                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                  isPast
+                    ? 'bg-[var(--coconut-palm)]'
+                    : isActive
+                      ? 'bg-[var(--coconut-palm)]'
+                      : hasError
+                        ? 'bg-[var(--coconut-shell)]'
+                        : 'bg-slate-200'
+                }`}>
                   {isPast ? (
                     <Check className="w-5 h-5 text-white" />
                   ) : isActive ? (
@@ -155,7 +173,9 @@ export function ProgressTracker({
                     )}
                   </div>
 
-                  <p className={`text-xs mb-2 ${\n                    isActive ? 'text-[var(--coconut-husk)]' : isPast ? 'text-[var(--coconut-palm)]' : hasError ? 'text-[var(--coconut-shell)]' : 'text-slate-500'\n                  }`}>
+                  <p className={`text-xs mb-2 ${
+                    isActive ? 'text-[var(--coconut-husk)]' : isPast ? 'text-[var(--coconut-palm)]' : hasError ? 'text-[var(--coconut-shell)]' : 'text-slate-500'
+                  }`}>
                     {step.description}
                   </p>
 
@@ -184,7 +204,15 @@ export function ProgressTracker({
 
                   {/* Status Badge */}
                   <div className="mt-2">
-                    <span className={`inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${\n                      isPast \n                        ? 'bg-[var(--coconut-palm)]/20 text-[var(--coconut-palm)]' \n                        : isActive \n                          ? 'bg-[var(--coconut-husk)]/20 text-[var(--coconut-husk)]' \n                          : hasError\n                            ? 'bg-[var(--coconut-shell)]/20 text-[var(--coconut-shell)]'\n                            : 'bg-slate-200 text-slate-600'\n                    }`}>
+                    <span className={`inline-flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
+                      isPast
+                        ? 'bg-[var(--coconut-palm)]/20 text-[var(--coconut-palm)]'
+                        : isActive
+                          ? 'bg-[var(--coconut-husk)]/20 text-[var(--coconut-husk)]'
+                          : hasError
+                            ? 'bg-[var(--coconut-shell)]/20 text-[var(--coconut-shell)]'
+                            : 'bg-slate-200 text-slate-600'
+                    }`}>
                       {isPast && <Check className="w-3 h-3" />}
                       {isActive && <Loader2 className="w-3 h-3 animate-spin" />}
                       {hasError && <AlertCircle className="w-3 h-3" />}

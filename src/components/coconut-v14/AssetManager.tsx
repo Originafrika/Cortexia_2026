@@ -24,7 +24,7 @@ import type { MissingAsset } from '../../lib/types/gemini';
 import { tokens, TRANSITIONS } from '@/lib/design/tokens';
 import { WORKFLOW_LABELS, ACTION_LABELS } from '@/lib/i18n/translations';
 import { handleError, showSuccess } from '@/lib/utils/errorHandler';
-import { EmptyState } from '@/components/common/EmptyState';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ============================================
 // TYPES

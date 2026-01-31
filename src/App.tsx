@@ -21,11 +21,11 @@ import { Auth0SetupHelper } from './components/auth/Auth0SetupHelper';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy'; // ✅ RGPD
 import { TermsOfService } from './components/legal/TermsOfService'; // ✅ RGPD
 import { ForYouFeed } from './components/ForYouFeed';
-import { Discovery } from './components/discovery/Discovery';
-import { Messages } from './components/messages/Messages';
+import { Discovery } from './components/Discovery';
+import { Messages } from './components/Messages';
 import { Profile } from './components/Profile';
 import { CreateHubGlass } from './components/create/CreateHubGlass';
-import { TextToImageV3 } from './components/create/TextToImageV3';
+import { TextToImageV3 } from './components/create/tools/TextToImageV3';
 import { CoconutV14App } from './components/coconut-v14/CoconutV14App';
 import { CoconutV14AppEnterprise } from './components/coconut-v14/CoconutV14AppEnterprise'; // ✅ NEW: Enterprise edition
 import { CocoBoardDemo } from './components/coconut-v14/CocoBoardDemo';
@@ -597,7 +597,7 @@ function AppContent() {
     // ✅ EXISTING: Main app screens
     switch (currentScreen) {
       case 'feed':
-        return <ForYouFeed onNavigate={handleNavigate} isAuthenticated={isAuthenticated} onOpenRemix={handleOpenRemix} />;
+        return <ForYouFeed onNavigate={handleNavigate} onOpenRemixScreen={handleOpenRemix} />;
       case 'discovery':
         return <Discovery 
           onNavigate={handleNavigate}
@@ -674,7 +674,7 @@ function AppContent() {
       case 'developer-dashboard':
         return <DeveloperDashboard onNavigate={handleNavigate} />;
       case 'referral':
-        return <ReferralDashboard onNavigate={handleNavigate} />;
+        return <ReferralDashboard />;
       case 'enhanced-feed':
         return <EnhancedFeed onNavigate={handleNavigate} />;
       case 'wallet':
@@ -688,7 +688,7 @@ function AppContent() {
       case 'my-uploads':
         return <MyUploadsPanel />;
       default:
-        return <ForYouFeed onNavigate={handleNavigate} onOpenRemix={handleOpenRemix} />;
+        return <ForYouFeed onNavigate={handleNavigate} onOpenRemixScreen={handleOpenRemix} />;
     }
   };
 
@@ -741,7 +741,7 @@ function AppContent() {
             userId={user.id}
             onCreditsUpdated={() => {
               // Force refresh credits by triggering updateCredits
-              updateCredits();
+              updateCredits(credits);
               window.location.reload();
             }}
           />

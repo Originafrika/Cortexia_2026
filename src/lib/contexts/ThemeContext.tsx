@@ -26,7 +26,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 const THEME_STORAGE_KEY = 'cortexia-theme';
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children, defaultTheme }: { children: React.ReactNode; defaultTheme?: string }) {
   const [theme, setThemeState] = useState<Theme>('system');
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
 
@@ -67,7 +67,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Initialize theme from localStorage or system
   useEffect(() => {
     const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    const initialTheme = stored || 'system';
+    // If a defaultTheme is provided, prefer it on first load
+    const initialTheme = (stored as Theme) || (defaultTheme as Theme) || 'system';
     setThemeState(initialTheme);
     
     const resolved = resolveTheme(initialTheme);

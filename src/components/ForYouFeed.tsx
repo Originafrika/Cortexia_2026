@@ -6,9 +6,9 @@ import { toast } from 'sonner@2.0.3'; // ✅ FIX: Add missing import
 import type { Screen } from '../App';
 import { PostCard } from './feed/PostCard';
 import { PostDetailModal } from './feed/PostDetailModal';
-import { CommentsSection } from './CommentsSection';
+import { CommentsSection } from './enterprise/team/CommentsSection';
 import { ShareModal } from './ShareModal';
-import { RemixChainViewer } from './RemixChainViewer';
+import { RemixChainViewer } from './feed/RemixChainViewer';
 import { UserProfile } from './UserProfile';
 import { formatNumber } from '../utils/formatNumber';
 import { useAuth } from '../lib/contexts/AuthContext'; // ✅ NEW: Get auth context
