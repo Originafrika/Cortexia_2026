@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import { LayoutGroup } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 
+// Environment
+import { logEnvironment } from './lib/config/environment';
+
 // Providers
 import { AuthProvider, useAuth } from './lib/contexts/AuthContext';
 import { ThemeProvider } from './lib/contexts/ThemeContext';
@@ -89,6 +92,11 @@ export type Screen =
   | 'my-uploads'; // ✅ NEW: My uploads management
 
 export default function App() {
+  // ✅ Log environment configuration on app startup
+  React.useEffect(() => {
+    logEnvironment();
+  }, []);
+
   return (
     <BrowserRouter>
       <I18nProvider>

@@ -1,4 +1,6 @@
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { API_CONFIG } from '../config/environment';
+import * as MockCreditsService from '../services/credits-mock';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
 
@@ -6,14 +8,28 @@ export interface UserCredits {
   free: number;
   paid: number;
   lastReset?: string;
+  // ✅ Enterprise credits
+  isEnterprise?: boolean;
+  monthlyCredits?: number;
+  monthlyCreditsRemaining?: number;
+  addOnCredits?: number;
+  nextResetDate?: string;
 }
 
 /**
  * Get user credits
+ * Uses mock service in Figma Make environment
  */
 export async function getUserCredits(
   userId: string
 ): Promise<{ success: boolean; credits?: UserCredits; daysUntilReset?: number; error?: string }> {
+  // ✅ Use mock service in development/Figma Make
+  if (API_CONFIG.useMockData) {
+    console.log('🎭 [MOCK MODE] Using local credits service');
+    return MockCreditsService.getUserCredits(userId);
+  }
+
+  // ✅ Production: Call real API
   try {
     // ✅ Encode userId to handle special characters like | in google-oauth2|123456
     const encodedUserId = encodeURIComponent(userId);
@@ -56,11 +72,19 @@ export async function getUserCredits(
 
 /**
  * Add paid credits to user
+ * Uses mock service in Figma Make environment
  */
 export async function addPaidCredits(
   userId: string,
   amount: number
 ): Promise<{ success: boolean; credits?: UserCredits; daysUntilReset?: number; error?: string }> {
+  // ✅ Use mock service in development/Figma Make
+  if (API_CONFIG.useMockData) {
+    console.log('🎭 [MOCK MODE] Using local credits service');
+    return MockCreditsService.addPaidCredits(userId, amount);
+  }
+
+  // ✅ Production: Call real API
   try {
     const response = await fetch(`${API_BASE}/credits/add-paid`, {
       method: 'POST',
@@ -84,12 +108,20 @@ export async function addPaidCredits(
 
 /**
  * Deduct credits from user
+ * Uses mock service in Figma Make environment
  */
 export async function deductCredits(
   userId: string,
   amount: number,
   type: 'free' | 'paid' = 'paid'
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
+  // ✅ Use mock service in development/Figma Make
+  if (API_CONFIG.useMockData) {
+    console.log('🎭 [MOCK MODE] Using local credits service');
+    return MockCreditsService.deductCredits(userId, amount, type);
+  }
+
+  // ✅ Production: Call real API
   try {
     const response = await fetch(`${API_BASE}/credits/deduct`, {
       method: 'POST',

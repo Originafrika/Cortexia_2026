@@ -6,6 +6,7 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect 
 import { toast } from 'sonner@2.0.3';
 import { getUserCredits, addPaidCredits as addPaidCreditsAPI } from '../api/credits';
 import { projectId } from '../../utils/supabase/info';
+import { API_CONFIG } from '../config/environment';
 
 // ✅ Backend-compatible UserCredits type
 export interface UserCredits {
@@ -63,7 +64,9 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
     try {
       console.log(`🔄 Fetching credits for user: ${userId}`);
-      console.log(`📍 API will call: https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/${encodeURIComponent(userId)}`);
+      if (!API_CONFIG.useMockData) {
+        console.log(`📍 API will call: https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/${encodeURIComponent(userId)}`);
+      }
       
       const response = await getUserCredits(userId);
       
@@ -75,11 +78,11 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         setDaysUntilReset(response.daysUntilReset || 30);
         setIsLoading(false);
         
-        // Show warning if using fallback
-        if (response.error) {
+        // Show warning if using fallback (only in production mode)
+        if (response.error && !API_CONFIG.useMockData) {
           console.warn('⚠️ Using fallback credits due to backend error:', response.error);
         } else {
-          console.log('✅ Credits fetched from backend:', response.credits);
+          console.log('✅ Credits loaded:', response.credits);
         }
       } else {
         throw new Error(response.error || 'Failed to fetch credits');
@@ -87,15 +90,16 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('❌ Failed to fetch credits from backend:', errorMessage);
-      console.error('❌ Full error object:', err);
+      console.error('❌ Failed to fetch credits:', errorMessage);
       setError(errorMessage);
       setIsLoading(false);
       
-      // ❌ Show error toast (only if no fallback credits)
-      toast.error('Unable to load credits. Using default credits.', {
-        description: errorMessage
-      });
+      // ✅ Only show error toast in production mode (not in mock mode)
+      if (!API_CONFIG.useMockData) {
+        toast.error('Unable to load credits. Using default credits.', {
+          description: errorMessage
+        });
+      }
     }
   }, [userId]);
 
