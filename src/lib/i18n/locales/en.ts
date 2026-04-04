@@ -250,7 +250,7 @@ export default {
         "included6": "Analytics dashboard",
         "exampleTitle": "Example Cost",
         "example1Label": "Full campaign (50 assets)",
-        "example1Value": "≈ 150 credits = $13.50",
+        "example1Value": "≈ 115 credits = $10.35",
         "example2Label": "1,000 credits pack",
         "example2Value": "$90",
         "ctaPrimary": "Get Started",
@@ -306,13 +306,13 @@ export default {
         "videos": {
           "type": "Videos",
           "example": "Short films, animations, clips",
-          "cost": "10-20 credits",
+          "cost": "25-40 credits",
           "result": "4-8 second videos, cinema quality"
         },
         "avatars": {
           "type": "Avatars",
           "example": "Talking portraits, animated selfies",
-          "cost": "5-10 credits",
+          "cost": "30 credits",
           "result": "Your photo speaks with AI voice"
         }
       },
@@ -368,9 +368,9 @@ export default {
         "imageLabel": "Image:",
         "imagePrice": "From 1 credit",
         "videoLabel": "Video:",
-        "videoPrice": "From 10 credits",
+        "videoPrice": "25-40 credits",
         "avatarLabel": "Avatar:",
-        "avatarPrice": "From 5 credits",
+        "avatarPrice": "30 credits",
         "cta": "Start Creating Free"
       },
       "finalCta": {
@@ -424,19 +424,19 @@ export default {
           "title": "Image Generation",
           "useCase": "Social media app with AI profile pics",
           "endpoint": "/v1/generate/image",
-          "credits": "1-5 credits"
+          "credits": "1-15 credits"
         },
         "video": {
           "title": "Video Creation",
           "useCase": "Marketing tool with instant video ads",
           "endpoint": "/v1/generate/video",
-          "credits": "10-20 credits"
+          "credits": "25-40 credits"
         },
         "avatar": {
           "title": "Avatar Mode",
           "useCase": "Learning app with talking teachers",
           "endpoint": "/v1/generate/avatar",
-          "credits": "5-10 credits"
+          "credits": "30 credits"
         }
       },
       "features": {
@@ -575,18 +575,7 @@ export default {
     "saveChanges": "Save Changes",
     "changesSaved": "Changes saved successfully",
     "selectLanguage": "Select Language",
-    "languageDescription": "Choose your preferred language",
-    "logout": "Log Out",
-    "deleteConfirmTitle": "Delete your account?",
-    "deleteConfirmMessage": "This action is irreversible. All your data will be permanently deleted.",
-    "deleteWarningTitle": "⚠️ What will be deleted:",
-    "deleteWarning1": "All your creations (images, videos, avatars)",
-    "deleteWarning2": "Your profile and statistics",
-    "deleteWarning3": "Your credits and payment history",
-    "deleteWarning4": "Your likes, comments, and subscriptions",
-    "cancel": "Cancel",
-    "deleteConfirm": "Yes, Delete",
-    "deletingAccount": "Deleting account..."
+    "languageDescription": "Choose your preferred language"
   },
   "feed": {
     "title": "Feed",

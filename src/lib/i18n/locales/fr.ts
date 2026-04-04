@@ -250,7 +250,7 @@ export default {
         "included6": "Tableau de bord analytique",
         "exampleTitle": "Exemple de Coût",
         "example1Label": "Campagne complète (50 assets)",
-        "example1Value": "≈ 150 crédits = 13,50$",
+        "example1Value": "≈ 115 crédits = 10,35$",
         "example2Label": "Pack 1 000 crédits",
         "example2Value": "90$",
         "ctaPrimary": "Commencer",
@@ -306,13 +306,13 @@ export default {
         "videos": {
           "type": "Vidéos",
           "example": "Courts-métrages, animations, clips",
-          "cost": "10-20 crédits",
+          "cost": "25-40 crédits",
           "result": "Vidéos 4-8 sec, qualité cinéma"
         },
         "avatars": {
           "type": "Avatars",
           "example": "Portraits parlants, selfies animés",
-          "cost": "5-10 crédits",
+          "cost": "30 crédits",
           "result": "Votre photo parle avec voix IA"
         }
       },
@@ -368,9 +368,9 @@ export default {
         "imageLabel": "Image :",
         "imagePrice": "À partir de 1 crédit",
         "videoLabel": "Vidéo :",
-        "videoPrice": "À partir de 10 crédits",
+        "videoPrice": "25-40 crédits",
         "avatarLabel": "Avatar :",
-        "avatarPrice": "À partir de 5 crédits",
+        "avatarPrice": "30 crédits",
         "cta": "Commencer à Créer Gratuitement"
       },
       "finalCta": {
@@ -424,19 +424,19 @@ export default {
           "title": "Génération d'Images",
           "useCase": "App réseaux sociaux avec photos de profil IA",
           "endpoint": "/v1/generate/image",
-          "credits": "1-5 crédits"
+          "credits": "1-15 crédits"
         },
         "video": {
           "title": "Création Vidéo",
           "useCase": "Outil marketing avec pubs vidéo instantanées",
           "endpoint": "/v1/generate/video",
-          "credits": "10-20 crédits"
+          "credits": "25-40 crédits"
         },
         "avatar": {
           "title": "Mode Avatar",
           "useCase": "App d'apprentissage avec professeurs parlants",
           "endpoint": "/v1/generate/avatar",
-          "credits": "5-10 crédits"
+          "credits": "30 crédits"
         }
       },
       "features": {
@@ -575,18 +575,7 @@ export default {
     "saveChanges": "Enregistrer les Modifications",
     "changesSaved": "Modifications enregistrées avec succès",
     "selectLanguage": "Sélectionner la Langue",
-    "languageDescription": "Choisissez votre langue préférée",
-    "logout": "Déconnexion",
-    "deleteConfirmTitle": "Supprimer votre compte ?",
-    "deleteConfirmMessage": "Cette action est irréversible. Toutes vos données seront définitivement supprimées.",
-    "deleteWarningTitle": "⚠️ Ce qui sera supprimé :",
-    "deleteWarning1": "Toutes vos créations (images, vidéos, avatars)",
-    "deleteWarning2": "Votre profil et statistiques",
-    "deleteWarning3": "Vos crédits et historique de paiements",
-    "deleteWarning4": "Vos likes, commentaires et abonnements",
-    "cancel": "Annuler",
-    "deleteConfirm": "Oui, Supprimer",
-    "deletingAccount": "Suppression en cours..."
+    "languageDescription": "Choisissez votre langue préférée"
   },
   "feed": {
     "title": "Feed",

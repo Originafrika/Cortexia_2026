@@ -1,8 +1,5 @@
 import { motion } from 'motion/react';
 import { ArrowRight, Check, Sparkles, Clock, Zap, Shield } from 'lucide-react';
-import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
-import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
-import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
 
 interface LandingEnterpriseProps {
   onGetStarted: () => void;
@@ -10,8 +7,6 @@ interface LandingEnterpriseProps {
 }
 
 export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpriseProps) {
-  const { t } = useTranslation(); // ✅ NEW: Translation hook
-  
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       {/* Hero Section */}
@@ -64,49 +59,58 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
               }}
             >
               <Sparkles size={16} className="text-[#F5EBE0]" />
-              <span className="text-sm text-[#F5EBE0]">{t('landing.enterprise.hero.badge')}</span>
+              <span className="text-sm text-[#F5EBE0]">Coconut V14 for Enterprise</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="text-white">{t('landing.enterprise.hero.title1')}</span>
+              <span className="text-white">Brief at 9am.</span>
               <br />
               <span className="bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA] bg-clip-text text-transparent">
-                {t('landing.enterprise.hero.title2')}
+                Campaign by lunch.
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-white/70 mb-4 max-w-3xl mx-auto">
-              {t('landing.enterprise.hero.subtitle')}
+              Launch 6-week campaigns in 6 minutes.
             </p>
             <p className="text-lg sm:text-xl text-white/60 mb-10 max-w-2xl mx-auto leading-relaxed">
-              {t('landing.enterprise.hero.description')}
+              One brief. 50 assets across every channel. All brand-perfect. 
               <br className="hidden sm:block" />
-              {t('landing.enterprise.hero.description2')}
+              Your creative team restored, not replaced.
             </p>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Button
+              <motion.button
                 onClick={onGetStarted}
-                variant="primary"
-                size="lg"
+                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
+                  boxShadow: '0 20px 60px rgba(245,235,224,0.3)',
+                  color: '#1A1A1A'
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: '0 25px 80px rgba(245,235,224,0.4)'
+                }}
+                whileTap={{ scale: 0.98 }}
               >
-                {t('landing.enterprise.hero.ctaPrimary')}
-              </Button>
+                <span>Start Free</span>
+                <ArrowRight size={20} />
+              </motion.button>
 
-              <Button
+              <button
                 onClick={onBookDemo}
-                variant="secondary"
-                size="lg"
+                className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 transition-all hover:bg-white/10 inline-flex items-center gap-3 text-lg"
               >
-                {t('landing.enterprise.hero.ctaSecondary')}
-              </Button>
+                <span>Book Demo</span>
+              </button>
             </div>
 
             <p className="text-sm text-white/40">
-              {t('landing.enterprise.hero.note')}
+              No credit card • See it in action in 2 minutes
             </p>
           </motion.div>
         </div>
@@ -122,10 +126,10 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              {t('landing.enterprise.reality.title')}
+              This is actually possible.
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              {t('landing.enterprise.reality.subtitle')}
+              Real campaign. Real timeline. Real results.
             </p>
           </div>
 
@@ -133,21 +137,21 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                time: t('landing.enterprise.reality.step1.time'),
-                title: t('landing.enterprise.reality.step1.title'),
-                description: t('landing.enterprise.reality.step1.description'),
+                time: '9:00 AM',
+                title: 'Your Brief',
+                description: 'Tell Coconut your campaign goals, target audience, brand guidelines.',
                 icon: Sparkles,
               },
               {
-                time: t('landing.enterprise.reality.step2.time'),
-                title: t('landing.enterprise.reality.step2.title'),
-                description: t('landing.enterprise.reality.step2.description'),
+                time: '9:15 AM',
+                title: 'Coconut Analyzes',
+                description: 'AI orchestrates creative directions, builds brand-perfect assets.',
                 icon: Zap,
               },
               {
-                time: t('landing.enterprise.reality.step3.time'),
-                title: t('landing.enterprise.reality.step3.title'),
-                description: t('landing.enterprise.reality.step3.description'),
+                time: '12:00 PM',
+                title: 'Campaign Ready',
+                description: '50 assets: Instagram, TikTok, YouTube, email headers. All ready.',
                 icon: Check,
               },
             ].map((step, idx) => (
@@ -191,44 +195,44 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              {t('landing.enterprise.benefits.title')}
+              What your team gets back
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              {t('landing.enterprise.benefits.subtitle')}
+              Time, energy, and creative freedom
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                metric: t('landing.enterprise.benefits.metric1.value'),
-                title: t('landing.enterprise.benefits.metric1.title'),
-                description: t('landing.enterprise.benefits.metric1.description'),
+                metric: '40 → 4 hours',
+                title: 'Weekly Time Saved',
+                description: 'From asset creation to campaign launch',
               },
               {
-                metric: t('landing.enterprise.benefits.metric2.value'),
-                title: t('landing.enterprise.benefits.metric2.title'),
-                description: t('landing.enterprise.benefits.metric2.description'),
+                metric: '100% consistency',
+                title: 'Brand Perfect',
+                description: 'Every asset, every channel, every time',
               },
               {
-                metric: t('landing.enterprise.benefits.metric3.value'),
-                title: t('landing.enterprise.benefits.metric3.title'),
-                description: t('landing.enterprise.benefits.metric3.description'),
+                metric: '$400 → $0.90',
+                title: 'Per Asset Cost',
+                description: 'Replace multiple subscriptions with one platform',
               },
               {
-                metric: t('landing.enterprise.benefits.metric4.value'),
-                title: t('landing.enterprise.benefits.metric4.title'),
-                description: t('landing.enterprise.benefits.metric4.description'),
+                metric: '50+ assets',
+                title: 'Per Campaign',
+                description: 'Instagram, TikTok, YouTube, email, web',
               },
               {
-                metric: t('landing.enterprise.benefits.metric5.value'),
-                title: t('landing.enterprise.benefits.metric5.title'),
-                description: t('landing.enterprise.benefits.metric5.description'),
+                metric: 'Real-time',
+                title: 'Iteration Speed',
+                description: 'Change directions, regenerate instantly',
               },
               {
-                metric: t('landing.enterprise.benefits.metric6.value'),
-                title: t('landing.enterprise.benefits.metric6.title'),
-                description: t('landing.enterprise.benefits.metric6.description'),
+                metric: 'Your team',
+                title: 'Restored Energy',
+                description: 'Focus on strategy, not production grind',
               },
             ].map((item, idx) => (
               <motion.div
@@ -260,21 +264,21 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              {t('landing.enterprise.features.title')}
+              Built for scale
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              {t('landing.enterprise.features.subtitle')}
+              Everything you need to orchestrate at enterprise level
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { icon: Zap, title: t('landing.enterprise.features.feature1.title'), desc: t('landing.enterprise.features.feature1.description') },
-              { icon: Shield, title: t('landing.enterprise.features.feature2.title'), desc: t('landing.enterprise.features.feature2.description') },
-              { icon: Clock, title: t('landing.enterprise.features.feature3.title'), desc: t('landing.enterprise.features.feature3.description') },
-              { icon: Check, title: t('landing.enterprise.features.feature4.title'), desc: t('landing.enterprise.features.feature4.description') },
-              { icon: Sparkles, title: t('landing.enterprise.features.feature5.title'), desc: t('landing.enterprise.features.feature5.description') },
-              { icon: ArrowRight, title: t('landing.enterprise.features.feature6.title'), desc: t('landing.enterprise.features.feature6.description') },
+              { icon: Zap, title: 'Priority Queue', desc: 'Your campaigns jump the line' },
+              { icon: Shield, title: 'Brand Management', desc: 'Upload logos, colors, style guides once' },
+              { icon: Clock, title: 'Batch Production', desc: 'Generate 50+ assets simultaneously' },
+              { icon: Check, title: '99.9% SLA', desc: 'Enterprise reliability, priority support' },
+              { icon: Sparkles, title: 'Campaign Analytics', desc: 'Track performance, optimize ROI' },
+              { icon: ArrowRight, title: 'Team Workspace', desc: 'Collaborate, iterate, approve together' },
             ].map((feature, idx) => {
               const Icon = feature.icon;
               return (
@@ -306,10 +310,10 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              {t('landing.enterprise.pricing.title')}
+              Transparent pricing
             </motion.h2>
             <p className="text-lg sm:text-xl text-white/60">
-              {t('landing.enterprise.pricing.subtitle')}
+              Pay per creation. Scale as you grow.
             </p>
           </div>
 
@@ -326,24 +330,24 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
             <div className="text-center mb-8">
               <div className="text-5xl sm:text-6xl font-bold mb-2">
                 <span className="bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA] bg-clip-text text-transparent">
-                  {t('landing.enterprise.pricing.price')}
+                  $0.09
                 </span>
-                <span className="text-2xl text-white/40">{t('landing.enterprise.pricing.unit')}</span>
+                <span className="text-2xl text-white/40">/credit</span>
               </div>
-              <p className="text-white/60">{t('landing.enterprise.pricing.minPurchase')}</p>
+              <p className="text-white/60">Min. 1,000 credits per purchase</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6 mb-8">
               <div>
-                <h4 className="text-sm text-[#F5EBE0] mb-3 uppercase tracking-wider">{t('landing.enterprise.pricing.includedTitle')}</h4>
+                <h4 className="text-sm text-[#F5EBE0] mb-3 uppercase tracking-wider">Included</h4>
                 <ul className="space-y-2">
                   {[
-                    t('landing.enterprise.pricing.included1'),
-                    t('landing.enterprise.pricing.included2'),
-                    t('landing.enterprise.pricing.included3'),
-                    t('landing.enterprise.pricing.included4'),
-                    t('landing.enterprise.pricing.included5'),
-                    t('landing.enterprise.pricing.included6'),
+                    'Full Coconut workspace',
+                    'Image, Video & Campaign modes',
+                    'Priority generation queue',
+                    'Team collaboration',
+                    'Brand asset management',
+                    'Analytics dashboard',
                   ].map((item, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="text-[#F5EBE0] flex-shrink-0" size={16} />
@@ -353,37 +357,37 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
                 </ul>
               </div>
               <div>
-                <h4 className="text-sm text-[#F5EBE0] mb-3 uppercase tracking-wider">{t('landing.enterprise.pricing.exampleTitle')}</h4>
+                <h4 className="text-sm text-[#F5EBE0] mb-3 uppercase tracking-wider">Example Cost</h4>
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-white/5">
-                    <div className="text-white/80 text-sm mb-1">{t('landing.enterprise.pricing.example1Label')}</div>
-                    <div className="text-white font-semibold">{t('landing.enterprise.pricing.example1Value')}</div>
+                    <div className="text-white/80 text-sm mb-1">Full campaign (50 assets)</div>
+                    <div className="text-white font-semibold">≈ 115 credits = $10.35</div>
                   </div>
                   <div className="p-3 rounded-lg bg-white/5">
-                    <div className="text-white/80 text-sm mb-1">{t('landing.enterprise.pricing.example2Label')}</div>
-                    <div className="text-white font-semibold">{t('landing.enterprise.pricing.example2Value')}</div>
+                    <div className="text-white/80 text-sm mb-1">1,000 credits pack</div>
+                    <div className="text-white font-semibold">$90</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button
+              <button
                 onClick={onGetStarted}
-                variant="primary"
-                size="lg"
-                fullWidth
+                className="flex-1 px-8 py-4 rounded-xl font-semibold transition-all hover:scale-105"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
+                  color: '#1A1A1A'
+                }}
               >
-                {t('landing.enterprise.pricing.ctaPrimary')}
-              </Button>
-              <Button
+                Get Started
+              </button>
+              <button
                 onClick={onBookDemo}
-                variant="secondary"
-                size="lg"
-                fullWidth
+                className="flex-1 px-8 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
               >
-                {t('landing.enterprise.pricing.ctaSecondary')}
-              </Button>
+                Contact Sales
+              </button>
             </div>
           </motion.div>
         </div>
@@ -398,24 +402,33 @@ export function LandingEnterprise({ onGetStarted, onBookDemo }: LandingEnterpris
             viewport={{ once: true }}
           >
             <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-              {t('landing.enterprise.finalCta.title1')}
+              Ready to brief at 9,
               <br />
               <span className="bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA] bg-clip-text text-transparent">
-                {t('landing.enterprise.finalCta.title2')}
+                launch by lunch?
               </span>
             </h2>
             <p className="text-lg sm:text-xl text-white/60 mb-10">
-              {t('landing.enterprise.finalCta.subtitle')}
+              See Coconut in action. No credit card required.
             </p>
 
-            <Button
+            <motion.button
               onClick={onGetStarted}
-              variant="primary"
-              size="lg"
-              icon={<ArrowRight size={24} />}
+              className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
+                boxShadow: '0 30px 80px rgba(245,235,224,0.4)',
+                color: '#1A1A1A'
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: '0 40px 100px rgba(245,235,224,0.5)'
+              }}
+              whileTap={{ scale: 0.98 }}
             >
-              {t('landing.enterprise.finalCta.cta')}
-            </Button>
+              <span>Enter the Fluid State</span>
+              <ArrowRight size={24} />
+            </motion.button>
           </motion.div>
         </div>
       </section>

@@ -4,15 +4,14 @@ import { ArrowRight, Sparkles, Check, Building2, Heart, Terminal, Zap, Layers, T
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
 import { LanguageSwitcher } from '../LanguageSwitcher'; // ✅ NEW: Language switcher
 import { TrustSignals } from '../shared/TrustSignals'; // ✅ BDS: Trust signals
-import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
-import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingScrollytellingProps {
   onGetStarted: () => void;
   onLogin?: () => void;
+  onNavigate?: (screen: string) => void; // ✅ NEW: Allow navigation to any screen
 }
 
-export function LandingScrollytelling({ onGetStarted, onLogin }: LandingScrollytellingProps) {
+export function LandingScrollytelling({ onGetStarted, onLogin, onNavigate }: LandingScrollytellingProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -74,6 +73,14 @@ function FixedHeader({ onLogin }: { onLogin?: () => void }) {
           <span className="text-lg font-medium text-white">Cortexia</span>
         </div>
         <div className="flex items-center gap-4">
+          {/* ✅ NEW: Coconut V14 Preview Button */}
+          <a
+            href="/coconut-v14"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20 hover:border-[#F5EBE0]/40 transition-all text-sm text-[#F5EBE0] flex items-center gap-2"
+          >
+            <Sparkles size={14} />
+            <span>Preview Coconut V14</span>
+          </a>
           <LanguageSwitcher variant="compact" />
           {onLogin && (
             <button
@@ -188,13 +195,31 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
           >
-            <Button
+            <motion.button
               onClick={onGetStarted}
-              variant="primary"
-              size="lg"
+              className="group relative px-10 py-5 rounded-2xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
+                boxShadow: '0 20px 60px rgba(245,235,224,0.3), inset 0 1px 0 rgba(255,255,255,0.4)'
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: '0 25px 80px rgba(245,235,224,0.4), inset 0 1px 0 rgba(255,255,255,0.6)'
+              }}
+              whileTap={{ scale: 0.98 }}
             >
-              {t('landing.hero.cta')}
-            </Button>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"
+                initial={{ x: '-100%' }}
+                whileHover={{ x: '100%' }}
+                transition={{ duration: 0.6 }}
+              />
+              
+              <span className="relative flex items-center gap-3 text-lg font-semibold text-[#1A1A1A]">
+                {t('landing.hero.cta')}
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </span>
+            </motion.button>
           </motion.div>
 
           {/* Trust Signal */}
@@ -547,14 +572,23 @@ function ThreePathsSection({ progress, onGetStarted }: { progress: any, onGetSta
                 </div>
 
                 {/* CTA */}
-                <Button
+                <motion.button
                   onClick={onGetStarted}
-                  variant={path.profile === 'Enterprise' ? 'primary' : path.profile === 'Individual' ? 'purple' : 'blue'}
-                  size="md"
-                  icon={<ArrowRight size={18} />}
+                  className={`px-8 py-4 rounded-xl font-medium ${path.accentColor} transition-all`}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${path.borderColor.replace('border-', '').replace('/20', '/30')}`
+                  }}
+                  whileHover={{
+                    background: 'rgba(255,255,255,0.08)',
+                    scale: 1.02
+                  }}
                 >
-                  {path.cta}
-                </Button>
+                  <span className="flex items-center gap-2">
+                    {path.cta}
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </motion.button>
               </div>
             </motion.div>
           ))}
@@ -728,15 +762,38 @@ function FinalCTA({ onGetStarted }: { onGetStarted: () => void }) {
           </p>
 
           {/* Main CTA */}
-          <Button
+          <motion.button
             onClick={onGetStarted}
-            variant="primary"
-            size="lg"
-            icon={<ArrowRight size={24} />}
-            className="text-xl px-12 py-6"
+            className="group relative px-12 py-6 rounded-2xl overflow-hidden text-xl font-semibold"
+            style={{
+              background: 'linear-gradient(135deg, rgba(245,235,224,0.95) 0%, rgba(227,213,202,0.9) 100%)',
+              boxShadow: '0 30px 80px rgba(245,235,224,0.4), inset 0 1px 0 rgba(255,255,255,0.5)',
+              color: '#1A1A1A'
+            }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: '0 40px 100px rgba(245,235,224,0.5), inset 0 1px 0 rgba(255,255,255,0.7)'
+            }}
+            whileTap={{ scale: 0.98 }}
           >
-            {t('landing.finalCta.cta')}
-          </Button>
+            {/* Liquid shimmer effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0"
+              animate={{
+                x: ['-200%', '200%']
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+            
+            <span className="relative flex items-center gap-3">
+              {t('landing.finalCta.cta')}
+              <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
+            </span>
+          </motion.button>
 
           <p className="mt-8 text-sm text-white/40">
             {t('landing.finalCta.note')}

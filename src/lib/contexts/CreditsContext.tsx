@@ -6,7 +6,6 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect 
 import { toast } from 'sonner@2.0.3';
 import { getUserCredits, addPaidCredits as addPaidCreditsAPI } from '../api/credits';
 import { projectId } from '../../utils/supabase/info';
-import { API_CONFIG } from '../config/environment';
 
 // ✅ Backend-compatible UserCredits type
 export interface UserCredits {
@@ -64,9 +63,7 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
     try {
       console.log(`🔄 Fetching credits for user: ${userId}`);
-      if (!API_CONFIG.useMockData) {
-        console.log(`📍 API will call: https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/${encodeURIComponent(userId)}`);
-      }
+      console.log(`📍 API will call: https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/${encodeURIComponent(userId)}`);
       
       const response = await getUserCredits(userId);
       
@@ -78,11 +75,12 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         setDaysUntilReset(response.daysUntilReset || 30);
         setIsLoading(false);
         
-        // Show warning if using fallback (only in production mode)
-        if (response.error && !API_CONFIG.useMockData) {
+        // Show warning if using fallback (but only once, not repeatedly)
+        if (response.error && !sessionStorage.getItem('credits-fallback-warned')) {
           console.warn('⚠️ Using fallback credits due to backend error:', response.error);
-        } else {
-          console.log('✅ Credits loaded:', response.credits);
+          sessionStorage.setItem('credits-fallback-warned', 'true');
+        } else if (!response.error) {
+          console.log('✅ Credits fetched from backend:', response.credits);
         }
       } else {
         throw new Error(response.error || 'Failed to fetch credits');
@@ -90,16 +88,25 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('❌ Failed to fetch credits:', errorMessage);
+      console.error('❌ Failed to fetch credits from backend:', errorMessage);
+      console.error('❌ Full error object:', err);
       setError(errorMessage);
       setIsLoading(false);
       
-      // ✅ Only show error toast in production mode (not in mock mode)
-      if (!API_CONFIG.useMockData) {
-        toast.error('Unable to load credits. Using default credits.', {
-          description: errorMessage
+      // ✅ IMPROVED: Only show error toast once per session
+      if (!sessionStorage.getItem('credits-error-shown')) {
+        toast.error('Unable to load credits. Using demo mode.', {
+          description: 'Backend not available'
         });
+        sessionStorage.setItem('credits-error-shown', 'true');
       }
+      
+      // ✅ Set demo credits as fallback
+      setCredits({
+        free: 50,
+        paid: 0,
+        lastReset: new Date().toISOString()
+      });
     }
   }, [userId]);
 
@@ -127,10 +134,11 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
           setDaysUntilReset(response.daysUntilReset || 30);
           setIsLoading(false);
           
-          // Show warning if using fallback
-          if (response.error) {
+          // Show warning if using fallback (but only once)
+          if (response.error && !sessionStorage.getItem('credits-fallback-warned')) {
             console.warn('⚠️ Using fallback credits due to backend error:', response.error);
-          } else {
+            sessionStorage.setItem('credits-fallback-warned', 'true');
+          } else if (!response.error) {
             console.log('✅ Credits fetched from backend:', response.credits);
           }
         } else {
@@ -145,8 +153,19 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         setError(errorMessage);
         setIsLoading(false);
         
-        toast.error('Unable to load credits. Using default credits.', {
-          description: errorMessage
+        // ✅ IMPROVED: Only show error toast once per session
+        if (!sessionStorage.getItem('credits-error-shown')) {
+          toast.error('Unable to load credits. Using demo mode.', {
+            description: 'Backend not available'
+          });
+          sessionStorage.setItem('credits-error-shown', 'true');
+        }
+        
+        // ✅ Set demo credits as fallback
+        setCredits({
+          free: 50,
+          paid: 0,
+          lastReset: new Date().toISOString()
         });
       }
     };

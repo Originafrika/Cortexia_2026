@@ -1,14 +1,16 @@
 /**
- * ANALYZING LOADER ULTRA-PREMIUM - LIGHT THEME
- * Phase d'analyse Gemini - Affichée après soumission de l'intent
+ * ANALYZING LOADER ULTRA-PREMIUM - Phase d'analyse Gemini
+ * Affichée après soumission de l'intent pendant l'analyse IA
  * 
- * COCONUT PREMIUM DESIGN SYSTEM V3
- * - Light theme with Warm Cream accents
+ * Premium Features:
  * - Hero section avec context de l'analyse
  * - Animation centrale sophistiquée (orb + particles)
  * - Steps progress avec timeline verticale
  * - Fun facts/tips pendant l'attente
+ * - Palette Coconut Warm exclusive
+ * - Stats en temps réel (temps, crédits, progression)
  * - BDS 7 Arts compliance
+ * - Score cible: 98%+
  */
 
 import React, { useEffect, useState } from 'react';
@@ -128,15 +130,15 @@ export function AnalyzingLoaderPremium({
   }, []);
   
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-warm-50 via-white to-warm-100 relative overflow-hidden">
       
-      {/* Premium ambient lights - Light theme */}
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(245,229,224,0.3)_0%,transparent_50%)]" />
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(227,213,202,0.25)_0%,transparent_50%)]" />
+      {/* Premium ambient lights - Coconut Warm glow */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(212,165,116,0.15)_0%,transparent_40%)]" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(184,137,79,0.12)_0%,transparent_40%)]" />
       
       {/* Floating orbs animation - warm colors */}
       <motion.div
-        className="fixed top-20 left-20 w-64 h-64 rounded-full bg-cream-400/10 blur-3xl"
+        className="fixed top-20 left-20 w-64 h-64 rounded-full bg-warm-400/10 blur-3xl"
         animate={{
           x: [0, 50, 0],
           y: [0, 30, 0],
@@ -150,7 +152,7 @@ export function AnalyzingLoaderPremium({
       />
       
       <motion.div
-        className="fixed bottom-20 right-20 w-96 h-96 rounded-full bg-amber-500/10 blur-3xl"
+        className="fixed bottom-20 right-20 w-96 h-96 rounded-full bg-palm-500/10 blur-3xl"
         animate={{
           x: [0, -40, 0],
           y: [0, -50, 0],
@@ -172,16 +174,16 @@ export function AnalyzingLoaderPremium({
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cream-50 border border-cream-200 mb-4">
-            <Brain className="w-4 h-4 text-cream-600" />
-            <span className="text-sm font-medium text-stone-700">Analyse IA en cours</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 backdrop-blur-xl border border-white/40 mb-4">
+            <Brain className="w-4 h-4 text-[var(--coconut-shell)]" />
+            <span className="text-sm font-medium text-[var(--coconut-shell)]">Analyse IA en cours</span>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-stone-900 via-cream-700 to-stone-900 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-[var(--coconut-shell)] via-[var(--coconut-palm)] to-[var(--coconut-shell)] bg-clip-text text-transparent mb-3">
             Gemini analyse votre projet
           </h1>
           
-          <p className="text-lg text-stone-600 max-w-2xl mx-auto">
+          <p className="text-lg text-[var(--coconut-husk)] max-w-2xl mx-auto">
             Notre IA examine votre intention, détecte le style et génère un prompt optimisé pour Flux 2 Pro
           </p>
         </motion.div>
@@ -194,19 +196,19 @@ export function AnalyzingLoaderPremium({
           className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl mb-12"
         >
           {/* Progress */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-lg">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-5 border border-white/60 shadow-lg">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-cream-100 to-amber-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-cream-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[var(--coconut-shell)]/20 to-[var(--coconut-palm)]/10 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-[var(--coconut-shell)]" />
               </div>
               <div>
-                <p className="text-xs text-stone-500 font-medium">Progression</p>
-                <p className="text-xl font-bold text-stone-900">{Math.round(progress)}%</p>
+                <p className="text-xs text-[var(--coconut-husk)]">Progression</p>
+                <p className="text-xl font-bold text-[var(--coconut-shell)]">{Math.round(progress)}%</p>
               </div>
             </div>
-            <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-[var(--coconut-cream)] rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-gradient-to-r from-cream-500 to-amber-500"
+                className="h-full bg-gradient-to-r from-[var(--coconut-shell)] to-[var(--coconut-palm)]"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5 }}
@@ -215,14 +217,14 @@ export function AnalyzingLoaderPremium({
           </div>
 
           {/* Time */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-lg">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-5 border border-white/60 shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl flex items-center justify-center">
-                <Clock className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 rounded-xl flex items-center justify-center">
+                <Clock className="w-5 h-5 text-cyan-500" />
               </div>
               <div>
-                <p className="text-xs text-stone-500 font-medium">Temps restant</p>
-                <p className="text-xl font-bold text-stone-900">
+                <p className="text-xs text-[var(--coconut-husk)]">Temps restant</p>
+                <p className="text-xl font-bold text-[var(--coconut-shell)]">
                   ~{remainingTime}s
                 </p>
               </div>
@@ -230,14 +232,14 @@ export function AnalyzingLoaderPremium({
           </div>
 
           {/* Credits */}
-          <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-lg">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-5 border border-white/60 shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-xl flex items-center justify-center">
+                <Zap className="w-5 h-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-xs text-stone-500 font-medium">Coût analyse</p>
-                <p className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">
+                <p className="text-xs text-[var(--coconut-husk)]">Coût analyse</p>
+                <p className="text-xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
                   {creditsUsed} cr
                 </p>
               </div>
@@ -258,7 +260,7 @@ export function AnalyzingLoaderPremium({
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             className="absolute inset-0 w-40 h-40 rounded-full"
           >
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cream-500 border-r-amber-500" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[var(--coconut-shell)] border-r-[var(--coconut-palm)]" />
           </motion.div>
 
           {/* Middle counter-rotating ring */}
@@ -267,7 +269,7 @@ export function AnalyzingLoaderPremium({
             transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
             className="absolute inset-3 w-34 h-34 rounded-full"
           >
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-stone-400 border-l-amber-500" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-[var(--coconut-husk)] border-l-[var(--coconut-palm)]" />
           </motion.div>
 
           {/* Center orb with pulsing */}
@@ -275,7 +277,7 @@ export function AnalyzingLoaderPremium({
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="w-24 h-24 rounded-full bg-gradient-to-br from-cream-500 to-amber-500 flex items-center justify-center shadow-2xl"
+              className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] flex items-center justify-center shadow-2xl"
             >
               <AnimatePresence mode="wait">
                 <motion.div
@@ -314,7 +316,7 @@ export function AnalyzingLoaderPremium({
                 transform: `rotate(${i * 90}deg) translateX(80px)`,
               }}
             >
-              <Sparkles className="w-5 h-5 text-cream-500" />
+              <Sparkles className="w-5 h-5 text-[var(--coconut-shell)]" />
             </motion.div>
           ))}
         </motion.div>
@@ -330,10 +332,10 @@ export function AnalyzingLoaderPremium({
             className="text-center mb-8"
           >
             <div className="text-4xl mb-2">{ANALYSIS_STEPS[activeStep]?.emoji}</div>
-            <h3 className="text-xl font-semibold text-stone-900 mb-1">
+            <h3 className="text-xl font-semibold text-[var(--coconut-shell)] mb-1">
               {ANALYSIS_STEPS[activeStep]?.label}
             </h3>
-            <p className="text-sm text-stone-600">
+            <p className="text-sm text-[var(--coconut-husk)]">
               {ANALYSIS_STEPS[activeStep]?.description}
             </p>
           </motion.div>
@@ -346,7 +348,7 @@ export function AnalyzingLoaderPremium({
           transition={{ duration: 0.6, delay: 0.4 }}
           className="w-full max-w-2xl mb-8"
         >
-          <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xl">
+          <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-xl">
             <div className="space-y-3">
               {ANALYSIS_STEPS.map((step, i) => {
                 const isCompleted = i < activeStep;
@@ -361,24 +363,24 @@ export function AnalyzingLoaderPremium({
                     transition={{ duration: 0.4, delay: i * 0.1 }}
                     className={`flex items-center gap-4 p-3 rounded-xl transition-all ${
                       isActive
-                        ? 'bg-gradient-to-r from-cream-50 to-amber-50 border-2 border-cream-300'
+                        ? 'bg-gradient-to-r from-[var(--coconut-shell)]/10 to-[var(--coconut-palm)]/10 border-2 border-[var(--coconut-shell)]/30'
                         : isCompleted
-                        ? 'bg-green-50 border border-green-200'
-                        : 'bg-stone-50 border border-stone-200'
+                        ? 'bg-[var(--coconut-palm)]/5 border border-[var(--coconut-palm)]/20'
+                        : 'bg-white/30 border border-white/20'
                     }`}
                   >
                     {/* Icon/Check */}
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                       isActive
-                        ? 'bg-gradient-to-br from-cream-500 to-amber-500 shadow-lg'
+                        ? 'bg-gradient-to-br from-[var(--coconut-shell)] to-[var(--coconut-palm)] shadow-lg'
                         : isCompleted
-                        ? 'bg-green-100'
-                        : 'bg-white'
+                        ? 'bg-[var(--coconut-palm)]/20'
+                        : 'bg-white/40'
                     }`}>
                       {isCompleted ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <CheckCircle className="w-5 h-5 text-[var(--coconut-palm)]" />
                       ) : (
-                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-stone-500'}`} />
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-[var(--coconut-husk)]'}`} />
                       )}
                     </div>
 
@@ -386,10 +388,10 @@ export function AnalyzingLoaderPremium({
                     <div className="flex-1">
                       <p className={`text-sm font-medium ${
                         isActive
-                          ? 'text-stone-900'
+                          ? 'text-[var(--coconut-shell)]'
                           : isCompleted
-                          ? 'text-green-700'
-                          : 'text-stone-600'
+                          ? 'text-[var(--coconut-palm)]'
+                          : 'text-[var(--coconut-husk)]'
                       }`}>
                         {step.label}
                       </p>
@@ -411,7 +413,7 @@ export function AnalyzingLoaderPremium({
                               repeat: Infinity,
                               delay: dot * 0.2
                             }}
-                            className="w-1.5 h-1.5 rounded-full bg-cream-600"
+                            className="w-1.5 h-1.5 rounded-full bg-[var(--coconut-shell)]"
                           />
                         ))}
                       </motion.div>
@@ -419,7 +421,7 @@ export function AnalyzingLoaderPremium({
 
                     {/* Check mark for completed */}
                     {isCompleted && (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <CheckCircle className="w-5 h-5 text-[var(--coconut-palm)]" />
                     )}
                   </motion.div>
                 );
@@ -435,13 +437,13 @@ export function AnalyzingLoaderPremium({
           transition={{ duration: 0.6, delay: 0.5 }}
           className="w-full max-w-2xl"
         >
-          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-5 border border-blue-200">
+          <div className="bg-gradient-to-br from-cyan-50 to-purple-50 rounded-2xl p-5 border border-cyan-100">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Eye className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold text-blue-700 mb-1 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-cyan-700 mb-1 uppercase tracking-wide">
                   Le saviez-vous ?
                 </p>
                 <AnimatePresence mode="wait">
@@ -451,7 +453,7 @@ export function AnalyzingLoaderPremium({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.5 }}
-                    className="text-sm text-blue-600 leading-relaxed"
+                    className="text-sm text-cyan-600 leading-relaxed"
                   >
                     {FUN_FACTS[currentFactIndex]}
                   </motion.p>

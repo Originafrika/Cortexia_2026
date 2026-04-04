@@ -25,30 +25,7 @@ const NotificationContext = createContext<UseNotificationsReturn | null>(null);
 export function useNotificationContext() {
   const context = useContext(NotificationContext);
   if (!context) {
-    // ✅ FIX: Return no-op functions instead of throwing
-    // This allows components to work without NotificationProvider
-    console.warn('useNotificationContext used outside NotificationProvider - notifications will be disabled');
-    
-    // Create a minimal no-op implementation
-    const noop = () => {};
-    const noopAsync = async () => false;
-    
-    return {
-      notifications: [],
-      success: noop,
-      error: noop,
-      warning: noop,
-      info: noop,
-      quickSuccess: noop,
-      quickError: noop,
-      quickWarning: noop,
-      quickInfo: noop,
-      confirm: noopAsync,
-      dismissNotification: noop,
-      clearAllNotifications: noop,
-      confirmState: { isOpen: false, options: null },
-      handleConfirmClose: noop,
-    } as any;
+    throw new Error('useNotificationContext must be used within NotificationProvider');
   }
   return context;
 }

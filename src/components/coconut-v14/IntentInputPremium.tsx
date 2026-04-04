@@ -43,7 +43,6 @@ import type {
 import { calculateCost, type GenerationSpecs } from '../../lib/utils/cost-calculator';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { useNotify } from './NotificationProvider';
-import { VoiceInputPremium } from './VoiceInputPremium'; // ✅ NEW: Voice input
 
 // ============================================
 // TYPES
@@ -529,16 +528,6 @@ export function IntentInputPremium({
                 disabled={isLoading}
                 className="w-full h-32 sm:h-48 px-4 py-3 rounded-xl bg-white/60 border border-white/40 text-[var(--coconut-shell)] placeholder:text-[var(--coconut-husk)]/50 resize-none focus:outline-none focus:ring-2 focus:ring-[var(--coconut-palm)]/50 focus:border-transparent transition-all disabled:opacity-50"
               />
-              
-              {/* ✅ NEW: Voice Input */}
-              <div className="mt-4">
-                <VoiceInputPremium
-                  onTranscript={(text) => {
-                    setDescription(prev => prev ? `${prev} ${text}` : text);
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
               
               {/* Tips */}
               <div className="mt-4 p-4 bg-gradient-to-br from-cyan-50 to-purple-50 rounded-xl border border-cyan-100">

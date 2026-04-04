@@ -43,7 +43,6 @@ interface CocoBoardSidebarPremiumProps {
   isDirty: boolean;
   onSave?: () => void;
   onGenerate?: () => void;
-  onBatchGenerate?: () => void; // ✅ NEW: Batch generation
   isGenerating?: boolean;
   onToggleBrandGuidelines?: (enabled: boolean) => void; // ✅ NEW: Toggle callback
 }
@@ -54,7 +53,6 @@ export function CocoBoardSidebarPremium({
   isDirty,
   onSave,
   onGenerate,
-  onBatchGenerate, // ✅ NEW
   isGenerating = false,
   onToggleBrandGuidelines, // ✅ NEW: Toggle callback
 }: CocoBoardSidebarPremiumProps) {
@@ -338,34 +336,6 @@ export function CocoBoardSidebarPremium({
               <Sparkles className={`w-5 h-5 ${isGenerating ? 'animate-spin' : ''}`} />
               <span className="font-semibold">
                 {isGenerating ? 'Génération...' : 'Générer maintenant'}
-              </span>
-            </div>
-          </motion.button>
-        )}
-
-        {/* ✅ NEW: Batch Generate button - Enterprise Feature */}
-        {onBatchGenerate && (
-          <motion.button
-            onClick={() => {
-              playClick();
-              onBatchGenerate();
-            }}
-            disabled={!canAfford || isGenerating}
-            whileHover={canAfford && !isGenerating ? { scale: 1.02, y: -2 } : {}}
-            whileTap={canAfford && !isGenerating ? { scale: 0.98 } : {}}
-            className={`w-full relative group overflow-hidden rounded-xl transition-all border-2 ${
-              !canAfford || isGenerating 
-                ? 'opacity-50 cursor-not-allowed border-white/20' 
-                : 'border-[var(--coconut-shell)]/30 hover:border-[var(--coconut-shell)]/50 shadow-lg hover:shadow-xl'
-            }`}
-          >
-            <div className="relative px-4 py-3 flex items-center justify-center gap-2">
-              <Layers className="w-5 h-5 text-[var(--coconut-shell)]" />
-              <span className="font-semibold text-[var(--coconut-shell)]">
-                Générer en lot
-              </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--coconut-shell)]/20 text-[var(--coconut-shell)] font-bold">
-                PRO
               </span>
             </div>
           </motion.button>

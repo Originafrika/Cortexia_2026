@@ -1,23 +1,16 @@
-import React, { useState } from 'react';
-import { ArrowLeft, WalletIcon, Shield, Bell, HelpCircle, FileText, Info, LogOut, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, WalletIcon, Shield, Bell, HelpCircle, FileText, Info, LogOut, ChevronRight } from 'lucide-react';
 import type { Screen } from '../App';
 import { signOut } from '../utils/supabase/auth';
-import { useTranslation } from '../lib/i18n'; // ✅ i18n hook
-import { LanguageSwitcher } from './LanguageSwitcher'; // ✅ Language switcher
-import { useAuth } from '../lib/contexts/AuthContext'; // ✅ Auth context
-import { projectId, publicAnonKey } from '../utils/supabase/info'; // ✅ Supabase config
+import { useTranslation } from '../lib/i18n'; // ✅ NEW: i18n hook
+import { LanguageSwitcher } from './LanguageSwitcher'; // ✅ NEW: Language switcher
 
 interface SettingsProps {
   onNavigate: (screen: Screen) => void;
 }
 
 export function Settings({ onNavigate }: SettingsProps) {
-  const { t } = useTranslation();
-  const { user } = useAuth(); // ✅ Get current user
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // ✅ Delete confirmation modal
-  const [deleteStep, setDeleteStep] = useState<'confirm' | 'password' | 'deleting'>('confirm'); // ✅ Multi-step deletion
-  const [password, setPassword] = useState(''); // ✅ Password for confirmation
-  const [deleteError, setDeleteError] = useState<string | null>(null); // ✅ Error handling
+  const { t } = useTranslation(); // ✅ NEW
   
   const handleLogout = async () => {
     console.log('🚪 [Settings] Logging out...');
@@ -27,52 +20,6 @@ export function Settings({ onNavigate }: SettingsProps) {
       onNavigate('login');
     } catch (error) {
       console.error('❌ [Settings] Logout error:', error);
-    }
-  };
-
-  // ✅ NEW: Handle account deletion (production-ready, RGPD-compliant)
-  const handleDeleteAccount = async () => {
-    if (!user?.id) {
-      setDeleteError('User not authenticated');
-      return;
-    }
-
-    setDeleteStep('deleting');
-    setDeleteError(null);
-
-    try {
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
-      
-      console.log('🗑️ [Settings] Initiating account deletion for user:', user.id);
-      
-      const response = await fetch(`${apiUrl}/users/${user.id}/delete`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          password: password || undefined, // Optional password confirmation
-          confirm: true,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete account');
-      }
-
-      console.log('✅ [Settings] Account deleted successfully');
-      
-      // Sign out and redirect
-      await signOut();
-      onNavigate('landing');
-      
-    } catch (error: any) {
-      console.error('❌ [Settings] Account deletion error:', error);
-      setDeleteError(error.message || 'Failed to delete account. Please try again.');
-      setDeleteStep('confirm');
     }
   };
   
@@ -189,98 +136,11 @@ export function Settings({ onNavigate }: SettingsProps) {
         </div>
 
         {/* Logout Button */}
-        <button 
-          className="w-full py-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors" 
-          onClick={handleLogout}
-        >
+        <button className="w-full py-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500 flex items-center justify-center gap-2" onClick={handleLogout}>
           <LogOut size={20} />
-          {t('settings.logout')}
-        </button>
-
-        {/* Delete Account Button */}
-        <button 
-          className="w-full py-4 mt-4 bg-gray-900 border border-gray-700 rounded-lg text-gray-400 flex items-center justify-center gap-2 hover:bg-gray-800 hover:text-red-400 hover:border-red-500/50 transition-colors" 
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          <Trash2 size={20} />
-          {t('settings.deleteAccount')}
+          Log Out
         </button>
       </div>
-
-      {/* ✅ DELETE CONFIRMATION MODAL (RGPD-compliant) */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
-          
-          <div className="relative w-full max-w-md bg-gray-900 rounded-2xl p-6 border border-red-500/20">
-            {/* Warning Icon */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle className="text-red-500" size={32} />
-              </div>
-            </div>
-
-            {/* Step 1: Confirmation */}
-            {deleteStep === 'confirm' && (
-              <>
-                <h2 className="text-white text-xl font-bold text-center mb-2">
-                  {t('settings.deleteConfirmTitle')}
-                </h2>
-                <p className="text-white/60 text-center mb-6">
-                  {t('settings.deleteConfirmMessage')}
-                </p>
-
-                {/* RGPD Warning */}
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
-                  <p className="text-red-400 text-sm font-medium mb-2">
-                    {t('settings.deleteWarningTitle')}
-                  </p>
-                  <ul className="text-red-400/80 text-sm space-y-1">
-                    <li>• {t('settings.deleteWarning1')}</li>
-                    <li>• {t('settings.deleteWarning2')}</li>
-                    <li>• {t('settings.deleteWarning3')}</li>
-                    <li>• {t('settings.deleteWarning4')}</li>
-                  </ul>
-                </div>
-
-                {deleteError && (
-                  <div className="bg-red-500/10 border border-red-500 rounded-lg p-3 mb-4">
-                    <p className="text-red-400 text-sm">{deleteError}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setShowDeleteConfirm(false);
-                      setDeleteError(null);
-                      setPassword('');
-                      setDeleteStep('confirm');
-                    }}
-                    className="flex-1 py-3 bg-gray-800 rounded-lg text-white hover:bg-gray-700 transition-colors"
-                  >
-                    {t('settings.cancel')}
-                  </button>
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="flex-1 py-3 bg-red-500 rounded-lg text-white hover:bg-red-600 transition-colors font-medium"
-                  >
-                    {t('settings.deleteConfirm')}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* Step 2: Deleting */}
-            {deleteStep === 'deleting' && (
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-white">{t('settings.deletingAccount')}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

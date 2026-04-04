@@ -1,249 +1,339 @@
-# 🎨 Cortexia Creation Hub V3 - AI Media Generation Platform
+# 🎨 Cortexia - AI Media Generation Platform
 
 **Progressive Web App (PWA)** de génération de médias IA avec système de production créative professionnelle **Coconut V14**.
 
-**Version :** 3.0.0  
-**Dernière mise à jour :** 27 janvier 2026  
-**Status :** 🚀 Production Ready
+**Last Updated:** 4 Janvier 2026  
+**Current Phase:** Auth0 Setup Required  
+**Status:** ⚠️ Action Required - Auth0 Configuration
 
 ---
 
-## 🎯 VUE D'ENSEMBLE
+## ⚠️ SETUP AUTH0 URGENT (6 MINUTES)
 
-Cortexia Creation Hub V3 est une plateforme premium d'orchestration créative multi-AI avec trois profils utilisateurs (Individual, Enterprise, Developer), un système d'abonnement Enterprise à $999/mois, et une architecture adaptative avec design liquid glass premium suivant le **Beauty Design System (BDS)**.
+### 🚨 PROBLÈMES ACTUELS
 
-### **Killer Features**
-- ✨ **Coconut V14** - Système d'orchestration créative premium (remplace un UI/UX designer)
-- 🎨 **CreateHub** - Génération instantanée text-to-image pour particuliers
-- 🤝 **Team Collaboration** - Batch generation, real-time comments, approval workflows
-- 💰 **Système de Crédits** - Dual model (gratuit/payant) avec abonnements Enterprise
-- 👥 **Community Feed** - Partage, remix, likes, comments pour Individual
-- 🎁 **Parrainage Universel** - Commissions avec streak multipliers
-- 🎬 **Creator System** - Accès Coconut limité pour créateurs actifs
+1. ❌ **Nom technique visible** : Users voient "dev-3ipjnnnncplwcx0t account"
+2. ❌ **GitHub login erreur 401** : GitHub OAuth pas configuré
+3. ❌ **Callback URL mismatch** : URLs pas dans Auth0
 
----
+### ✅ SOLUTION RAPIDE
 
-## 📚 DOCUMENTATION PRINCIPALE
+**Commencez ici** : **`/⚡_START_HERE.md`** (lecture 1 min)
 
-### **🔥 DOCUMENTS ESSENTIELS** (À lire en priorité)
+**Plan complet** : **`/AUTH0_MASTER_SETUP.md`** (lecture 3 min)
 
-| Document | Description | Audience |
-|----------|-------------|----------|
-| **[CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md)** | 📖 **Document système complet** : Types de comptes, crédits, Creator system, parrainage, accès Coconut, KV Store, restrictions, flux techniques, storage cleanup | **Tous développeurs** |
-| **[Guidelines.md](./guidelines/Guidelines.md)** | 🎨 Beauty Design System (BDS) + Framework R→T→C→R→O→S (obligatoire pour tous les prompts) | Designers, Développeurs frontend |
-| **[QUICK_START.md](./QUICK_START.md)** | ⚡ Guide démarrage rapide (5 min) | Nouveaux développeurs |
+### 📋 GUIDES DISPONIBLES
 
----
+| Guide | Temps | Objectif |
+|-------|-------|----------|
+| **⚡_START_HERE.md** | 1 min | Vue d'ensemble et plan d'action |
+| `/AUTH0_BRANDING_QUICK.md` | 1 min | Fix "dev-xxx" → "Cortexia" |
+| `/QUICK_FIX_AUTH0.md` | 30 sec | Fix callback URLs |
+| `/GITHUB_OAUTH_QUICK_SETUP.md` | 3 min | Fix GitHub 401 error |
+| `/AUTH0_MASTER_SETUP.md` | 5 min | Guide complet avec troubleshooting |
 
-### **🏗️ ARCHITECTURE & TECHNIQUE**
+### ⚡ ACTION IMMÉDIATE (6 MIN 30)
 
-| Document | Description |
-|----------|-------------|
-| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Architecture technique globale (frontend, backend, AI providers) |
-| **[STORAGE_ARCHITECTURE.md](./STORAGE_ARCHITECTURE.md)** | Architecture Supabase Storage (buckets, cleanup, protected files) |
-| **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** | Guide de déploiement production (Supabase, Stripe, Auth0) |
+```
+1. Lisez /⚡_START_HERE.md             (1 min)
+2. Fix branding (Cortexia)             (1 min)
+3. Fix callback URLs (Figma Make)      (30 sec)
+4. Fix GitHub OAuth                    (3 min)
+5. Testez sur cortexia.figma.site      (1 min)
+```
 
----
-
-### **🔐 AUTHENTIFICATION & SÉCURITÉ**
-
-| Document | Description |
-|----------|-------------|
-| **[AUTH0_MASTER_SETUP.md](./AUTH0_MASTER_SETUP.md)** | Configuration Auth0 complète (OAuth, callback URLs, branding) |
+**Total : 6 min 30 sec** → Auth0 professionnel ✅
 
 ---
 
-### **🎨 DESIGN & UI/UX**
+## 🎯 COCONUT V14 - ÉTAT ACTUEL
 
-| Document | Description |
-|----------|-------------|
-| **[DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)** | Design system détaillé (tokens, components, animations) |
-| **[NAVIGATION_GUIDE.md](./NAVIGATION_GUIDE.md)** | Guide navigation UI/UX (sidebar, topbar, routing) |
-| **[ENTERPRISE_DESIGN_HARMONIZATION.md](./ENTERPRISE_DESIGN_HARMONIZATION.md)** | Harmonisation design Enterprise (light theme, cream palette) |
-| **[COCONUT_PREMIUM_DESIGN_SYSTEM.md](./COCONUT_PREMIUM_DESIGN_SYSTEM.md)** | Design system premium Coconut V14 |
+### ✅ Phase 1: Foundation (100% Complete)
+- Backend routes fonctionnelles
+- Dashboard entreprise
+- Intent Input complet
+- Project storage
+- Système de crédits complet
 
----
+### ✅ Phase 2: Gemini Analysis (100% Complete) 🎉
+- Analyse multimodale Gemini 2.5 Flash (10 images + 10 vidéos)
+- Asset detection intelligent
+- CocoBoard éditable (15+ champs)
+- Versioning system
+- Testing complet (16 tests automatisés)
+- Error handling robuste
 
-### **📋 SPÉCIFICATIONS PRODUIT**
-
-| Document | Description |
-|----------|-------------|
-| **[CAHIER_DES_CHARGES_CORTEXIA.md](./CAHIER_DES_CHARGES_CORTEXIA.md)** | Cahier des charges complet (features, user stories, specs) |
-| **[CORTEXIA_COMPLETE_DESCRIPTION.md](./CORTEXIA_COMPLETE_DESCRIPTION.md)** | Description complète du produit (vision, positionnement) |
-
----
-
-### **💳 STRIPE & PAIEMENTS**
-
-| Document | Description |
-|----------|-------------|
-| **[PAYMENT_ARCHITECTURE.md](./PAYMENT_ARCHITECTURE.md)** | 🏗️ Architecture hybride complète FedaPay + Stripe (achats, retraits, wireframes UI) 🆕 |
-| **[PAYMENT_IMPLEMENTATION_COMPLETE.md](./PAYMENT_IMPLEMENTATION_COMPLETE.md)** | ✅ Statut implémentation paiements & checklist déploiement 🆕 |
-| **[PAYMENT_ROUTES_FIXES.md](./PAYMENT_ROUTES_FIXES.md)** | 🔧 Corrections FedaPay (migration vers API REST) 🆕 |
-| **[README_STRIPE.md](./README_STRIPE.md)** | Configuration Stripe (checkout, webhooks, subscriptions) |
-| **[stripe.md](./stripe.md)** | 📚 Documentation complète Stripe API (payments, billing, checkout, connect, etc.) |
-| **[fedapay.md](./fedapay.md)** | 📚 Documentation complète FedaPay API (paiements mobile money Afrique de l'Ouest) |
+### 🔜 Phase 3: Generation (0% - Next Step)
+- Intégration Kie AI + Flux 2 Pro
+- Single-pass generation
+- Multi-pass pipeline
+- GenerationView avec progress
+- Result display HD
 
 ---
 
-### **📊 STATUS & PROGRESSION**
+## 📋 NAVIGATION RAPIDE
 
-| Document | Description |
-|----------|-------------|
-| **[REFONTE_SUMMARY.md](./REFONTE_SUMMARY.md)** | Résumé refonte design (14 écrans convertis en light theme) |
-| **[COCONUT_REFONTE_PROGRESS.md](./COCONUT_REFONTE_PROGRESS.md)** | Progression refonte Coconut V14 |
-| **[ENTERPRISE_REFACTOR_COMPLETE.md](./ENTERPRISE_REFACTOR_COMPLETE.md)** | Statut refactor Enterprise |
+### 🆕 Nouveau sur le Projet?
+→ **COCONUT_V14_PHASE_2_COMPLETE.md** - Phase 2 complete documentation
+→ **COCONUT_V14_PHASE_3_DETAILED_PLAN.md** - Prochaine phase
+
+### 🧪 Testing
+```bash
+# Phase 1 Tests (Foundation)
+./test-coconut-v14.sh https://YOUR_PROJECT.supabase.co
+
+# Phase 2 Tests (Gemini Analysis)
+./test-coconut-v14-phase2.sh https://YOUR_PROJECT.supabase.co
+```
+
+### 📊 Documentation Phase 2
+- `/COCONUT_V14_PHASE_2_COMPLETE.md` - Documentation complète
+- `/COCONUT_V14_PHASE_2_DETAILED_PLAN.md` - Plan détaillé
+- `/lib/utils/error-handlers.ts` - Error handling system
 
 ---
 
-## ✨ FONCTIONNALITÉS PRINCIPALES
+## ✨ FONCTIONNALITÉS
 
-### 🥥 **COCONUT V14** - Système de Production Créative Premium
+### 🥥 COCONUT - Production Creative System (NOUVEAU)
 
-Système professionnel d'orchestration qui remplace complètement un UI/UX designer via intelligence créative multi-AI.
+**Système professionnel de génération end-to-end** qui transforme une vision créative en contenu visuel complet :
 
-#### **3 Modes de Génération**
+#### Les 3 Types d'Output
 
-**1. Image Mode** 🖼️
-- Génération Flux 2 Pro (100 crédits)
-- Analyse Gemini 2.5 Flash (15 crédits)
-- **Total : 115 crédits**
+**1. Images/Affiches** 🖼️
+- Génération progressive multi-layer (Flux 2 Pro)
+- Multi-image blending jusqu'à 10 références
+- Affiches, social media posts, packaging, moodboards
+- Cost: 10-50 crédits payants
 
-**2. Video Mode** 🎬
-- Génération Veo 2 (235 crédits)
-- Analyse Gemini 2.5 Flash (15 crédits)
-- **Total : 250 crédits**
+**2. Vidéos/Commercials** 🎬
+- Génération avec continuité frame-to-frame (Veo 3.1 Fast)
+- Prompts cinématographiques 5-blocs
+- Last_frame continuity pour cohérence parfaite
+- Commercials 15s-60s, explainers, trailers
+- Cost: 40-200 crédits payants par shot
 
-**3. Campaign Mode** 🎯 (Enterprise uniquement)
+**3. Campagnes Complètes** 🎯
 - Orchestration multi-assets multi-plateformes
-- Coût variable selon complexity (500+ crédits)
+- Cohérence visuelle cross-platform
+- Instagram + TikTok + YouTube + Web
+- Cost: 100 crédits payants par CocoBoard
 
----
+#### Architecture Coconut V3
 
-### 🎨 **CREATEHUB** - Génération Instantanée (Individual)
-
-**Modes disponibles :**
-- Quick Create (text-to-image)
-- Template-Based (35 templates)
-- Remix (depuis Feed)
-
----
-
-### 👥 **COMMUNITY FEED** (Individual uniquement)
-
-- Posts publics avec images/vidéos
-- Likes, comments, @mentions
-- Remix chain viewer
-- Creator badges
-
----
-
-### 🤝 **TEAM COLLABORATION** (Enterprise)
-
-- Team management (invitations, roles)
-- Real-time comments avec @mentions
-- Approval workflows (request/approve/reject)
-- Shared workspaces (CocoBoards)
-- Client portal (liens shareable)
-- Activity feed (notifications temps réel)
-- Version control (snapshots)
-
----
-
-### 💰 **SYSTÈME DE CRÉDITS**
-
-#### **Individual**
-- **25 crédits gratuits/mois** (reset le 1er)
-- Achat de crédits payants (n'expirent jamais)
-- Peut devenir **Creator** → Accès Coconut limité (3 générations/mois)
-
-#### **Enterprise**
-- **Abonnement $999/mois** → 10,000 crédits mensuels (reset le 1er)
-- Add-on crédits (persistants, n'expirent pas)
-- Accès **Coconut V14 illimité**
-- Campaign Mode activé
-
-#### **Developer**
-- API access uniquement
-- Dashboard développeur
-- API keys management
-
-**Documentation complète :** [CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md) → Section 2
-
----
-
-### 🎨 **CREATOR SYSTEM** (Individual)
-
-#### **2 Options pour devenir Creator**
-
-**Option A : Organique (Gratuit)**
-- 60 créations générées dans le mois
-- 5 posts publiés dans le Feed
-- Chaque post doit avoir 5+ likes
-
-**Option B : Achat (Payant)**
-- Acheter 1000 crédits dans le mois calendaire en cours
-
-#### **Bénéfices Creator**
-- ✅ Badge "Creator" affiché
-- ✅ Accès Coconut V14 : **3 générations/mois** (Image + Video, PAS Campaign)
-- ✅ **Commissions sur achats de crédits des filleuls** : 10% × Streak Multiplier
-- ✅ **Téléchargement sans watermark** (filigrane)
-- ✅ Accès prioritaire (génération plus rapide)
-
-**Documentation complète :** [CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md) → Section 3
-
----
-
-### 🎁 **PARRAINAGE UNIVERSEL** (Individual uniquement)
-
-#### **Règles**
-- ✅ **Individual peut parrainer** : TOUS les types (Individual, Enterprise, Developer)
-- ❌ Enterprise ne peut PAS parrainer
-- ❌ Developer ne peut PAS parrainer
-
-#### **Commissions**
 ```
-Commission = Montant d'achat × 10% × Streak Multiplier
+User Vision → AI Director → CocoBoard Builder → Generation Engine → Validation → Export
+
+✅ Phase 0: Foundation (100%)
+✅ Phase 1: Generation Engine (100%)
+✅ Phase 2: Canvas UI Components (100%)
+✅ Phase 3: Integration & Orchestration (100%)
+✅ Phase 4: Testing & Documentation (100%)
+✅ Phase 5: Advanced Features (100%)
+🔄 Phase 6: UI Premium (0% - Planning)
 ```
 
-**Streak Multipliers :**
-- Jour 1-6 : ×1.0
-- Jour 7-13 : ×1.1
-- Jour 14-20 : ×1.2
-- Jour 21-29 : ×1.3
-- Jour 30+ : ×1.5
+#### Features Coconut V3 (Phase 5 Complete)
 
-**Exemples :**
-- Filleul Individual achète 100$ → Commission = 12$ (streak ×1.2)
-- Filleul Enterprise achète 2000$ → Commission = 300$ (streak ×1.5)
+**Core System:**
+- [x] AI Director avec analyse créative (Apriel-1.5-15b-Thinker)
+- [x] CocoBoard Builder avec structure hiérarchique
+- [x] Generation Engine avec Flux 2 Pro + Veo 3.1 Fast
+- [x] Canvas infini avec React Flow
+- [x] Node system avec dependencies
+- [x] Queue de génération asynchrone
+- [x] Cost tracking et estimation
+- [x] Error handling robuste
+- [x] 47+ tests automatisés
 
-**Documentation complète :** [CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md) → Section 4
+**Advanced Features (Phase 5):**
+- [x] Auto-Validation avec Vision AI (GPT-4 Vision)
+- [x] Advanced Blending Controls (12 blend modes)
+- [x] Template System (6 templates pré-construits)
+- [x] Prompt Library (20+ prompts optimisés)
+- [x] Version History avec snapshots
+- [x] Export Enhancements (8 presets, 7 formats)
+
+**Documentation:**
+- [x] README complet
+- [x] 34 fichiers de code
+- [x] 13,500+ lignes de code
+- [x] Troubleshooting guide
+- [x] Keyboard shortcuts
+- [x] Performance utilities
+- [x] Demo page interactive
+
+#### UI Premium Requirements (Phase 6 - À faire)
+
+**Critiques:**
+- [ ] Node Cards avec thumbnails/previews visuels
+- [ ] Sidebar Inspector détaillé
+- [ ] Status indicators visuels (colors + icons)
+- [ ] Connecteurs visuellement riches
+
+**Importantes:**
+- [ ] Canvas Toolbar complet
+- [ ] Design System Premium
+- [ ] Animations & micro-interactions
+- [ ] Keyboard shortcuts
+
+**Détails:** Voir **COCONUT-UI-AUDIT.md**
 
 ---
 
-## 🏗️ ARCHITECTURE TECHNIQUE
+### 🎨 Modes de Création Classiques
 
-### **Frontend**
+**1. Quick Create** - Génération instantanée text-to-image
+**2. Template-Based** - 35 templates professionnels avec upload
+**3. Remix** - Transformation d'images depuis le feed
+**4. Coconut Pro** - Système de production créative complet
+
+---
+
+## 📦 TEMPLATES DISPONIBLES (35)
+
+### Enhancement (7)
+- Ultra Enhance
+- Old Photo Restoration
+- Deblur & Sharpen
+- Face Swap Pro
+- Outpainting
+- 4K Upscale
+- 8K Upscale
+
+### Portrait (5)
+- Professional Headshot
+- Glamour Portrait
+- Character Concept
+- Fantasy Avatar
+- Cinematic Portrait
+
+### Product (4)
+- Product Hero Shot
+- E-commerce Showcase
+- Lifestyle Product
+- 360° Product View
+
+### Fashion (4)
+- Fashion Editorial
+- Lookbook
+- Runway Show
+- Street Style
+
+### Food (4)
+- Food Photography
+- Recipe Hero
+- Restaurant Menu
+- Culinary Art
+
+**Plus:** Architecture (3), Design (3), Landscape (2), Space (2), Character (1)
+
+---
+
+## 🎯 CARACTÉRISTIQUES TECHNIQUES
+
+### Design System
+
+**Vision Premium:**
+- ✨ Premium & Épuré
+- 🎨 Minimaliste Moderne
+- 💼 Professionnel
+- 🌙 Mode sombre exclusif
+- 💜 Violet-Bleu (#6366f1) comme accent
+
+**Actuellement:**
+- ✅ Mode sombre implémenté
+- ✅ Couleur accent cohérente
+- ⚠️ Design system à améliorer (voir COCONUT-UI-AUDIT.md)
+- ⚠️ Palette à raffiner pour feel premium
+
+### Architecture
+
+**Frontend:**
 - ⚛️ React 18 + TypeScript
 - 🎨 Tailwind CSS v4
-- 🔄 Motion/React (animations)
-- 📊 React Flow (canvas Coconut)
-- 🎯 Zustand (state management)
+- 🔄 Motion/React pour animations
+- 📊 React Flow pour canvas
+- 🎯 Zustand pour state management
 
-### **Backend**
+**Backend:**
 - 🗄️ Supabase (Database, Storage, Auth)
 - 🌐 Edge Functions (Hono web server)
 - 🔒 Row Level Security (RLS)
-- 📦 KV Store (données utilisateurs)
+- 📦 KV Store pour données
 
-### **AI Providers**
+**AI Providers:**
 - 🤖 Pollinations AI (seedream, nanobanana)
 - 🎬 Together AI (Apriel, Llama-3.1-70B)
-- 🖼️ Replicate (🧠 Google Gemini 2.5 Flash (analyse créative)) 
-- 👁️ Kie AI (image generation, avatars,Flux 2 Pro, Veo 2)
+- 🖼️ Replicate (Flux 2 Pro, Veo 3.1 Fast)
+- 👁️ OpenAI (GPT-4 Vision pour validation)
 
-**Documentation complète :** [ARCHITECTURE.md](./ARCHITECTURE.md)
+### Modularité & Best Practices
+
+- 📦 Max 250 lignes par composant
+- 🔄 Separation of Concerns
+- 🧩 Composition de petits composants
+- 🎯 Single Responsibility Principle
+- 🧪 Test coverage avec fixtures
+- 📝 TypeScript strict mode
+- 🎨 Design tokens centralisés (à améliorer)
+
+---
+
+## 🔧 CONFIGURATION
+
+### Variables d'Environnement (Supabase Secrets)
+
+**Déjà configurés:**
+```bash
+SUPABASE_URL              # URL du projet Supabase ✅
+SUPABASE_ANON_KEY         # Clé anonyme Supabase ✅
+SUPABASE_SERVICE_ROLE_KEY # Clé service role ✅
+SUPABASE_DB_URL           # URL database ✅
+POLLINATIONS_API_KEY      # API Pollinations ✅
+REPLICATE_API_KEY         # API Replicate ✅
+TOGETHER_API_KEY          # API Together AI ✅
+```
+
+**À ajouter si vous utilisez auto-validation:**
+```bash
+OPENAI_API_KEY            # Pour GPT-4 Vision validation
+```
+
+---
+
+## 📊 SYSTÈME DE CRÉDITS
+
+### Modèle Dual (Gratuits + Payants)
+
+**Crédits Gratuits:**
+- 50 crédits initiaux
+- Rechargent : 5 crédits/6h
+- Max : 50 crédits stockés
+- Usage : Quick Create, Templates basiques
+
+**Crédits Payants:**
+- Achat : 500 crédits = $9.99
+- Pas d'expiration
+- Usage : Coconut Pro, Templates premium, 4K/8K upscale
+
+### Pricing Coconut
+
+**Images/Affiches:**
+- Background layer: 10 crédits payants
+- Chaque layer additionnelle: 10 crédits payants
+- Total poster 5 layers: ~50 crédits payants
+
+**Vidéos:**
+- Shot 5s-8s: 40 crédits payants
+- Opening frame (optionnel): 10 crédits payants
+- Commercial 30s (5 shots): ~200 crédits payants
+
+**Campagnes:**
+- CocoBoard complet: 100 crédits payants minimum
+- Multi-platform peut atteindre 500+ crédits
 
 ---
 
@@ -251,322 +341,225 @@ Commission = Montant d'achat × 10% × Streak Multiplier
 
 ```
 /
-├── components/                    # Composants React
-│   ├── ui/                       # Composants UI de base (shadcn/ui)
-│   ├── ui-premium/               # Composants UI premium (BDS)
-│   ├── ui-enterprise/            # Composants UI Enterprise (light theme)
-│   ├── coconut-v14/              # Coconut V14 (Individual Creator)
-│   ├── coconut-v14-enterprise/   # Coconut V14 Enterprise
-│   ├── create/                   # CreateHub (Individual)
-│   ├── feed/                     # Community Feed
-│   ├── landing/                  # Landing pages (3 types)
-│   ├── auth/                     # Auth0 (Login/Signup)
-│   ├── onboarding/               # Onboarding flows
-│   └── ...
-
-├── lib/                          # Logique métier
-│   ├── types/                    # Types TypeScript
-│   ├── utils/                    # Utilities
-│   ├── hooks/                    # React hooks
-│   ├── services/                 # Services (API, Auth0, etc.)
-│   ├── constants/                # Design tokens, pricing
-│   └── ...
-
+├── components/          # Composants React
+│   ├── ui/             # Composants UI de base
+│   ├── feed/           # Feed public
+│   ├── create/         # Modes de création
+│   ├── templates/      # System de templates
+│   ├── profile/        # Profil utilisateur
+│   └── coconut-v3/     # Système Coconut V3
+│       ├── canvas/     # Canvas React Flow
+│       ├── nodes/      # Node components
+│       ├── validation/ # Auto-validation UI
+│       ├── blending/   # Blending controls
+│       └── templates/  # Template library
+│
+├── lib/                # Logique métier
+│   ├── types/          # Types TypeScript
+│   ├── utils/          # Utilities
+│   ├── credits/        # Système crédits
+│   └── coconut/        # Coconut core logic
+│       ├── hooks/      # React hooks
+│       ├── templates/  # CocoBoard templates
+│       ├── prompts/    # Prompt library
+│       ├── versioning/ # Version manager
+│       └── export/     # Export manager
+│
 ├── supabase/
 │   └── functions/
-│       └── server/               # Edge Functions backend
-│           ├── index.tsx                        # Main Hono server
-│           ├── coconut-v14-orchestrator.ts      # Coconut orchestration
-│           ├── credits.tsx                      # Crédits system
-│           ├── creator-routes.ts                # Creator system
-│           ├── referral-routes.ts               # Parrainage
-│           ├── enterprise-subscription.ts       # Abonnements Enterprise
-│           ├── storage-cleanup-routes.ts        # Storage cleanup cron
-│           ├── stripe-webhook.ts                # Stripe webhooks
-│           └── [100+ autres fichiers...]
+│       └── server/     # Edge Functions backend
+│           ├── index.tsx              # Main server
+│           ├── coconut-orchestrator.tsx  # Orchestration
+│           ├── generation-engine.tsx     # Generation
+│           ├── vision-validator.tsx      # Auto-validation
+│           ├── image-blender.tsx         # Blending
+│           ├── providers.tsx             # AI providers
+│           └── [autres modules...]
+│
+├── styles/             # Styles globaux
+│   └── globals.css     # Tailwind + design tokens
+│
+├── public/             # Assets statiques
+│
+└── [docs]              # Documentation
+    ├── README.md                 # Ce fichier
+    ├── coconut-structure.md      # Spec Coconut
+    ├── COCONUT-UI-AUDIT.md       # Audit UI/UX
+    ├── PHASE-5-PROGRESS.md       # Progress Phase 5
+    ├── STATUS.md                 # État configuration
+    └── [autres docs...]
+```
 
-├── styles/
-│   └── globals.css               # Tailwind v4 + design tokens
+---
 
-├── guidelines/
-│   └── Guidelines.md             # BDS + Framework R→T→C→R→O→S
+## 🧪 TESTING
 
-└── [docs]                        # Documentation (MD files)
-    ├── README.md                           # Ce fichier
-    ├── CORTEXIA_SYSTEM_REFERENCE.md        # 🔥 Document système complet
-    ├── Guidelines.md                       # BDS + Framework
-    ├── ARCHITECTURE.md                     # Architecture technique
-    ├── DEPLOYMENT_GUIDE.md                 # Guide déploiement
-    └── [40+ autres docs...]
+### Tests Disponibles
+
+```bash
+# Tests Coconut V3
+/lib/coconut/__tests__/
+├── cocoboard-builder.test.ts    # ✅ 8 tests
+├── generation-queue.test.ts     # ✅ 7 tests
+├── cost-calculator.test.ts      # ✅ 6 tests
+├── validation-system.test.ts    # ✅ 5 tests
+├── error-handling.test.ts       # ✅ 4 tests
+└── [plus de tests...]           # ✅ 47+ total
+```
+
+### Test Fixtures
+
+```typescript
+// fixtures/sample-cocoboards.ts
+export const SAMPLE_IMAGE_COCOBOARD = { ... }
+export const SAMPLE_VIDEO_COCOBOARD = { ... }
+export const SAMPLE_CAMPAIGN_COCOBOARD = { ... }
+```
+
+### Demo Page
+
+```
+/coconut-demo
+
+- Interactive playground
+- Test tous les modules
+- Fixtures pré-chargées
+- Console de debug
 ```
 
 ---
 
 ## 🚀 DÉMARRAGE RAPIDE
 
-### **1. Prérequis**
-
-```bash
-Node.js >= 18
-npm >= 9
-Compte Supabase
-Compte Auth0
-Compte Stripe
-```
-
-### **2. Installation**
+### Installation
 
 ```bash
 # Clone le projet
 git clone [repo-url]
-cd cortexia-hub-v3
 
 # Installe les dépendances
 npm install
-```
 
-### **3. Configuration**
+# Configure Supabase (si pas déjà fait)
+# Les secrets sont déjà configurés dans Supabase
 
-**Variables d'environnement Supabase Secrets** (déjà configurées) :
-```bash
-SUPABASE_URL
-SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_DB_URL
-STRIPE_SECRET_KEY
-STRIPE_WEBHOOK_SECRET
-VITE_AUTH0_DOMAIN
-VITE_AUTH0_CLIENT_ID
-POLLINATIONS_API_KEY
-REPLICATE_API_KEY
-TOGETHER_API_KEY
-KIE_AI_API_KEY
-RESEND_API_KEY
-```
-
-### **4. Lancer le projet**
-
-```bash
-# Dev server
+# Lance le dev server
 npm run dev
-
-# Build production
-npm run build
-
-# Preview production
-npm run preview
 ```
 
-**Guide complet :** [QUICK_START.md](./QUICK_START.md)
+### Utiliser Coconut
 
----
+**1. Mode Conversationnel:**
+```typescript
+// Frontend
+import { useCoconut } from '@/lib/coconut/hooks/useCoconut'
 
-## 🧪 TESTING
+const { sendMessage, cocoboard, isGenerating } = useCoconut()
 
-### **Tests Backend**
+// User input
+await sendMessage("Je veux un commercial 30s pour mon parfum...")
 
-```bash
-# Tests des routes Coconut V14
-curl -X POST https://PROJECT_ID.supabase.co/functions/v1/make-server-e55aa214/coconut/analyze \
-  -H "Authorization: Bearer ANON_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"intent": "Create a luxury perfume ad", "mode": "image"}'
-
-# Tests storage cleanup (manuel)
-curl -X POST https://PROJECT_ID.supabase.co/functions/v1/make-server-e55aa214/storage/cleanup-individual \
-  -H "Authorization: Bearer SERVICE_ROLE_KEY"
+// AI analyze et crée le CocoBoard
+// Affiche dans le canvas
 ```
 
----
+**2. Mode Template:**
+```typescript
+import { TemplateLibraryPanel } from '@/components/coconut-v3/templates/TemplateLibraryPanel'
 
-## 📦 KV STORE - CLÉS PRINCIPALES
-
-### **Clés Universelles**
-```
-user:profile:{userId}           → Profil complet
-user:credits:{userId}           → Crédits (free, paid, total)
-auth0:{auth0Id}                 → Mapping Auth0 → internal userId
-```
-
-### **Individual**
-```
-user:referrals:{userId}         → Liste des filleuls
-referral:code:{CODE}            → userId du parrain
-user:posts:{userId}             → Posts publiés dans Feed
+<TemplateLibraryPanel
+  onSelectTemplate={(template, params) => {
+    const cocoboard = createCocoboardFromTemplate(template, params, userId)
+    // Start generation
+  }}
+/>
 ```
 
-### **Enterprise**
+**3. Mode Direct:**
+```typescript
+import { generateAllAssets } from '@/lib/coconut/generation-engine'
+
+const cocoboard = { ... } // Your CocoBoard structure
+const result = await generateAllAssets(cocoboard)
 ```
-user:subscription:{userId}      → Abonnement Stripe
-cocoboard:{cocoBoardId}         → CocoBoards sauvegardés
-```
-
-### **Developer**
-```
-user:api-keys:{userId}          → API keys (hashed)
-```
-
-**Documentation complète :** [CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md) → Section 6
-
----
-
-## 💾 STORAGE CLEANUP (CRON JOBS)
-
-### **Individual/Creator** (Quotidien - 02:00 UTC)
-- ❌ Supprime fichiers > 24h
-- ✅ Conserve posts publiés dans Feed (indéfiniment)
-
-### **Enterprise** (Hebdomadaire - Dimanches 03:00 UTC)
-- ❌ Supprime fichiers > 7 jours
-- ✅ Conserve CocoBoards sauvegardés (indéfiniment)
-
-**Documentation complète :** [CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md) → Section 9
-
----
-
-## 🎨 DESIGN SYSTEM
-
-### **Hybrid Theme System**
-
-**Landing/Marketing** (Dark Theme) :
-- Background : `#0A0A0A`
-- Cream accents : `#F5EBE0`, `#E3D5CA`
-
-**App Workflow** (Light Theme) :
-- Background : `white`
-- Warm palette : `cream-500/600/700`, `amber-500/600`, `stone-50/100/200`
-
-**Beauty Design System (BDS) :**
-- 7 Arts de Perfection Divine (Grammaire, Logique, Rhétorique, Arithmétique, Géométrie, Musique, Astronomie)
-- Framework R→T→C→R→O→S obligatoire pour tous les prompts
-- Liquid glass premium effects
-
-**Documentation complète :** [Guidelines.md](./guidelines/Guidelines.md)
 
 ---
 
 ## 📈 ROADMAP
 
-### ✅ **Phase 1 : Foundation** (100%)
-- Architecture Supabase
-- Auth0 OAuth
-- KV Store
-- Système de crédits
+### ✅ Phase 0: Foundation (100%)
+- Type consolidation
+- Infrastructure setup
+- Documentation base
 
-### ✅ **Phase 2 : Core Features** (100%)
-- CreateHub (Individual)
-- Coconut V14 (Enterprise)
-- Community Feed
-- Template system (35 templates)
+### ✅ Phase 1: Generation Engine (100%)
+- Flux 2 Pro integration
+- Veo 3.1 Fast integration
+- Multi-provider system
+- Queue de génération
 
-### ✅ **Phase 3 : Premium Features** (100%)
-- Batch Generation
-- Team Collaboration
-- Creator System
-- Parrainage Universel
-- Storage Cleanup
+### ✅ Phase 2: Canvas UI (100%)
+- React Flow canvas
+- Node components
+- Connector system
+- Zoom/Pan controls
 
-### ✅ **Phase 4 : Design Refonte** (100%)
-- Conversion 14 écrans en light theme
-- Harmonisation Enterprise
-- BDS implementation
-- Hybrid theme system
+### ✅ Phase 3: Integration (100%)
+- CocoBoard validation
+- Error handling
+- Cost tracking
+- Progress monitoring
 
-### 🔄 **Phase 5 : Optimisations** (En cours)
-- Performance monitoring
-- Error tracking (Sentry)
-- Analytics (Mixpanel)
-- A/B testing
+### ✅ Phase 4: Testing & Polish (100%)
+- 47+ tests automatisés
+- Demo page interactive
+- Documentation complète
+- Performance utilities
 
-### 🔜 **Phase 6 : Mobile & PWA** (À venir)
+### ✅ Phase 5: Advanced Features (100%)
+- Auto-Validation Vision AI
+- Advanced Blending (12 modes)
+- Template System (6 templates)
+- Prompt Library (20+ prompts)
+- Version History
+- Export Enhancements (8 presets)
+
+### 🔄 Phase 6: UI Premium (0% - Next)
+- Node Cards avec previews
+- Sidebar Inspector
+- Canvas Toolbar complet
+- Design System premium
+- Animations & interactions
+- Keyboard shortcuts
 - Responsive optimizations
-- Mobile-first redesign
-- PWA features (offline, push notifications)
-- App Store deployment
+
+**Détails Phase 6:** Voir **COCONUT-UI-AUDIT.md**
 
 ---
 
 ## 🤝 CONTRIBUTION
 
-### **Documentation**
-- Mettre à jour README si feature majeure
-- Commenter code complexe
-- Types bien définis
+### Guidelines
 
----
+1. **Code Style:**
+   - TypeScript strict
+   - Max 250 lignes/composant
+   - Functional components
+   - Named exports
 
-## 🤝 CONTRIBUTION
+2. **Commits:**
+   - Conventional commits
+   - Français ou Anglais OK
+   - Descriptions claires
 
-Intéressé pour contribuer à Cortexia ? **Merci !** Toutes les contributions sont les bienvenues. 💜
+3. **Testing:**
+   - Ajouter tests pour nouvelles features
+   - Maintenir coverage >80%
 
-### **📖 Guide Complet**
-
-Lisez notre **[Guide de Contribution](./CONTRIBUTING.md)** pour tout savoir sur :
-- Standards de code (TypeScript, React, Tailwind)
-- Architecture & conventions
-- Workflow de contribution (branches, commits, PR)
-- Testing & documentation
-- Review process
-
-### **⚡ Quick Start**
-
-```bash
-# 1. Fork & clone le repo
-git clone https://github.com/VOTRE_USERNAME/cortexia-hub-v3.git
-
-# 2. Installer les dépendances
-npm install
-
-# 3. Créer une branche feature
-git checkout -b feature/ma-nouvelle-feature
-
-# 4. Développer et tester
-npm run dev
-
-# 5. Commit (Conventional Commits)
-git commit -m "feat(scope): description"
-
-# 6. Push et créer une Pull Request
-git push origin feature/ma-nouvelle-feature
-```
-
-### **📋 Standards Clés**
-
-| Standard | Règle |
-|----------|-------|
-| **TypeScript** | Strict mode, types explicites |
-| **Components** | Max 250 lignes, functional, named exports |
-| **Styling** | Tailwind CSS v4, BDS tokens |
-| **Commits** | Conventional Commits (`feat:`, `fix:`, etc.) |
-| **Framework** | R→T→C→R→O→S obligatoire pour prompts IA |
-
-### **🎯 Types de Contributions**
-
-- 🐛 **Bug Fixes** : Corriger des bugs existants
-- ✨ **Features** : Ajouter nouvelles fonctionnalités
-- 📝 **Documentation** : Améliorer la documentation
-- 🎨 **Design** : Améliorer UI/UX (suivre le BDS)
-- ⚡ **Performance** : Optimiser performance
-- 🧪 **Tests** : Ajouter ou améliorer tests
-
-### **🐛 Reporter un Bug**
-
-Créez une [issue GitHub](https://github.com/REPO/cortexia-hub-v3/issues/new) avec :
-- Description claire du bug
-- Étapes pour reproduire
-- Comportement attendu vs actuel
-- Screenshots (si applicable)
-- Environnement (OS, browser, version)
-
-### **💡 Proposer une Feature**
-
-Créez une [issue GitHub](https://github.com/REPO/cortexia-hub-v3/issues/new) avec :
-- Problème à résoudre
-- Solution proposée
-- Alternatives considérées
-- Impact utilisateur (Individual/Enterprise/Developer)
-
-**Documentation complète :** [CONTRIBUTING.md](./CONTRIBUTING.md)
+4. **Documentation:**
+   - Mettre à jour README si feature majeure
+   - Commenter code complexe
+   - Types bien définis
 
 ---
 
@@ -579,26 +572,33 @@ MIT License - Voir LICENSE file
 ## 🙏 CRÉDITS
 
 **AI Providers:**
-- Pollinations AI, Together AI, Replicate, Google Gemini, Kie AI
+- Pollinations AI (text-to-image)
+- Together AI (intelligence créative)
+- Replicate (Flux 2 Pro, Veo 3.1)
+- OpenAI (GPT-4 Vision validation)
 
 **Technologies:**
-- React, Tailwind CSS, Supabase, Hono, Auth0, Stripe
+- React Team
+- Vercel (Tailwind CSS)
+- Supabase Team
+- React Flow Team
 
 ---
 
 ## 📞 SUPPORT
 
-**Documentation principale :**
-- [CORTEXIA_SYSTEM_REFERENCE.md](./CORTEXIA_SYSTEM_REFERENCE.md) - Document système complet
-- [Guidelines.md](./guidelines/Guidelines.md) - BDS + Framework R→T→C→R→O→S
-- [QUICK_START.md](./QUICK_START.md) - Démarrage rapide
+**Documentation:**
+- **DOCS_INDEX.md** - Index complet
+- **coconut-structure.md** - Spec détaillée
+- **COCONUT-UI-AUDIT.md** - Guide UI/UX
+- **START_HERE.md** - Quick start
 
-**Issues GitHub :**
-- Créer une issue avec label approprié
+**Issues:**
+- Créer une issue GitHub avec label approprié
 - Fournir contexte et reproduction steps
 
 ---
 
 **Made with 💜 by Cortexia Team**
 
-*Last Updated: January 27, 2026*
+Last Updated: January 4, 2026

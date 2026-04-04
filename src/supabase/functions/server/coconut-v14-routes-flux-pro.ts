@@ -45,7 +45,7 @@ console.log('🚀 Coconut V14 Routes (FLUX PRO OPTIMIZED) initializing...');
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'x-user-id'], // ✅ FIX: Add x-user-id header
+  allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use('*', logger(console.log));

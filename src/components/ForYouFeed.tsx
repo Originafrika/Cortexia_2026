@@ -6,9 +6,9 @@ import { toast } from 'sonner@2.0.3'; // ✅ FIX: Add missing import
 import type { Screen } from '../App';
 import { PostCard } from './feed/PostCard';
 import { PostDetailModal } from './feed/PostDetailModal';
-import { CommentsSection } from './CommentsSection';
+import { CommentsSheet } from './CommentsSheet';
 import { ShareModal } from './ShareModal';
-import { RemixChainViewer } from './RemixChainViewer';
+import { RemixChainViewer } from './feed/RemixChainViewer';
 import { UserProfile } from './UserProfile';
 import { formatNumber } from '../utils/formatNumber';
 import { useAuth } from '../lib/contexts/AuthContext'; // ✅ NEW: Get auth context
@@ -1016,7 +1016,7 @@ export function ForYouFeed({
         )}
 
         {showCommentsSheet && currentPost && (
-          <CommentsSection
+          <CommentsSheet
             postId={currentPost.id}
             totalComments={parseInt(currentPost.comments) || 0}
             onClose={() => setShowCommentsSheet(false)}

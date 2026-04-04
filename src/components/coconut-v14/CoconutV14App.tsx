@@ -59,18 +59,11 @@ import { DirectionSelectorPremium } from './DirectionSelectorPremium'; // 🆕 P
 import { TypeSelectorPremium } from './TypeSelectorPremium'; // 🆕 PREMIUM VERSION
 import { NavigationPremium } from './NavigationPremium'; // 🆕 NEW: Premium Navigation Sidebar
 import { CampaignWorkflow } from './CampaignWorkflow'; // 🆕 NEW: Campaign mode workflow
-import { EnterpriseTemplateSelector } from './EnterpriseTemplateSelector'; // 🆕 NEW: Enterprise templates
-import { BatchGenerationModal, type BatchConfig } from './BatchGenerationModal'; // ✅ NEW: Batch generation
-import { BatchResultsView, type BatchVariant } from './BatchResultsView'; // ✅ NEW: Batch results
-import { TeamDashboard } from './TeamDashboard'; // ✅ NEW: Team collaboration dashboard
-import { TeamInviteModal } from './TeamInviteModal'; // ✅ NEW: Team invite modal
-import { ClientPortal } from './ClientPortal'; // ✅ NEW: Client portal view
 
 // ✅ FIX: Import missing types and functions from correct locations
 import type { IntentData } from './IntentInput';
 import type { GeminiAnalysisResponse } from '../../lib/types/gemini';
 import { generateCreativeDirections, applyDirectionToAnalysis } from '../../lib/utils/creative-directions-generator';
-import { templateToIntentData, type EnterpriseTemplate } from '../../lib/data/enterprise-templates'; // 🆕 NEW: Template helper
 
 // ✅ FIX: Import CreativeDirection type from DirectionSelector
 import type { CreativeDirection } from './DirectionSelector';
@@ -83,7 +76,6 @@ type CoconutV14Screen =
   | 'dashboard'        // ✅ Point d'entrée
   | 'boards'           // ✅ Projects list
   | 'type-select'      // 🆕 NOUVEAU: Choix image/video/campaign (PHASE 1)
-  | 'template-select'  // 🆕 NEW: Enterprise template selection (PHASE 1.5)
   | 'intent-input'     // 🆕 New generation flow
   | 'analyzing'         // 🆕 Gemini analysis loading
   | 'direction-select'  // 🆕 NEW: Creative direction selection
@@ -95,9 +87,7 @@ type CoconutV14Screen =
   | 'settings' 
   | 'history' 
   | 'profile'
-  | 'video-flow'       // ✅ NEW: Video flow screen
-  | 'team'             // 🆕 NEW: Team collaboration dashboard (Enterprise only)
-  | 'client-portal';   // 🆕 NEW: Client portal view (Client role only)
+  | 'video-flow';       // ✅ NEW: Video flow screen
 
 // ============================================
 // PREMIUM SIDEBAR NAVIGATION
@@ -359,7 +349,7 @@ const CoconutV14Sidebar = ({
                         className="absolute inset-0 bg-white/30 rounded-full"
                         animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
                         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                      />
+                        data-fg-bfm9105="1528.134:1528.49477:/components/coconut-v14/CoconutV14App.tsx:313:21:16933:718:e:motion.div" />
                     </>
                   )}
                 </div>
@@ -498,119 +488,9 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
   // ✅ NEW: Campaign editing
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   
-  // ✅ NEW: Batch Generation states
-  const [showBatchModal, setShowBatchModal] = useState(false);
-  const [batchVariants, setBatchVariants] = useState<BatchVariant[]>([]);
-  const [showBatchResults, setShowBatchResults] = useState(false);
-  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
-  
-  // ✅ NEW: Team Collaboration states (Enterprise only)
-  const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]); // TeamMember[] from team-collaboration.tsx
-  const [showTeamInvite, setShowTeamInvite] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'editor' | 'viewer' | 'client'>('editor');
-  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
-  
   const { getCoconutCredits, refetchCredits } = useCredits();
   const notify = useNotify();
   const navigate = useNavigate(); // ✅ Keep for other routes if needed
-  
-  // ✅ NEW: Define API_BASE before using it
-  const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
-  
-  // ✅ NEW: Load team data on mount (Enterprise only)
-  useEffect(() => {
-    const loadTeamData = async () => {
-      // Only load team data for Enterprise users
-      if (!accessData?.isEnterprise) {
-        console.log('🚫 Not Enterprise - skipping team load');
-        return;
-      }
-      
-      try {
-        // Load user's primary team
-        const teamsResponse = await fetch(
-          `${API_BASE}/team/teams?userId=${userId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
-              'Content-Type': 'application/json',
-            }
-          }
-        );
-        
-        if (!teamsResponse.ok) {
-          console.warn('⚠️ Failed to load teams');
-          return;
-        }
-        
-        const teamsData = await teamsResponse.json();
-        
-        if (teamsData.success && teamsData.data?.teams?.length > 0) {
-          const primaryTeam = teamsData.data.teams[0]; // Use first team
-          setCurrentTeamId(primaryTeam.id);
-          
-          // Load team members
-          const membersResponse = await fetch(
-            `${API_BASE}/team/teams/${primaryTeam.id}/members`,
-            {
-              headers: {
-                'Authorization': `Bearer ${publicAnonKey}`,
-                'Content-Type': 'application/json',
-              }
-            }
-          );
-          
-          if (membersResponse.ok) {
-            const membersData = await membersResponse.json();
-            if (membersData.success) {
-              setTeamMembers(membersData.data.members || []);
-              
-              // Find current user's role
-              const currentMember = membersData.data.members?.find(
-                (m: any) => m.userId === userId
-              );
-              if (currentMember) {
-                setUserRole(currentMember.role);
-              }
-              
-              console.log(`✅ Team loaded: ${primaryTeam.name} (${membersData.data.members?.length || 0} members)`);
-            }
-          }
-          
-          // Load pending approvals count
-          if (primaryTeam.id) {
-            const approvalsResponse = await fetch(
-              `${API_BASE}/team/teams/${primaryTeam.id}/approvals/pending?userId=${userId}`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${publicAnonKey}`,
-                  'Content-Type': 'application/json',
-                }
-              }
-            );
-            
-            if (approvalsResponse.ok) {
-              const approvalsData = await approvalsResponse.json();
-              if (approvalsData.success) {
-                setPendingApprovalsCount(approvalsData.data?.count || 0);
-                console.log(`✅ Pending approvals: ${approvalsData.data?.count || 0}`);
-              }
-            }
-          }
-        } else {
-          console.log('ℹ️ No team found - user needs to create one');
-        }
-      } catch (error) {
-        console.error('❌ Error loading team data:', error);
-        // Don't show error to user - team features will simply be disabled
-      }
-    };
-    
-    if (userId && accessData) {
-      loadTeamData();
-    }
-  }, [userId, accessData]);
   
   // ✅ NEW: Access Control - Block unauthorized users
   useEffect(() => {
@@ -965,7 +845,6 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
           onNavigate={setCurrentScreen}
           onToggleSidebar={() => {}}
           onBackToFeed={onNavigate ? () => onNavigate('feed') : undefined}
-          pendingApprovalsCount={pendingApprovalsCount}
         />
       </div>
 
@@ -990,7 +869,6 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                 onNavigate={setCurrentScreen}
                 onToggleSidebar={() => setSidebarOpen(false)}
                 onBackToFeed={onNavigate ? () => onNavigate('feed') : undefined}
-                pendingApprovalsCount={pendingApprovalsCount}
               />
             </div>
           </>
@@ -1022,7 +900,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
             {currentScreen === 'cocoboard' && (
               <CocoBoardPremium 
                 projectId={currentProjectId || 'demo-project'} 
-                userId={userId}
+                userId="demo-user"
                 analysis={geminiAnalysis}
                 uploadedReferences={uploadedReferences}
                 onGenerationStart={(generationId: string) => {
@@ -1031,10 +909,6 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                   setCurrentGenerationId(generationId);
                   setCurrentScreen('generation');
                 }}
-                // ✅ NEW: Pass team collaboration props
-                teamId={currentTeamId || undefined}
-                teamMembers={teamMembers}
-                isEnterprise={accessData?.isEnterprise || false}
               />
             )}
             
@@ -1160,7 +1034,6 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
               <TypeSelectorPremium
                 onSelectType={handleTypeSelect}
                 onBack={() => setCurrentScreen('dashboard')}
-                onBrowseTemplates={() => setCurrentScreen('template-select')} // ✅ NEW: Navigate to templates
                 coconutGenerationsRemaining={accessData?.remainingGenerations}
                 isEnterprise={accessData?.isEnterprise}
               />
@@ -1198,105 +1071,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                 existingCocoBoardId={editingCampaignId || undefined}
               />
             )}
-            
-            {currentScreen === 'template-select' && (
-              <EnterpriseTemplateSelector
-                selectedType={selectedType || 'image'} // ✅ Pass selected type (default to image)
-                onSelectTemplate={(template: EnterpriseTemplate) => {
-                  console.log('🎨 Template selected:', template);
-                  // ✅ Set the type from template before submitting
-                  setSelectedType(template.type as 'image' | 'video' | 'campaign');
-                  const intentData = templateToIntentData(template);
-                  handleIntentSubmit(intentData as IntentData);
-                }}
-                onSkip={() => {
-                  // ✅ Skip templates and go to intent input
-                  setCurrentScreen('intent-input');
-                }}
-                onBack={() => setCurrentScreen('type-select')}
-              />
-            )}
-            
-            {currentScreen === 'batch-generation' && (
-              <BatchGenerationModal
-                show={showBatchModal}
-                onClose={() => setShowBatchModal(false)}
-                onGenerate={async (config: BatchConfig) => {
-                  console.log('🎨 Batch generation config:', config);
-                  setIsBatchGenerating(true);
-                  
-                  // TODO: Call batch generation API
-                  await new Promise(resolve => setTimeout(resolve, 2000));
-                  
-                  // Simulate batch results
-                  const variants: BatchVariant[] = [
-                    { id: '1', name: 'Variant 1', preview: 'https://via.placeholder.com/150' },
-                    { id: '2', name: 'Variant 2', preview: 'https://via.placeholder.com/150' },
-                    { id: '3', name: 'Variant 3', preview: 'https://via.placeholder.com/150' },
-                  ];
-                  
-                  setBatchVariants(variants);
-                  setIsBatchGenerating(false);
-                  setShowBatchResults(true);
-                }}
-                isGenerating={isBatchGenerating}
-              />
-            )}
-            
-            {currentScreen === 'batch-results' && (
-              <BatchResultsView
-                show={showBatchResults}
-                onClose={() => setShowBatchResults(false)}
-                variants={batchVariants}
-                onDownload={(variantId: string) => {
-                  console.log('📥 Downloading variant:', variantId);
-                  // TODO: Call download API
-                  notify.success('Download started', 'Your file is being prepared for download');
-                }}
-              />
-            )}
-            
-            {currentScreen === 'team' && accessData?.isEnterprise && (
-              <TeamDashboard
-                userId={userId || 'demo-user'}
-                enterpriseAccountId={accessData?.enterpriseAccountId || 'demo-enterprise'}
-                onCreateTeam={() => {
-                  notify.info('Create Team', 'Team creation flow');
-                }}
-                onInviteMember={(teamId) => {
-                  setCurrentTeamId(teamId);
-                  setShowTeamInvite(true);
-                }}
-                onManageTeam={(teamId) => {
-                  console.log('Manage team:', teamId);
-                }}
-              />
-            )}
-            
-            {currentScreen === 'client-portal' && userRole === 'client' && currentTeamId && (
-              <ClientPortal
-                userId={userId || 'demo-user'}
-                userName={displayName || userName}
-                teamId={currentTeamId}
-                teamMembers={teamMembers}
-              />
-            )}
           </motion.div>
-        </AnimatePresence>
-        
-        {/* Team Invite Modal */}
-        <AnimatePresence>
-          {showTeamInvite && currentTeamId && (
-            <TeamInviteModal
-              isOpen={showTeamInvite}
-              onClose={() => setShowTeamInvite(false)}
-              teamId={currentTeamId}
-              invitedBy={userId || 'demo-user'}
-              onMemberInvited={() => {
-                notify.success('Member invited successfully');
-              }}
-            />
-          )}
         </AnimatePresence>
       </div>
     </div>

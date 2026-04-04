@@ -14,7 +14,6 @@ export { CocoBoard } from './CocoBoard';
 export { Dashboard } from './Dashboard';
 export { GenerationView } from './GenerationView';
 export { CoconutV14App } from './CoconutV14App';
-export { CoconutV14AppEnterprise } from './CoconutV14AppEnterprise'; // ✅ NEW: Enterprise edition
 export { LoadingScreen } from './LoadingScreen';
 
 // ============================================

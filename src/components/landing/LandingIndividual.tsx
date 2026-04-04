@@ -1,8 +1,6 @@
 import { motion, useScroll, useTransform } from 'motion/react';
 import { ArrowRight, Check, Sparkles, Heart, MessageCircle, Award, Palette } from 'lucide-react'; // ✅ BDS: Added community icons
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
-import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
-import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingIndividualProps {
   onJoinCommunity: () => void;
@@ -11,7 +9,6 @@ interface LandingIndividualProps {
 
 export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingIndividualProps) {
   const { t } = useTranslation(); // ✅ NEW: Translation hook
-  const reducedMotion = useReducedMotion(); // ✅ A11y: Reduced motion
   
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -89,21 +86,29 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Button
+              <motion.button
                 onClick={onJoinCommunity}
-                variant="purple"
-                size="lg"
+                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(168,85,247,0.9) 0%, rgba(139,92,246,0.85) 100%)',
+                  boxShadow: '0 20px 60px rgba(168,85,247,0.35)',
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: '0 25px 80px rgba(168,85,247,0.45)'
+                }}
+                whileTap={{ scale: 0.98 }}
               >
-                {t('landing.individual.hero.ctaPrimary')}
-              </Button>
+                <span>{t('landing.individual.hero.ctaPrimary')}</span>
+                <ArrowRight size={20} />
+              </motion.button>
 
-              <Button
+              <button
                 onClick={onExploreFeed}
-                variant="secondary"
-                size="lg"
+                className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 transition-all hover:bg-white/10 inline-flex items-center gap-3 text-lg"
               >
-                {t('landing.individual.hero.ctaSecondary')}
-              </Button>
+                <span>{t('landing.individual.hero.ctaSecondary')}</span>
+              </button>
             </div>
 
             <p className="text-sm text-white/40">
@@ -285,14 +290,16 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
                 })}
               </div>
 
-              <Button
+              <button
                 onClick={onExploreFeed}
-                variant="purple"
-                size="lg"
-                icon={<ArrowRight size={20} />}
+                className="px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 transition-all hover:scale-105 inline-flex items-center gap-3"
+                style={{
+                  boxShadow: '0 20px 60px rgba(168,85,247,0.3)'
+                }}
               >
-                {t('landing.individual.community.cta')}
-              </Button>
+                <span>{t('landing.individual.community.cta')}</span>
+                <ArrowRight size={20} />
+              </button>
             </motion.div>
 
             <motion.div
@@ -509,7 +516,7 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
             </div>
           </motion.div>
 
-          <Button
+          <button
             onClick={onJoinCommunity}
             className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
             style={{
@@ -519,7 +526,7 @@ export function LandingIndividual({ onJoinCommunity, onExploreFeed }: LandingInd
           >
             <span>{t('landing.individual.pricing.cta')}</span>
             <ArrowRight size={24} />
-          </Button>
+          </button>
         </div>
       </section>
 

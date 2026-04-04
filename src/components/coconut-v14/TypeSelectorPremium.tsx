@@ -36,7 +36,6 @@ import {
 interface TypeSelectorPremiumProps {
   onSelectType: (type: 'image' | 'video' | 'campaign') => void;
   onBack: () => void;
-  onBrowseTemplates?: () => void; // ✅ NEW: Navigate to template selector
   coconutGenerationsRemaining?: number; // ✅ NEW: Remaining Coconut generations for Creators
   isEnterprise?: boolean; // ✅ NEW: Is Enterprise user (unlimited)
 }
@@ -44,7 +43,6 @@ interface TypeSelectorPremiumProps {
 export function TypeSelectorPremium({ 
   onSelectType, 
   onBack,
-  onBrowseTemplates, // ✅ NEW
   coconutGenerationsRemaining,
   isEnterprise 
 }: TypeSelectorPremiumProps) {
@@ -214,46 +212,6 @@ export function TypeSelectorPremium({
         </motion.div>
 
         {/* ========== PREMIUM LAYOUT: FEATURED + 2 COLUMNS ========== */}
-        
-        {/* ✅ NEW: Enterprise Templates Button */}
-        {onBrowseTemplates && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex justify-center"
-          >
-            <button
-              onClick={() => {
-                playClick();
-                light();
-                onBrowseTemplates();
-              }}
-              className="group relative px-8 py-4 rounded-2xl bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-xl border border-white/60 hover:border-[#F97316]/50 shadow-xl hover:shadow-2xl transition-all duration-300"
-            >
-              {/* Glow effect */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#F97316]/0 to-[#D97706]/0 group-hover:from-[#F97316]/20 group-hover:to-[#D97706]/20 rounded-2xl blur-xl transition-all duration-300" />
-              
-              <div className="relative flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#F97316] to-[#D97706] flex items-center justify-center shadow-lg">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-                
-                <div className="text-left">
-                  <div className="text-lg font-bold bg-gradient-to-r from-[#F97316] to-[#D97706] bg-clip-text text-transparent">
-                    Browse Enterprise Templates
-                  </div>
-                  <div className="text-sm text-[var(--coconut-husk)]">
-                    Industry-specific intent structures • Pre-analyzed by Gemini
-                  </div>
-                </div>
-                
-                <ChevronRight className="w-5 h-5 text-[#F97316] group-hover:translate-x-1 transition-transform" />
-              </div>
-            </button>
-          </motion.div>
-        )
-        }
         
         {/* Featured Type - IMAGE (Most Popular) */}
         <motion.div

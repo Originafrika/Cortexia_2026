@@ -149,7 +149,7 @@ export function FreeCreditsWarning({ freeCredits, onUpgrade }: FreeCreditsWarnin
             <h3 className="text-sm font-semibold text-white">Free Credits Active</h3>
           </div>
           <p className="text-xs text-gray-400 mb-2">
-            Currently using free tier models. Upgrade to paid credits for premium quality.
+            Currently using Pollinations models. Upgrade to paid credits for premium access.
           </p>
           {onUpgrade && (
             <button

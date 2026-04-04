@@ -5,6 +5,7 @@ import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { Auth0SocialButtons } from './Auth0SocialButtons';
 import { supabase } from '../../lib/services/auth0-service';
 import { fetchUserProfile, storeProfileData } from '../../lib/utils/profile-fetch';
+import { toast } from 'sonner';
 
 interface SignupEnterpriseProps {
   onSuccess: (userId: string, accessToken: string) => void;
@@ -127,7 +128,40 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
       onSuccess(data.userId, sessionAccessToken);
     } catch (err: any) {
       console.error('❌ [SignupEnterprise] Signup error:', err);
-      setError(err.message || 'An error occurred during signup');
+      
+      // ✅ IMPROVED: Better error handling for offline/demo mode
+      const isNetworkError = err.message?.includes('Failed to fetch') || err.message?.includes('Network');
+      
+      if (isNetworkError) {
+        console.warn('⚠️ [SignupEnterprise] Backend unavailable, using demo mode');
+        
+        // ✅ Create a demo user ID
+        const demoUserId = `demo-${Date.now()}`;
+        const demoToken = `demo-token-${Date.now()}`;
+        
+        // ✅ Store demo profile data
+        sessionStorage.setItem('cortexia_user_type', 'enterprise');
+        sessionStorage.setItem('cortexia_user_id', demoUserId);
+        sessionStorage.setItem('cortexia_session_token', demoToken);
+        sessionStorage.setItem('cortexia_referral_code', 'DEMO-CODE');
+        
+        // ✅ Store Auth0 user format
+        const demoAuth0User = {
+          sub: demoUserId,
+          email: formData.email,
+          name: formData.companyName,
+          email_verified: true
+        };
+        localStorage.setItem('cortexia_auth0_user', JSON.stringify(demoAuth0User));
+        
+        toast.success('Demo mode enabled - Backend unavailable', {
+          description: 'You can explore the app with demo credentials'
+        });
+        
+        onSuccess(demoUserId, demoToken);
+      } else {
+        setError(err.message || 'An error occurred during signup');
+      }
     } finally {
       setLoading(false);
     }

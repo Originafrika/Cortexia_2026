@@ -80,20 +80,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
 export function useSoundContext() {
   const context = useContext(SoundContext);
   if (!context) {
-    // ✅ FIX: Return no-op functions instead of throwing
-    // This allows components to work without SoundProvider (Enterprise mode)
-    console.warn('useSoundContext used outside SoundProvider - sounds will be disabled');
-    return {
-      isEnabled: false,
-      toggleSound: () => false,
-      setEnabled: () => {},
-      playClick: () => {},
-      playHover: () => {},
-      playSuccess: () => {},
-      playError: () => {},
-      playWhoosh: () => {},
-      playPop: () => {},
-    };
+    throw new Error('useSoundContext must be used within SoundProvider');
   }
   return context;
 }

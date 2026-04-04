@@ -180,40 +180,27 @@ export function SettingsPage() {
     setIsDeleting(true);
     
     try {
-      console.log('🗑️ [SettingsPage] Starting account deletion for user:', user.id);
-      
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${user.id}/delete`,
+        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${user.id}/account`,
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            confirm: true
-          })
+            'Authorization': `Bearer ${publicAnonKey}`
+          }
         }
       );
       
       const data = await response.json();
       
-      console.log('📦 [SettingsPage] Delete response:', data);
-      
       if (data.success) {
-        toast.success('✅ Account deleted successfully!');
-        setShowDeleteConfirm(false);
-        
-        // Wait a moment for user to see the success message
-        setTimeout(() => {
-          logout();
-        }, 1500);
+        toast.success('✅ Account deleted!');
+        logout();
       } else {
-        throw new Error(data.error || 'Failed to delete account');
+        throw new Error(data.error || 'Failed to delete');
       }
     } catch (error: any) {
-      console.error('❌ [SettingsPage] Account delete error:', error);
-      toast.error(error.message || 'Failed to delete account. Please try again.');
+      console.error('❌ Account delete error:', error);
+      toast.error('Failed to delete account');
     } finally {
       setIsDeleting(false);
     }
@@ -595,10 +582,7 @@ export function SettingsPage() {
               
               {/* Logout */}
               <button
-                onClick={() => {
-                  console.log('🔘 [SettingsPage] Logout button clicked');
-                  logout();
-                }}
+                onClick={logout}
                 className="w-full p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 text-red-400"
               >
                 <LogOut size={20} />
@@ -607,69 +591,27 @@ export function SettingsPage() {
               
               {/* Delete Account */}
               <button
-                onClick={() => {
-                  console.log('🔘 [SettingsPage] Delete Account button clicked');
-                  setShowDeleteConfirm(true);
-                }}
+                onClick={() => setShowDeleteConfirm(true)}
                 className="w-full p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 text-red-400"
               >
                 <Trash2 size={20} />
                 <span className="font-medium">Delete Account</span>
               </button>
               
-              {/* ✅ RGPD-COMPLIANT DELETE CONFIRMATION MODAL */}
+              {/* Delete Confirmation */}
               {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => !isDeleting && setShowDeleteConfirm(false)}>
-                  <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-                  
-                  <div className="relative w-full max-w-md bg-gray-900 rounded-2xl p-6 border border-red-500/20" onClick={(e) => e.stopPropagation()}>
-                    {/* Warning Icon */}
-                    <div className="flex justify-center mb-4">
-                      <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                        <AlertTriangle className="text-red-500" size={32} />
-                      </div>
-                    </div>
+                <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
+                  <div className="bg-white/5 border border-white/10 p-6 rounded-2xl text-white max-w-sm">
+                    <h3 className="text-lg font-semibold mb-4">Confirm Account Deletion</h3>
                     
-                    <h3 className="text-xl font-bold text-center mb-2 text-white">Delete Your Account?</h3>
-                    
-                    <p className="text-center text-white/60 mb-6">
-                      This action is <span className="text-red-400 font-semibold">permanent and irreversible</span>.
+                    <p className="text-sm text-white/60 mb-4">
+                      Are you sure you want to delete your account? This action is irreversible.
                     </p>
                     
-                    {/* RGPD Warning Box */}
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
-                      <p className="text-red-400 text-sm font-medium mb-2">
-                        ⚠️ What will be permanently deleted:
-                      </p>
-                      <ul className="text-red-400/80 text-sm space-y-1.5">
-                        <li className="flex items-start gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>
-                          <span>All your creations (images, videos, avatars)</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>
-                          <span>Your profile, stats, and creator status</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>
-                          <span>Your credits balance and purchase history</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>
-                          <span>All likes, comments, and social connections</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>
-                          <span>Referral links and commission earnings</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <button
                         onClick={() => setShowDeleteConfirm(false)}
-                        disabled={isDeleting}
-                        className="flex-1 py-3 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors text-white disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                       >
                         Cancel
                       </button>
@@ -677,7 +619,7 @@ export function SettingsPage() {
                       <button
                         onClick={handleDeleteAccount}
                         disabled={isDeleting}
-                        className="flex-1 py-3 rounded-lg bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-white font-medium"
+                        className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
                         {isDeleting ? (
                           <>

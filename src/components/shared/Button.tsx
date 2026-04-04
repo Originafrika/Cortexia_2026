@@ -1,7 +1,6 @@
 import { motion } from 'motion/react';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { forwardRef } from 'react';
-import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion support
 
 // ============================================
 // BEAUTY DESIGN SYSTEM — BUTTON COMPONENT
@@ -89,7 +88,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const currentVariant = variantStyles[variant];
     const isDisabled = disabled || loading;
-    const shouldReduceMotion = useReducedMotion();
 
     return (
       <motion.button
@@ -111,7 +109,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           border: currentVariant.border,
         }}
         whileHover={
-          !isDisabled && !shouldReduceMotion
+          !isDisabled
             ? {
                 scale: currentVariant.hoverScale,
                 boxShadow: currentVariant.hoverShadow,
@@ -119,7 +117,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               }
             : {}
         }
-        whileTap={!isDisabled && !shouldReduceMotion ? { scale: 0.98 } : {}}
+        whileTap={!isDisabled ? { scale: 0.98 } : {}}
         disabled={isDisabled}
         {...props}
       >

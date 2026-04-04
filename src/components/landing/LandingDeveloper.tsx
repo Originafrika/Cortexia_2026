@@ -1,8 +1,6 @@
 import { motion } from 'motion/react';
 import { ArrowRight, Check, Code, Zap, BookOpen, Sparkles, Video, User, Book, Bell, Lock, BarChart3, MessageCircle } from 'lucide-react'; // ✅ BDS: Added icons
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
-import { Button } from '../shared/Button'; // ✅ BDS: Universal button component
-import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion
 
 interface LandingDeveloperProps {
   onGetStarted: () => void;
@@ -88,22 +86,30 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-              <Button
+              <motion.button
                 onClick={onGetStarted}
-                variant="blue"
-                size="lg"
+                className="px-8 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.85) 100%)',
+                  boxShadow: '0 20px 60px rgba(59,130,246,0.35)',
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: '0 25px 80px rgba(59,130,246,0.45)'
+                }}
+                whileTap={{ scale: 0.98 }}
               >
-                {t('landing.developer.hero.ctaPrimary')}
-              </Button>
+                <span>{t('landing.developer.hero.ctaPrimary')}</span>
+                <ArrowRight size={20} />
+              </motion.button>
 
-              <Button
+              <button
                 onClick={onViewDocs}
-                variant="secondary"
-                size="lg"
-                icon={<BookOpen size={20} />}
+                className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 transition-all hover:bg-white/10 inline-flex items-center gap-3 text-lg"
               >
-                {t('landing.developer.hero.ctaSecondary')}
-              </Button>
+                <span>{t('landing.developer.hero.ctaSecondary')}</span>
+                <BookOpen size={20} />
+              </button>
             </div>
 
             <p className="text-sm text-white/40">
@@ -468,14 +474,22 @@ export function LandingDeveloper({ onGetStarted, onViewDocs }: LandingDeveloperP
               {t('landing.developer.finalCta.subtitle')}
             </p>
 
-            <Button
+            <motion.button
               onClick={onGetStarted}
-              variant="blue"
-              size="lg"
-              icon={<ArrowRight size={24} />}
+              className="px-12 py-5 rounded-2xl text-lg font-semibold inline-flex items-center gap-3"
+              style={{
+                background: 'linear-gradient(135deg, rgba(59,130,246,0.9) 0%, rgba(6,182,212,0.85) 100%)',
+                boxShadow: '0 30px 80px rgba(59,130,246,0.4)',
+              }}
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: '0 40px 100px rgba(59,130,246,0.5)'
+              }}
+              whileTap={{ scale: 0.98 }}
             >
-              {t('landing.developer.finalCta.cta')}
-            </Button>
+              <span>{t('landing.developer.finalCta.cta')}</span>
+              <ArrowRight size={24} />
+            </motion.button>
           </motion.div>
         </div>
       </section>

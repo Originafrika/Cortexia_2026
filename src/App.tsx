@@ -3,9 +3,6 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import { LayoutGroup } from 'motion/react';
 import { Toaster } from 'sonner@2.0.3';
 
-// Environment
-import { logEnvironment } from './lib/config/environment';
-
 // Providers
 import { AuthProvider, useAuth } from './lib/contexts/AuthContext';
 import { ThemeProvider } from './lib/contexts/ThemeContext';
@@ -24,18 +21,13 @@ import { Auth0SetupHelper } from './components/auth/Auth0SetupHelper';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy'; // ✅ RGPD
 import { TermsOfService } from './components/legal/TermsOfService'; // ✅ RGPD
 import { ForYouFeed } from './components/ForYouFeed';
-import { Discovery } from './components/discovery/Discovery';
-import { Messages } from './components/messages/Messages';
+import { Discovery } from './components/Discovery';
+import { Messages } from './components/Messages';
 import { Profile } from './components/Profile';
 import { CreateHubGlass } from './components/create/CreateHubGlass';
-import { TextToImageV3 } from './components/create/TextToImageV3';
+import { TextToImageV3 } from './components/create/tools/TextToImageV3';
 import { CoconutV14App } from './components/coconut-v14/CoconutV14App';
-import { CoconutV14AppEnterprise } from './components/coconut-v14/CoconutV14AppEnterprise'; // ✅ NEW: Enterprise edition
 import { CocoBoardDemo } from './components/coconut-v14/CocoBoardDemo';
-import { DeveloperDashboard } from './components/developer'; // ✅ NEW: Developer Dashboard
-import { CreatorSystem } from './components/creator'; // ✅ NEW: Creator System
-import { ReferralDashboard } from './components/referral'; // ✅ NEW: Referral System
-import { EnhancedFeed } from './components/feed'; // ✅ NEW: Enhanced Feed
 import { CreatorDashboard } from './components/CreatorDashboardNew'; // ✅ UPDATED: New dashboard with tabs
 import { Wallet } from './components/Wallet';
 import { Settings } from './components/Settings';
@@ -81,10 +73,6 @@ export type Screen =
   | 'coconut-v14-cocoboard'
   | 'coconut-v14'
   | 'creator-dashboard'
-  | 'creator-system' // ✅ NEW: Creator System
-  | 'developer-dashboard' // ✅ NEW: Developer Dashboard
-  | 'referral' // ✅ NEW: Referral System
-  | 'enhanced-feed' // ✅ NEW: Enhanced Feed
   | 'wallet'
   | 'settings'
   | 'new-message'
@@ -92,11 +80,6 @@ export type Screen =
   | 'my-uploads'; // ✅ NEW: My uploads management
 
 export default function App() {
-  // ✅ Log environment configuration on app startup
-  React.useEffect(() => {
-    logEnvironment();
-  }, []);
-
   return (
     <BrowserRouter>
       <I18nProvider>
@@ -156,20 +139,15 @@ function CreditsProviderWrapper({ children }: { children: React.ReactNode }) {
         // User is authenticated - update to real userId
         console.log('🔐 [CreditsProviderWrapper] Setting stable userId:', user.id);
         setStableUserId(user.id);
-      } else if (!stableUserId || stableUserId !== 'demo-user') {
-        // ✅ FIX: When user logs out, reset to demo-user
-        // Check if stableUserId was a real user (not demo-user) and user is now null
-        if (stableUserId && stableUserId !== 'demo-user' && !user) {
-          console.log('🚪 [CreditsProviderWrapper] User logged out, resetting to demo-user');
-          setStableUserId('demo-user');
-        } else if (!stableUserId) {
-          // No user and no stableUserId yet - use demo-user
-          console.log('🔐 [CreditsProviderWrapper] No user, using demo-user');
-          setStableUserId('demo-user');
-        }
+      } else if (!stableUserId) {
+        // No user and no stableUserId yet - use demo-user
+        console.log('🔐 [CreditsProviderWrapper] No user, using demo-user');
+        setStableUserId('demo-user');
       }
+      // ✅ IMPORTANT: If stableUserId exists but user is null, DON'T change it
+      // This prevents losing the user during temporary auth refreshes
     }
-  }, [user, loading]);
+  }, [user, loading, stableUserId]);
   
   // ✅ Wait for initial userId to be set
   if (!stableUserId) {
@@ -265,10 +243,6 @@ function AppContent() {
       'coconut-v14-cocoboard': '/coconut-v14-cocoboard',
       'coconut-v14': '/coconut-v14',
       'creator-dashboard': '/creator-dashboard',
-      'creator-system': '/creator-system', // ✅ NEW: Creator System
-      'developer-dashboard': '/developer-dashboard', // ✅ NEW: Developer Dashboard
-      'referral': '/referral', // ✅ NEW: Referral System
-      'enhanced-feed': '/enhanced-feed', // ✅ NEW: Enhanced Feed
       'wallet': '/wallet',
       'settings': '/settings',
       'new-message': '/new-message',
@@ -310,10 +284,6 @@ function AppContent() {
       '/coconut-v14-cocoboard': 'coconut-v14-cocoboard',
       '/coconut-v14': 'coconut-v14',
       '/creator-dashboard': 'creator-dashboard',
-      '/creator-system': 'creator-system', // ✅ NEW: Creator System
-      '/developer-dashboard': 'developer-dashboard', // ✅ NEW: Developer Dashboard
-      '/referral': 'referral', // ✅ NEW: Referral System
-      '/enhanced-feed': 'enhanced-feed', // ✅ NEW: Enhanced Feed
       '/wallet': 'wallet',
       '/settings': 'settings',
       '/new-message': 'new-message',
@@ -332,6 +302,12 @@ function AppContent() {
   
   // ✅ NEW: Auto-navigate based on auth state changes
   useEffect(() => {
+    // ⚠️ TEMPORARY: Allow access to coconut-v14 without auth for testing
+    if (currentScreen === 'coconut-v14') {
+      console.log('🧪 [TEMP] Allowing coconut-v14 access without auth');
+      return;
+    }
+    
     // ✅ CRITICAL: Wait for auth to finish loading
     if (loading) {
       console.log('⏳ Auth still loading, skipping route protection');
@@ -667,24 +643,9 @@ function AppContent() {
         return <CocoBoardDemo onNavigate={() => handleBackFromCoconut()} />;
       case 'coconut-v14':
         // ✅ COCONUT V14 - Ultra-Premium Full App
-        // ✅ NEW: Feature flag to switch between old and new design
-        const useEnterpriseDesign = true; // 🎯 SET TO TRUE to use new Enterprise design
-        
-        return useEnterpriseDesign ? (
-          <CoconutV14AppEnterprise onNavigate={handleNavigate} />
-        ) : (
-          <CoconutV14App onNavigate={handleNavigate} />
-        );
+        return <CoconutV14App onNavigate={handleNavigate} />;
       case 'creator-dashboard':
         return <CreatorDashboard onNavigate={handleNavigate} />;
-      case 'creator-system':
-        return <CreatorSystem onNavigate={handleNavigate} />;
-      case 'developer-dashboard':
-        return <DeveloperDashboard onNavigate={handleNavigate} />;
-      case 'referral':
-        return <ReferralDashboard onNavigate={handleNavigate} />;
-      case 'enhanced-feed':
-        return <EnhancedFeed onNavigate={handleNavigate} />;
       case 'wallet':
         return <Wallet onNavigate={handleNavigate} />;
       case 'settings':
@@ -700,7 +661,7 @@ function AppContent() {
     }
   };
 
-  const showTabBar = !['landing', 'signup-individual', 'signup-enterprise', 'signup-developer', 'login', 'login-individual', 'login-enterprise', 'login-developer', 'onboarding', 'auth-callback', 'create', 'create-v4', 'coconut-campaign', 'coconut-v14-cocoboard', 'coconut-v14', 'creator-dashboard', 'creator-system', 'developer-dashboard', 'referral', 'enhanced-feed', 'wallet', 'settings', 'new-message', 'activity', 'my-uploads'].includes(currentScreen);
+  const showTabBar = !['landing', 'signup-individual', 'signup-enterprise', 'signup-developer', 'login', 'login-individual', 'login-enterprise', 'login-developer', 'onboarding', 'auth-callback', 'create', 'create-v4', 'coconut-campaign', 'coconut-v14-cocoboard', 'coconut-v14', 'creator-dashboard', 'wallet', 'settings', 'new-message', 'activity', 'my-uploads'].includes(currentScreen);
 
   return (
     <ProvidersProvider

@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
 import { forwardRef } from 'react';
-import { useReducedMotion } from '../../lib/useReducedMotion'; // ✅ A11y: Reduced motion support
 
 // ============================================
 // BEAUTY DESIGN SYSTEM — CARD COMPONENT
@@ -62,8 +61,6 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
 
     const currentVariant = variantStyles[variant];
 
-    const shouldReduceMotion = useReducedMotion();
-
     return (
       <motion.div
         ref={ref}
@@ -79,14 +76,14 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
           backdropFilter: currentVariant.backdropFilter,
         }}
         whileHover={
-          hoverable && !shouldReduceMotion
+          hoverable
             ? {
                 scale: 1.02,
                 background: variant === 'default' ? 'rgba(255,255,255,0.05)' : currentVariant.background,
               }
             : {}
         }
-        whileTap={hoverable && !shouldReduceMotion ? { scale: 0.98 } : {}}
+        whileTap={hoverable ? { scale: 0.98 } : {}}
         {...props}
       >
         {/* Glow effect on hover */}
