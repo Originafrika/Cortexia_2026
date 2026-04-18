@@ -47,7 +47,7 @@ import { AdvancedErrorBoundary as ErrorBoundary } from './AdvancedErrorBoundary'
 import { Skeleton } from '../ui/skeleton'; // ✅ FIXED: Use shadcn skeleton instead of ui-premium
 import { Loader2, AlertCircle, Sparkles, Zap, Palette, Settings2, Image as ImageIcon } from 'lucide-react';
 import { api } from '../../lib/api/client';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import type { GeminiAnalysisResponse } from '../../lib/types/gemini';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { buildTextPromptFromJSON } from '../../lib/utils/promptUtils';

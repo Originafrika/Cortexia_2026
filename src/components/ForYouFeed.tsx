@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Sparkles, TrendingUp, Crown, Award, Zap, Share2, Plus, ChevronLeft, Filter, Clock, Flame, ChevronDown, Bell, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router'; // ✅ FIX: Add missing import
-import { toast } from 'sonner@2.0.3'; // ✅ FIX: Add missing import
+import { toast } from 'sonner'; // ✅ FIX: Add missing import
 import type { Screen } from '../App';
 import { PostCard } from './feed/PostCard';
 import { PostDetailModal } from './feed/PostDetailModal';

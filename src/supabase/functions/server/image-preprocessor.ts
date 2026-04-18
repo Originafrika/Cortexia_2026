@@ -7,7 +7,7 @@
  * - Valide les dimensions
  */
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js';
 
 export interface ImageDimensions {
   width: number;

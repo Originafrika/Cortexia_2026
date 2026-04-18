@@ -136,6 +136,24 @@ export function useCoconutAccess(userId: string | null) {
       return;
     }
 
+    // ✅ Skip backend fetch for demo-user - grant default access
+    if (userId === 'demo-user') {
+      console.log('🥥 [useCoconutAccess] Demo-user detected, granting default access');
+      const demoAccess: CoconutAccessData = {
+        hasAccess: true,
+        isCreator: true,
+        isEnterprise: true,
+        monthlyQuota: -1, // Unlimited
+        remainingGenerations: 1500,
+        usedThisMonth: 0,
+        resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString(),
+        accountType: 'enterprise'
+      };
+      setAccessData(demoAccess);
+      setIsLoading(false);
+      return;
+    }
+
     // ✅ Prevent duplicate concurrent fetches
     if (fetchInProgressRef.current && !bypassCache) {
       console.log('🥥 [useCoconutAccess] ⏭️ Fetch already in progress, skipping');

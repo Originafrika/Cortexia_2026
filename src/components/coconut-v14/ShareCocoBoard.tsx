@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3B: Import sound
 import { Share2, Link, Check, Copy, QrCode, X } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface ShareCocoBoardProps {
   boardId: string;

@@ -18,7 +18,7 @@ import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import * as kv from './kv_store.tsx';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js';
 import * as kieAIImage from './kie-ai-image.ts';
 import { buildJSONPromptForFlux, buildTextPromptForFlux } from './prompt-utils.ts';
 import * as CreditsSystem from './unified-credits-system.ts'; // ✅ Use unified credits system

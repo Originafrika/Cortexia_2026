@@ -3,7 +3,7 @@ import { X, Sparkles, Wand2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { smartEnhancePrompt, detectPeopleInPrompt } from '../lib/promptEnhancer';
 import { remixImage } from '../lib/generation';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface RemixScreenProps {
   mediaUrl: string;

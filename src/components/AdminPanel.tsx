@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, RefreshCw, AlertTriangle, Users, Database, Edit2, Save, X, Plus, Minus, Crown, TestTube } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { ReferralSystemTester } from './ReferralSystemTester';
 

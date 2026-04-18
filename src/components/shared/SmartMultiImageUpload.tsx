@@ -5,7 +5,7 @@ import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { Upload, X, Images as ImagesIcon, AlertCircle, Info, Crown, ArrowRight, Star, GripVertical, Lightbulb } from 'lucide-react';
 import { multiImageService } from '../../lib/services/multiImageService';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface SmartMultiImageUploadProps {
   maxFiles?: number;

@@ -1,7 +1,7 @@
 // storage.tsx - Supabase Storage management for image uploads
 // Handles bucket creation, file uploads, and signed URL generation
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from 'jsr:@supabase/supabase-js';
 
 const BUCKET_NAME = "make-e55aa214-uploads";
 const VIDEO_BUCKET_NAME = "make-e55aa214-videos";

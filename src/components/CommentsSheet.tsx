@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Heart, Send, X, Trash2 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useAuth } from '../lib/contexts/AuthContext';
 import { getAvatarUrl, formatUsername } from '../utils/avatarHelpers'; // ✅ NEW: Avatar helpers

@@ -3,7 +3,7 @@
 // ============================================
 // API endpoints pour upload de références (images/vidéos)
 
-import { Hono } from 'npm:hono@4';
+import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import * as storage from './coconut-v14-storage.ts';

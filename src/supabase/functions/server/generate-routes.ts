@@ -10,7 +10,7 @@
  */
 
 import { Hono } from 'npm:hono';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js';
 import * as CreditsSystem from './unified-credits-system.ts'; // ✅ NEW: Use unified credits system
 import * as kieAIImage from './kie-ai-image.ts'; // ✅ Kie AI image generation
 import * as pollinations from './pollinations.tsx'; // ✅ NEW: Pollinations Enterprise API

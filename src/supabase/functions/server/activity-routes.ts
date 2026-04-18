@@ -3,7 +3,7 @@
  * Aggregates likes, comments, remixes, and follows received by the user
  */
 
-import { Hono } from 'npm:hono@4';
+import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
 
 const app = new Hono();

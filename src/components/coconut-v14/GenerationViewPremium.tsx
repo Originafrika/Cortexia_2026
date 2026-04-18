@@ -30,7 +30,7 @@ import {
   Grid3x3, LayoutGrid, ChevronRight, RotateCcw, Settings2
 } from 'lucide-react';
 import { handleError, showSuccess, showWarning } from '../../lib/utils/errorHandler';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
 

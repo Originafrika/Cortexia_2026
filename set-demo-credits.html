@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Demo User Credits</title>
+</head>
+<body>
+    <h1>Set Demo User Credits</h1>
+    <p>Click the button to set 1500 paid credits for demo-user</p>
+    <button onclick="setCredits()">Set 1500 Credits</button>
+    <button onclick="checkCredits()">Check Current Credits</button>
+    <div id="result"></div>
+
+    <script>
+        function setCredits() {
+            const credits = {
+                free: 25,
+                paid: 1500,
+                lastReset: new Date().toISOString()
+            };
+            localStorage.setItem('cortexia-credits-demo-user', JSON.stringify(credits));
+            document.getElementById('result').innerHTML = '✅ Credits set to 1500 paid + 25 free';
+            console.log('Credits set:', credits);
+        }
+
+        function checkCredits() {
+            const credits = JSON.parse(localStorage.getItem('cortexia-credits-demo-user') || '{"free":0,"paid":0}');
+            document.getElementById('result').innerHTML = `
+                Current Credits:<br>
+                Free: ${credits.free}<br>
+                Paid: ${credits.paid}<br>
+                Last Reset: ${credits.lastReset}
+            `;
+            console.log('Current credits:', credits);
+        }
+
+        // Auto-check on load
+        checkCredits();
+    </script>
+</body>
+</html>

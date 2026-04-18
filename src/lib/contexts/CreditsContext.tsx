@@ -3,7 +3,7 @@
 // ❌ NO LOCAL STORAGE - All credits from database only
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { getUserCredits, addPaidCredits as addPaidCreditsAPI } from '../api/credits';
 import { projectId } from '../../utils/supabase/info';
 
@@ -44,13 +44,23 @@ interface CreditsProviderProps {
 }
 
 export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProviderProps) {
-  const [credits, setCredits] = useState<UserCredits>({
-    free: 0,  // ✅ Start at 0, will be loaded from backend
-    paid: 0,  // ✅ Start at 0, will be loaded from backend
-    lastReset: new Date().toISOString()
+  const [credits, setCredits] = useState<UserCredits>(() => {
+    // ✅ Initialize with demo credits if userId is demo-user (for instant display)
+    if (userId === 'demo-user') {
+      return {
+        free: 25,
+        paid: 1500,
+        lastReset: new Date().toISOString()
+      };
+    }
+    return {
+      free: 0,
+      paid: 0,
+      lastReset: new Date().toISOString()
+    };
   });
   
-  const [isLoading, setIsLoading] = useState(true); // ✅ Start loading until backend responds
+  const [isLoading, setIsLoading] = useState(() => userId !== 'demo-user'); // ✅ Don't load for demo-user
   const [error, setError] = useState<string | null>(null);
   const [daysUntilReset, setDaysUntilReset] = useState(30);
 
@@ -110,8 +120,14 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
     }
   }, [userId]);
 
-  // Fetch credits on mount AND when userId changes
+  // Fetch credits on mount AND when userId changes (skip for demo-user)
   useEffect(() => {
+    // ✅ Skip backend fetch for demo-user - credits are initialized locally
+    if (userId === 'demo-user') {
+      console.log('🥥 Skipping backend fetch for demo-user - using local credits');
+      return;
+    }
+
     let cancelled = false; // ✅ Track if this effect has been cancelled
     
     const fetchWithCancel = async () => {
@@ -153,8 +169,8 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         setError(errorMessage);
         setIsLoading(false);
         
-        // ✅ IMPROVED: Only show error toast once per session
-        if (!sessionStorage.getItem('credits-error-shown')) {
+        // ✅ IMPROVED: Only show error toast once per session (skip for demo-user)
+        if (userId !== 'demo-user' && !sessionStorage.getItem('credits-error-shown')) {
           toast.error('Unable to load credits. Using demo mode.', {
             description: 'Backend not available'
           });
@@ -162,11 +178,10 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
         }
         
         // ✅ Set demo credits as fallback
-        setCredits({
-          free: 50,
-          paid: 0,
-          lastReset: new Date().toISOString()
-        });
+        const demoCredits = userId === 'demo-user' 
+          ? { free: 25, paid: 1500, lastReset: new Date().toISOString() }
+          : { free: 50, paid: 0, lastReset: new Date().toISOString() };
+        setCredits(demoCredits);
       }
     };
     
@@ -213,8 +228,7 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
     setCredits(prev => ({
       ...prev,
       paid: prev.paid - paidUsed,
-      free: prev.free - freeUsed,
-      total: prev.total - amount
+      free: prev.free - freeUsed
     }));
 
     console.log(`💎 Deducted ${amount} credits locally (optimistic):`);
@@ -298,27 +312,8 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
     return credits.paid;
   }, [credits, getTotalCredits]);
 
-  // ✅ DEMO USER AUTO-CREDIT - Give 10,000 paid credits on first launch (DISABLED for now)
-  // This will be handled by onboarding flow instead
-  /*
-  useEffect(() => {
-    const initDemoCredits = async () => {
-      if (userId === 'demo-user') {
-        // Check if we already credited
-        const hasInitialized = localStorage.getItem('cortexia-demo-initialized');
-        
-        if (!hasInitialized && credits.paid === 0) {
-          console.log('🥥 Initializing demo user with 10,000 paid credits...');
-          await addPaidCredits(10000);
-          localStorage.setItem('cortexia-demo-initialized', 'true');
-        }
-      }
-    };
-
-    // Wait a bit for initial credits fetch, then check
-    setTimeout(initDemoCredits, 1000);
-  }, [userId, credits.paid, addPaidCredits]);
-  */
+  // ✅ DEMO USER AUTO-CREDIT - Already handled in useState initialization
+  // No need for separate effect since we initialize with 1500 credits upfront
 
   return (
     <CreditsContext.Provider value={{ 

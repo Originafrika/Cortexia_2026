@@ -4,7 +4,7 @@
  */
 
 import { Hono } from 'npm:hono';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js';
 import * as kv from './kv_store.tsx';
 import type { VideoShot, VideoAnalysisResponse } from './coconut-v14-video-analyzer.ts';
 import { handleAnalyzeVideoIntent } from './coconut-v14-video-analyzer.ts';

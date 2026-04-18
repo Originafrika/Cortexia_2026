@@ -3,7 +3,7 @@
  * Phase 3 - Jour 7: API routes for history management
  */
 
-import { Hono } from 'npm:hono@4.6.14';
+import { Hono } from 'npm:hono';
 import * as kv from './kv_store.tsx';
 
 const app = new Hono();

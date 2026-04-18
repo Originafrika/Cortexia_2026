@@ -3,7 +3,7 @@
  * Handles PKCE automatically and securely
  */
 
-import { createAuth0Client, Auth0Client } from '@auth0/auth0-spa-js@2.1.3';
+import { createAuth0Client, Auth0Client } from '@auth0/auth0-spa-js';
 import type { User, UserType } from '../contexts/AuthContext';
 
 // Auth0 Configuration

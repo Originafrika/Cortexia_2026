@@ -9,7 +9,7 @@
  * - Enterprise assets: PERMANENT (never delete)
  */
 
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js';
 import * as kv from './kv_store.tsx';
 import { shouldLog } from './server-config.ts';
 

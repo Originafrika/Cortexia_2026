@@ -3,7 +3,7 @@
  * Routes for dashboard statistics, user settings, and transactions
  */
 
-import { Hono } from 'npm:hono@4.0.2';
+import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono@4.0.2/cors';
 import * as kv from './kv_store.tsx';
 

@@ -1,5 +1,5 @@
 import { Hono } from 'npm:hono';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js';
 import * as kv from './kv_store.tsx';
 import { verifyAuth0AndCreateSession } from './auth0-verification.ts';
 

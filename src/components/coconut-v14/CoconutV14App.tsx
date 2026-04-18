@@ -23,7 +23,7 @@ import { LanguageSwitcher } from '../LanguageSwitcher'; // ✅ NEW: Language swi
 import { useCurrentUser } from '../../lib/hooks/useCurrentUser'; // ✅ NEW: Get real user
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Get userType
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 // ✅ FIX 1.2: Import CocoBoard store
 import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
 // ✅ NEW: Projects API
@@ -313,7 +313,6 @@ const CoconutV14Sidebar = ({
                     <motion.div 
                       layoutId="activeBackground"
                       className={`absolute inset-0 bg-gradient-to-r ${item.color} rounded-2xl shadow-2xl border border-white/20`}
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.7 }}
                       animate={{ 
                         boxShadow: [
                           '0 20px 40px -12px rgba(107, 93, 79, 0.3)',

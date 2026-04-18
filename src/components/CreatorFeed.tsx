@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Heart, MessageCircle, Share2, MoreVertical } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { PostOptionsSheet } from './PostOptionsSheet';
 import { CommentsSheet } from './CommentsSheet';

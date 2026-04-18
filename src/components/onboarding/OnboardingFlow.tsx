@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star, Copy, Gift } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
 import { AcquisitionSourceStep } from './AcquisitionSourceStep'; // ✅ NEW: Import acquisition source step
 

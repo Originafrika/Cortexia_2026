@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
 import { LayoutGroup } from 'motion/react';
-import { Toaster } from 'sonner@2.0.3';
+import { Toaster } from 'sonner';
 
 // Providers
 import { AuthProvider, useAuth } from './lib/contexts/AuthContext';

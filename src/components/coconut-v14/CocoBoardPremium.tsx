@@ -46,7 +46,7 @@ import {
   Settings2, Image as ImageIcon, Wand2, FileText,
   Eye, Grid3x3, ChevronRight
 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import type { GeminiAnalysisResponse } from '../../lib/types/gemini';
 import { projectId as supabaseProjectId, publicAnonKey } from '../../utils/supabase/info';
 import { useAutoSave } from '../../lib/hooks/useAutoSave';

@@ -3,7 +3,7 @@
 
 import { Hono } from 'npm:hono';
 import type { Context } from 'npm:hono';
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js';
 
 const templates = new Hono();
 

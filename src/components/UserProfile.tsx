@@ -3,7 +3,7 @@ import { ArrowLeft, Share2, MoreHorizontal, MessageCircle } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { UserOptionsSheet } from './UserOptionsSheet';
 import { CreatorFeed } from './CreatorFeed';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface Post {
   id: string;

@@ -3,7 +3,7 @@
  * Handles bucket initialization and asset uploads for the feed system
  */
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'jsr:@supabase/supabase-js';
 
 // ✅ Create Supabase client with service role key for storage operations
 const supabase = createClient(

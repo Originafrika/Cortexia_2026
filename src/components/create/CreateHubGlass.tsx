@@ -31,7 +31,7 @@ import {
   ArrowLeftRight,
   Clock
 } from 'lucide-react';
-import { toast } from 'sonner@2.0.3'; // ✅ NEW: Add toast for publish feedback
+import { toast } from 'sonner'; // ✅ NEW: Add toast for publish feedback
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';
 import { useVideoGeneration } from '../../lib/hooks/useVideoGeneration';

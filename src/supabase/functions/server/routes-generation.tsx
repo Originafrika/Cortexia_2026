@@ -3,7 +3,7 @@
  * Phase 3 - Jour 6: API routes for generation
  */
 
-import { Hono } from 'npm:hono@4.6.14';
+import { Hono } from 'npm:hono';
 import { cors } from 'npm:hono/cors';
 import { logger } from 'npm:hono/logger';
 import * as kv from './kv_store.tsx';

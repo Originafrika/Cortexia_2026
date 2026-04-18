@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Mail, Lock, User, Sparkles, Building2, Code, Users as UsersIcon } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface SignupPageProps {
   onNavigate: (screen: 'landing' | 'login' | 'onboarding') => void;
