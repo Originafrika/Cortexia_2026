@@ -1,8 +1,8 @@
-const { neon } = require('@neondatabase/serverless');
+import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL || '');
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -42,7 +42,7 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'userId and assetUrl required' });
       }
 
-      const creationId = require('crypto').randomUUID();
+      const creationId = crypto.randomUUID();
       await sql(
         `INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, NOW())`,

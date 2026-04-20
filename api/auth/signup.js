@@ -1,8 +1,8 @@
-const { neon } = require('@neondatabase/serverless');
+import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL || '');
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    const userId = require('crypto').randomUUID();
+    const userId = crypto.randomUUID();
     await sql(
       `INSERT INTO users (id, email, password, name, type, free_balance, created_at) 
        VALUES ($1, $2, $3, $4, 'individual', 20, NOW())`,
