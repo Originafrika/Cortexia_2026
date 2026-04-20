@@ -1,0 +1,53 @@
+import { neon } from '@neondatabase/serverless';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+const sql = neon(process.env.DATABASE_URL);
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { email, password, name } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    // Check if user exists
+    const existing = await sql.query(
+      `SELECT id FROM users WHERE email = $1`,
+      [email]
+    );
+    
+    const existingRows = existing as any;
+    if (existingRows && existingRows.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    const userId = crypto.randomUUID();
+    await sql.query(
+      `INSERT INTO users (id, email, password, name, type, free_balance, created_at) 
+       VALUES ($1, $2, $3, $4, 'individual', 20, NOW())`,
+      [userId, email, password, name || email.split('@')[0]]
+    );
+
+    return res.status(200).json({
+      success: true,
+      userId,
+      user: { id: userId, email, name: name || email.split('@')[0], type: 'individual' }
+    });
+  } catch (error) {
+    console.error('[Signup] Error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
