@@ -3,8 +3,8 @@
 
 import { Redis } from '@upstash/redis';
 
-const REDIS_URL = import.meta.env.VITE_UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = import.meta.env.VITE_UPSTASH_REDIS_REST_TOKEN;
+const REDIS_URL = import.meta.env.VITE_UPSTASH_REDIS_REST_URL || import.meta.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = import.meta.env.UPSTASH_REDIS_REST_TOKEN;
 
 const redis = new Redis({
   url: REDIS_URL || '',
