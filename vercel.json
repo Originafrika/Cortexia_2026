@@ -1,5 +1,6 @@
 {
-  "functions": {
-    "api/index.ts": {}
+  "build": {
+    "src": "api",
+    "use": "@vercel/node"
   }
 }
