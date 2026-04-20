@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { vercel } from 'vite-plugin-vercel';
+import { vercel } from 'vite-plugin-vercel/vite';
 import path from 'path';
 
 export default defineConfig({
