@@ -12,9 +12,7 @@ interface SignupIndividualProps {
 }
 
 // Use VITE_API_URL from env, fallback to local
-const LOCAL_API = typeof import !== 'undefined' && import.meta?.env?.VITE_API_URL 
-  ? import.meta.env.VITE_API_URL 
-  : (typeof window === 'undefined' ? '' : 'http://localhost:3001');
+const LOCAL_API = (import.meta as any).env?.VITE_API_URL || '';
 
 export function SignupIndividual({ onSuccess, onSwitchToLogin, onBack }: SignupIndividualProps) {
   const { refreshUser } = useAuth();

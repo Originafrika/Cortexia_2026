@@ -498,9 +498,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Signing in with email:', email);
       
       // Use API_URL from env or default to local
-      const API_URL = typeof import !== 'undefined' && import.meta?.env?.VITE_API_URL 
-        ? import.meta.env.VITE_API_URL 
-        : (typeof window !== 'undefined' ? window.location.origin : '');
+      const API_URL = (import.meta as any).env?.VITE_API_URL || '';
       
       const response = await fetch(`${API_URL}/api/auth/signin`, {
         method: 'POST',
