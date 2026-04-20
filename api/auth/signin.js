@@ -1,3 +1,4 @@
+// FIX: Use sql.query() for Neon Serverless
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
