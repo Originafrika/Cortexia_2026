@@ -1,61 +1,54 @@
 import { neon } from '@neondatabase/serverless';
 
-const SQL = neon(process.env.DATABASE_URL || '');
+export const runtime = 'nodejs18.x';
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+export async function GET(req) {
+  const sql = neon(process.env.DATABASE_URL || '');
 
   try {
-    if (req.method === 'GET') {
-      const rawResult = await SQL.query(
-        `SELECT * FROM creations ORDER BY created_at DESC LIMIT 20`
-      );
-      
-      const rows = Array.isArray(rawResult) ? rawResult : (rawResult?.rows || []);
-      
-      return res.status(200).json({
-        success: true,
-        creations: rows.map((c) => ({
-          id: c.id,
-          userId: c.user_id,
-          username: c.username,
-          caption: c.caption,
-          assetUrl: c.asset_url,
-          likes: c.likes || 0,
-          comments: c.comments || 0,
-          remixes: c.remixes || 0
-        })),
-        pagination: { offset: 0, limit: 20, hasMore: false }
-      });
-    }
+    const result = await sql.query(
+      'SELECT * FROM creations ORDER BY created_at DESC LIMIT 20'
+    );
 
-    if (req.method === 'POST') {
-      const body = req.body || {};
-      const { userId, username, userAvatar, assetUrl, caption, model } = body;
-      
-      if (!userId || !assetUrl) {
-        return res.status(400).json({ error: 'userId and assetUrl required' });
-      }
+    const rows = result?.rows || [];
 
-      const creationId = crypto.randomUUID();
-      await SQL.query(
-        `INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, NOW())`,
-        [creationId, userId, username, userAvatar, assetUrl, caption, model]
-      );
-
-      return res.status(200).json({ success: true, creationId });
-    }
-
-    return res.status(405).json({ error: 'Method not allowed' });
+    return Response.json({
+      success: true,
+      creations: rows.map((c) => ({
+        id: c.id,
+        userId: c.user_id,
+        username: c.username,
+        caption: c.caption,
+        assetUrl: c.asset_url,
+        likes: c.likes || 0,
+        comments: c.comments || 0,
+        remixes: c.remixes || 0
+      })),
+      pagination: { offset: 0, limit: 20, hasMore: false }
+    });
   } catch (error) {
-    console.error('[Feed] Error:', error.message);
-    return res.status(500).json({ error: 'Internal server error', message: error.message });
+    return Response.json({ error: error.message }, { status: 500 });
   }
-};
+}
+
+export async function POST(req) {
+  const { userId, username, userAvatar, assetUrl, caption, model } = await req.json();
+
+  if (!userId || !assetUrl) {
+    return Response.json({ error: 'userId and assetUrl required' }, { status: 400 });
+  }
+
+  const sql = neon(process.env.DATABASE_URL || '');
+
+  try {
+    const creationId = crypto.randomUUID();
+    await sql.query(
+      'INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, NOW())',
+      [creationId, userId, username, userAvatar, assetUrl, caption, model]
+    );
+
+    return Response.json({ success: true, creationId });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
