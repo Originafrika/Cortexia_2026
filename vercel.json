@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/**/*.ts",
+      "src": "api/**/*.js",
       "use": "@vercel/node"
     }
   ],
@@ -10,22 +10,22 @@
     {
       "src": "/api/auth/signin",
       "methods": ["POST"],
-      "dest": "/api/auth/signin.ts"
+      "dest": "/api/auth/signin.js"
     },
     {
       "src": "/api/auth/signup", 
       "methods": ["POST"],
-      "dest": "/api/auth/signup.ts"
+      "dest": "/api/auth/signup.js"
     },
     {
       "src": "/api/feed",
       "methods": ["GET", "POST"],
-      "dest": "/api/feed/index.ts"
+      "dest": "/api/feed/index.js"
     },
     {
       "src": "/api/credits",
       "methods": ["GET", "POST"],
-      "dest": "/api/credits.ts"
+      "dest": "/api/credits.js"
     }
   ]
 }

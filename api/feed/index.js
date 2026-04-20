@@ -1,9 +1,8 @@
-import { neon } from '@neondatabase/serverless';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL || '');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,17 +12,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // GET /api/feed - get all posts
     if (req.method === 'GET') {
-      const rawResult = await sql.query(
+      const rawResult = await sql(
         `SELECT * FROM creations ORDER BY created_at DESC LIMIT 20`
       );
       
-      const rows = Array.isArray(rawResult) ? rawResult : ((rawResult as any)?.rows || []);
+      const rows = Array.isArray(rawResult) ? rawResult : (rawResult?.rows || []);
       
       return res.status(200).json({
         success: true,
-        creations: rows.map((c: any) => ({
+        creations: rows.map((c) => ({
           id: c.id,
           userId: c.user_id,
           username: c.username,
@@ -37,7 +35,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // POST /api/feed - create post
     if (req.method === 'POST') {
       const { userId, username, userAvatar, assetUrl, caption, model } = req.body;
       
@@ -45,8 +42,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'userId and assetUrl required' });
       }
 
-      const creationId = crypto.randomUUID();
-      await sql.query(
+      const creationId = require('crypto').randomUUID();
+      await sql(
         `INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, NOW())`,
         [creationId, userId, username, userAvatar, assetUrl, caption, model]
@@ -60,4 +57,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[Feed] Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
+};

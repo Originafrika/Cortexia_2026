@@ -1,11 +1,10 @@
-import { neon } from '@neondatabase/serverless';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+const { neon } = require('@neondatabase/serverless');
 
 const sql = neon(process.env.DATABASE_URL || '');
 
 console.log('[Signin] DATABASE_URL set:', !!process.env.DATABASE_URL);
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -25,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const result = await sql.query(
+    const result = await sql(
       `SELECT id, email, name, type FROM users WHERE email = $1 AND password = $2`,
       [email, password]
     );
@@ -45,8 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[Signin] Error:', error);
     return res.status(500).json({ 
       error: 'Internal server error', 
-      message: (error as Error).message,
-      stack: (error as Error).stack 
+      message: error.message 
     });
   }
-}
+};

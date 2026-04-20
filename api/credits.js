@@ -1,9 +1,8 @@
-import { neon } from '@neondatabase/serverless';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL || '');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,20 +12,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // GET /api/credits?userId=xxx
     if (req.method === 'GET') {
-      const userId = req.query.userId as string;
+      const userId = req.query.userId;
       
       if (!userId) {
         return res.status(400).json({ error: 'User ID required' });
       }
 
-      const result = await sql.query(
+      const result = await sql(
         `SELECT free_balance, premium_balance FROM users WHERE id = $1`,
         [userId]
       );
 
-      const rows = Array.isArray(result) ? result : ((result as any)?.rows || []);
+      const rows = Array.isArray(result) ? result : (result?.rows || []);
       const user = rows[0];
 
       return res.status(200).json({
@@ -38,7 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // POST /api/credits - add credits
     if (req.method === 'POST') {
       const { userId, amount, type } = req.body;
       
@@ -48,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const balanceCol = type === 'paid' ? 'premium_balance' : 'free_balance';
       
-      await sql.query(
+      await sql(
         `UPDATE users SET ${balanceCol} = ${balanceCol} + $1, updated_at = NOW() WHERE id = $2`,
         [amount, userId]
       );
@@ -61,4 +58,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[Credits] Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
