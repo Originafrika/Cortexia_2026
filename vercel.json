@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.ts", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/auth/signin", "dest": "/api/auth/signin.ts" },
+    { "src": "/api/auth/signup", "dest": "/api/auth/signup.ts" },
+    { "src": "/api/feed", "dest": "/api/feed/index.ts" },
+    { "src": "/api/feed/publish", "dest": "/api/feed/index.ts" },
+    { "src": "/api/credits", "dest": "/api/credits.ts" }
+  ]
+}

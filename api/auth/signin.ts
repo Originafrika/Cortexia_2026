@@ -1,7 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL || '');
+
+console.log('[Signin] DATABASE_URL set:', !!process.env.DATABASE_URL);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,7 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       [email, password]
     );
 
-    const rows = result as any;
+    console.log('[Signin] Query result:', result);
+    
+    const rows = Array.isArray(result) ? result : (result?.rows || []);
     if (!rows || rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -39,6 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (error) {
     console.error('[Signin] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ 
+      error: 'Internal server error', 
+      message: (error as Error).message,
+      stack: (error as Error).stack 
+    });
   }
 }
