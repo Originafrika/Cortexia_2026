@@ -17,10 +17,10 @@ const getEnv = (key: string): string | undefined => {
   return undefined;
 };
 
-const redis = new Redis({
-  url: getEnv('VITE_UPSTASH_REDIS_REST_URL') || '',
-  token: getEnv('VITE_UPSTASH_REDIS_REST_TOKEN') || '',
-});
+// Only initialize Redis if credentials are available
+const redisUrl = getEnv('VITE_UPSTASH_REDIS_REST_URL') || '';
+const redisToken = getEnv('VITE_UPSTASH_REDIS_REST_TOKEN') || '';
+const redis = (redisUrl && redisToken) ? new Redis({ url: redisUrl, token: redisToken }) : null;
 
 // LLM Provider configurations
 export const LLM_PROVIDERS = {
@@ -107,6 +107,7 @@ const getDailyUsageKey = (provider: string) => `llm:daily:${provider}:${new Date
 
 class LLMCascadeService {
   private async checkCloudflareBudget(): Promise<boolean> {
+    if (!redis) return true; // Allow if Redis is not configured
     const today = new Date().toISOString().split('T')[0];
     const key = `cloudflare:neurons:${today}`;
     const used = await redis.get(key) as number || 0;
@@ -114,6 +115,7 @@ class LLMCascadeService {
   }
 
   private async incrementCloudflareUsage(neurons: number): Promise<void> {
+    if (!redis) return; // Skip if Redis is not configured
     const today = new Date().toISOString().split('T')[0];
     const key = `cloudflare:neurons:${today}`;
     await redis.incrby(key, neurons);
@@ -121,6 +123,7 @@ class LLMCascadeService {
   }
 
   private async checkGroqRateLimit(model: string): Promise<boolean> {
+    if (!redis) return true; // Allow if Redis is not configured
     const key = getRateLimitKey('groq', model);
     const today = new Date().toISOString().split('T')[0];
     const usage = await redis.hget(key, today) as number || 0;
@@ -129,6 +132,7 @@ class LLMCascadeService {
   }
 
   private async incrementGroqUsage(model: string): Promise<void> {
+    if (!redis) return; // Skip if Redis is not configured
     const key = getRateLimitKey('groq', model);
     const today = new Date().toISOString().split('T')[0];
     await redis.hincrby(key, today, 1);
@@ -152,24 +156,34 @@ class LLMCascadeService {
       const apiToken = getEnv('VITE_CF_API_TOKEN') || getEnv('CF_API_TOKEN');
       const model = LLM_PROVIDERS.cloudflare.models[request.modelPreference || 'fast'];
 
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: [
-              { role: 'system', content: request.systemPrompt },
-              { role: 'user', content: request.userPrompt },
-            ],
-            temperature: request.temperature ?? 0.7,
-            max_tokens: request.maxTokens ?? 4096,
-          }),
-        }
-      );
+      // Call Cloudflare API directly
+      if (!accountId || !apiToken) {
+        return {
+          success: false,
+          provider: 'cloudflare',
+          model,
+          error: 'Cloudflare credentials not configured',
+          retryable: false,
+        };
+      }
+
+      const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: request.systemPrompt },
+            { role: 'user', content: request.userPrompt },
+          ],
+          temperature: request.temperature ?? 0.7,
+          max_tokens: request.maxTokens ?? 4096,
+        }),
+      });
 
       if (!response.ok) {
         const error = await response.text();
@@ -382,13 +396,14 @@ class LLMCascadeService {
 
   /**
    * Call LLM with automatic fallback cascade
-   * Order: Cloudflare → Groq → Nvidia → Kie AI
+   * Order: Cloudflare → Groq (Nvidia & Kie AI disabled for browser due to CORS/paid restrictions)
+   * Note: Cloudflare uses local proxy in browser mode to avoid CORS
    */
   async callWithFallback(request: LLMRequest): Promise<CascadeResult> {
     const attempts: { provider: LLMProvider; success: boolean; error?: string }[] = [];
     let totalCost = 0;
 
-    // Try Cloudflare first
+    // Try Cloudflare first (uses proxy in browser mode)
     const cloudflareResult = await this.callCloudflare(request);
     attempts.push({ provider: 'cloudflare', success: cloudflareResult.success, error: cloudflareResult.error });
     if (cloudflareResult.success) {
@@ -400,7 +415,7 @@ class LLMCascadeService {
       };
     }
 
-    // Fallback to Groq
+    // Fallback to Groq (works in browser)
     const groqResult = await this.callGroq(request);
     attempts.push({ provider: 'groq', success: groqResult.success, error: groqResult.error });
     if (groqResult.success) {
@@ -412,31 +427,10 @@ class LLMCascadeService {
       };
     }
 
-    // Fallback to Nvidia
-    const nvidiaResult = await this.callNvidia(request);
-    attempts.push({ provider: 'nvidia', success: nvidiaResult.success, error: nvidiaResult.error });
-    if (nvidiaResult.success) {
-      return {
-        success: true,
-        response: nvidiaResult,
-        attempts,
-        totalCost: 0,
-      };
-    }
+    // Nvidia & Kie AI disabled for browser mode (CORS/paid restrictions)
+    // If you want to use them, you need a backend proxy
 
-    // Last resort: Kie AI (paid)
-    const kieResult = await this.callKie(request);
-    attempts.push({ provider: 'kie', success: kieResult.success, error: kieResult.error });
-    if (kieResult.success) {
-      return {
-        success: true,
-        response: kieResult,
-        attempts,
-        totalCost: kieResult.cost || 0,
-      };
-    }
-
-    // All failed
+    // All providers failed
     return {
       success: false,
       attempts,

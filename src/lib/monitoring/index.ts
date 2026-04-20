@@ -21,6 +21,9 @@ export type { WebVitalsMetric, CustomMetric, PerformanceReport } from './perform
 export { sentry, initSentry, captureException, captureMessage, setSentryUser, clearSentryUser, addBreadcrumb } from './sentry';
 export type { SentryConfig, ErrorContext } from './sentry';
 
+// Sentry Client
+export { init, captureError, captureMessage, captureException, ErrorBoundary, Sentry } from './sentry-client';
+
 // Provider
 export { MonitoringProvider, MonitoringProviderWithContext, useMonitoring, defaultMonitoringConfig } from './MonitoringProvider';
 export type { MonitoringConfig, MonitoringProviderProps } from './MonitoringProvider';

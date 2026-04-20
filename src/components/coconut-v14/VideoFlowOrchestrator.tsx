@@ -3,15 +3,19 @@
  * Intent Input → Analysis → CocoBoard → Generation → Player
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnalyzingLoaderPremium } from './AnalyzingLoaderPremium';
 import { VideoCocoBoardPremium } from './VideoCocoBoardPremium';
 import { VideoPlayerPremium } from './VideoPlayerPremium';
 import { VideoCocoBoard } from './VideoCocoBoard';
+import { VideoTimeline, type TimelineShot } from '../cocoblend/VideoTimeline';
+import { videoAssembler } from '../../lib/coconut/video-assembler';
 import type { IntentData } from './IntentInputPremium';
 import type { VideoAnalysisResponse, VideoShot } from '../../supabase/functions/server/coconut-v14-video-analyzer';
 import type { VideoGenerationJob } from '../../supabase/functions/server/coconut-v14-video-routes';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 type VideoFlowStage = 'analyzing' | 'cocoboard' | 'generating' | 'completed' | 'error';
 
@@ -27,20 +31,82 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
   const [analysis, setAnalysis] = useState<VideoAnalysisResponse | null>(null);
   const [cocoBoardId, setCocoBoardId] = useState<string | null>(null);
   const [generationJob, setGenerationJob] = useState<VideoGenerationJob | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [assembledVideoUrl, setAssembledVideoUrl] = useState<string | null>(null);
 
-  const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+  const apiUrl = '/api';
+
+  // Convert generation job shots to TimelineShot format
+  const timelineShots: TimelineShot[] = React.useMemo(() => {
+    if (!analysis || !analysis.shots) return [];
+    return analysis.shots.map((shot, index) => {
+      const jobShot = generationJob?.shots?.find(s => s.shotId === shot.id);
+      return {
+        id: shot.id,
+        order: shot.order || index + 1,
+        duration: shot.duration || 5,
+        model: shot.model || 'kling-3-std',
+        description: shot.prompt || '',
+        outputUrl: jobShot?.videoUrl,
+        status: jobShot?.status || 'pending',
+        error: jobShot?.error,
+      };
+    });
+  }, [analysis, generationJob]);
+
+  // Handle video export/assembly
+  const handleExport = useCallback(async () => {
+    const completedVideos = timelineShots.filter(s => s.status === 'completed' && s.outputUrl);
+    if (completedVideos.length === 0) {
+      toast.error('Aucune vidéo complétée à exporter');
+      return;
+    }
+
+    setIsExporting(true);
+    setExportProgress(0);
+
+    try {
+      await videoAssembler.load();
+      const urls = completedVideos.map(s => s.outputUrl!).filter(Boolean);
+      const blob = await videoAssembler.concatenate(urls, (p) => setExportProgress(p));
+
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        setAssembledVideoUrl(url);
+        videoAssembler.download(blob, 'cortexia-video.mp4');
+        toast.success('Vidéo exportée avec succès!');
+      } else {
+        toast.error("L'assemblage a échoué");
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error("Erreur lors de l'export");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [timelineShots]);
 
   // Stage 1: Analyze
   React.useEffect(() => {
     if (stage === 'analyzing') {
-      analyzeVideoIntent();
+      handleAnalyze();
     }
   }, [stage]);
 
-  const analyzeVideoIntent = async () => {
+  const handleAnalyze = async () => {
+    setStage('analyzing');
+    
+    // ✅ DEMO MODE: Skip video flow for demo-user
+    if (userId === 'demo-user') {
+      console.log('🥥 Demo-user detected, video flow not available in demo mode');
+      alert('Mode démo: Le flow vidéo n\'est pas disponible. Utilisez le flow image pour tester.');
+      onBack();
+      return;
+    }
+
     try {
-      console.log('🎬 Starting video analysis with projectId:', projectId);
-      
+      console.log(' Starting video analysis for intent:', intentData.description);
       const response = await fetch(`${apiUrl}/coconut-v14/video/analyze`, {
         method: 'POST',
         headers: {
@@ -258,13 +324,61 @@ export function VideoFlowOrchestrator({ intentData, userId, projectId: propProje
   }
 
   if (stage === 'completed' && generationJob) {
-    // ✅ NEW: Use VideoCocoBoard to show completed generation with all details
     return (
-      <VideoCocoBoard
-        cocoBoardId={cocoBoardId!}
-        jobId={generationJob.id}
-        onClose={onBack}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] p-4 sm:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--coconut-shell)]">Vidéo terminée 🎉</h1>
+              <p className="text-sm text-[var(--coconut-husk)]">
+                {timelineShots.filter(s => s.status === 'completed').length}/{timelineShots.length} shots complétés
+              </p>
+            </div>
+            <button
+              onClick={onBack}
+              className="px-4 py-2 text-sm text-[var(--coconut-husk)] hover:text-[var(--coconut-shell)] transition-colors"
+            >
+              Retour au dashboard
+            </button>
+          </div>
+
+          {/* Assembled video player */}
+          {assembledVideoUrl && (
+            <VideoPlayerPremium videoUrl={assembledVideoUrl} />
+          )}
+
+          {/* VideoTimeline with export */}
+          <div className="bg-white/80 backdrop-blur-2xl rounded-2xl p-6 border border-white/60 shadow-xl">
+            <VideoTimeline
+              shots={timelineShots}
+              onChange={() => {}}
+              onExport={handleExport}
+              isExporting={isExporting}
+              totalDuration={analysis?.totalDuration}
+            />
+            {isExporting && (
+              <div className="mt-4 flex items-center gap-3">
+                <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                <div className="flex-1">
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                      style={{ width: `${exportProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Assemblage... {exportProgress}%</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Final video player */}
+          {generationJob.finalVideoUrl && !assembledVideoUrl && (
+            <VideoPlayerPremium videoUrl={generationJob.finalVideoUrl} />
+          )}
+        </div>
+      </div>
     );
   }
 

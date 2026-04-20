@@ -27,13 +27,12 @@ export function PaymentSuccess() {
 
         console.log('✅ Verifying payment session:', sessionId);
 
-        // Call backend with Authorization header
+        // Call backend
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/checkout/verify-session?session_id=${sessionId}`,
+          `/api/checkout/verify-session?session_id=${sessionId}`,
           {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
               'Content-Type': 'application/json',
             },
           }

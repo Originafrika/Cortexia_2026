@@ -27,7 +27,7 @@ export function ReferralSystemTester({ onClose, userId }: ReferralSystemTesterPr
   const [referralStats, setReferralStats] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'tests' | 'simulate'>('overview');
 
-  const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+  const apiUrl = '/api';
 
   useEffect(() => {
     loadInitialData();

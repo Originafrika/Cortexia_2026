@@ -86,24 +86,14 @@ export function MyUploadsPanel() {
 
       // Fetch uploads list
       const uploadsResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/list/${user.id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
-        }
+        `/api/storage/list/${user.id}`
       );
 
       const uploadsData = await uploadsResponse.json();
 
       // Fetch quota
       const quotaResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/quota/${user.id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
-        }
+        `/api/storage/quota/${user.id}`
       );
 
       const quotaData = await quotaResponse.json();
@@ -133,12 +123,11 @@ export function MyUploadsPanel() {
       setDeletingId(uploadId);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/delete/${uploadId}`,
+        `/api/storage/delete/${uploadId}`,
         {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ userId: user.id })
         }

@@ -30,11 +30,10 @@ export function EnterpriseSubscriptionSuccess() {
 
         // Call backend to verify and activate
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/enterprise/subscription/verify?session_id=${sessionId}`,
+          `/api/enterprise/subscription/verify?session_id=${sessionId}`,
           {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
               'Content-Type': 'application/json',
             },
           }

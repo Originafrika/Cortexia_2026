@@ -41,12 +41,7 @@ export function CommentsSheet({ postId, totalComments, onClose, onCommentsUpdate
   const loadComments = useCallback(async () => {
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${postId}/comments`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
-        }
+        `/api/feed/${postId}/comments`
       );
 
       const data = await response.json();
@@ -56,7 +51,7 @@ export function CommentsSheet({ postId, totalComments, onClose, onCommentsUpdate
           id: c.id || c.commentId,
           userId: c.userId,
           username: c.username,
-          avatar: getAvatarUrl(c.userAvatar, c.username), // ✅ NEW: Use avatar helper
+          avatar: getAvatarUrl(c.userAvatar, c.username),
           text: c.text,
           likes: c.likes || 0,
           liked: c.liked || false,
@@ -98,11 +93,10 @@ export function CommentsSheet({ postId, totalComments, onClose, onCommentsUpdate
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${postId}/comments`,
+        `/api/feed/${postId}/comments`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -172,11 +166,10 @@ export function CommentsSheet({ postId, totalComments, onClose, onCommentsUpdate
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${postId}/comments/${commentId}/like`,
+        `/api/feed/${postId}/comments/${commentId}/like`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -211,11 +204,10 @@ export function CommentsSheet({ postId, totalComments, onClose, onCommentsUpdate
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${postId}/comments/${commentId}`,
+        `/api/feed/${postId}/comments/${commentId}`,
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

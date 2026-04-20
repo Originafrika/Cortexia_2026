@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const API_BASE = '/api';
 
 export default function TestCampaignPage() {
   const [isRunning, setIsRunning] = useState(false);

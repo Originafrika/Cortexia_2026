@@ -5,6 +5,8 @@
 
 import { projectId } from '../../utils/supabase/info';
 
+const API_BASE = '/api';
+
 export interface ProfileData {
   success: boolean;
   userId: string;
@@ -51,7 +53,7 @@ export async function fetchUserProfile(
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/auth/profile/${userId}`,
+        `${API_BASE}/auth/profile/${userId}`,
         {
           method: 'GET',
           headers: {

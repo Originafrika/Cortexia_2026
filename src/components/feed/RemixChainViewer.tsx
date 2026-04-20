@@ -62,12 +62,7 @@ export function RemixChainViewer({
         console.log('🔗 Fetching remix chain for:', rootPost.id);
         
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${rootPost.id}/remix-chain`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
-            }
-          }
+          `/api/feed/${rootPost.id}/remix-chain`
         );
         
         const data = await response.json();

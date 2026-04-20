@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star, Copy, Gift } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star, Copy, Gift, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
 import { AcquisitionSourceStep } from './AcquisitionSourceStep'; // ✅ NEW: Import acquisition source step
@@ -11,7 +11,7 @@ interface OnboardingFlowProps {
 }
 
 export function OnboardingFlow({ userType, onComplete }: OnboardingFlowProps) {
-  const { completeOnboarding } = useAuth(); // ✅ NEW: Get completeOnboarding
+  const { completeOnboarding, refreshUser } = useAuth(); // ✅ NEW: Get refreshUser
   const [currentStep, setCurrentStep] = useState(0);
   const [preferences, setPreferences] = useState({
     // Common
@@ -189,6 +189,19 @@ export function OnboardingFlow({ userType, onComplete }: OnboardingFlowProps) {
     if (isLastStep) {
       toast.success('Onboarding complete!');
       
+      // ✅ Mark onboarding as complete in localStorage
+      const currentUser = localStorage.getItem('cortexia_user');
+      if (currentUser) {
+        const userData = JSON.parse(currentUser);
+        userData.onboardingComplete = true;
+        localStorage.setItem('cortexia_user', JSON.stringify(userData));
+        console.log('[Onboarding] Marked as complete in localStorage');
+      }
+      
+      // ✅ CRITICAL: Refresh auth context to detect user
+      refreshUser();
+      console.log('[Onboarding] ✅ Auth context refreshed');
+      
       // ✅ Save ALL onboarding data to user profile in KV store
       await completeOnboarding({
         // Common data
@@ -315,10 +328,11 @@ function WelcomeStep({ userType }: { userType: 'individual' | 'enterprise' | 'de
       icon: User,
       title: 'Create Amazing Content',
       features: [
-        'Simple creation mode',
-        'Access community feed',
+        'AI image & video generation',
+        'Community feed access',
         '25 free credits every month',
-        'Share & download without watermark',
+        'No watermark on downloads',
+        'Premium models available',
       ],
     },
     enterprise: {
@@ -337,7 +351,7 @@ function WelcomeStep({ userType }: { userType: 'individual' | 'enterprise' | 'de
       features: [
         'Full REST API access',
         'Webhooks & real-time updates',
-        '100 credits to start',
+        '25 credits to start',
         'Flexible credit packages + referral bonus',
       ],
     },
@@ -689,236 +703,193 @@ function APIKeyStep() {
 
 // Completion Step Component
 function CompletionStep({ userType, creatorOptIn }: { userType: 'individual' | 'enterprise' | 'developer'; creatorOptIn?: boolean }) {
-  const [referralCode, setReferralCode] = useState<string | null>(null);
-  
-  // ✅ Get referral code from sessionStorage
-  useState(() => {
-    const code = sessionStorage.getItem('cortexia_referral_code');
-    if (code) {
-      setReferralCode(code);
-    }
-  });
-
-  const handleCopyReferralCode = () => {
-    if (referralCode) {
-      navigator.clipboard.writeText(referralCode);
-      toast.success('Referral code copied to clipboard!');
-    }
-  };
-
   const content = {
     individual: {
-      credits: '25 free credits',
-      message: 'Start creating amazing content',
+      message: "You're all set!",
+      credits: "25 free credits",
     },
     enterprise: {
-      credits: 'Coconut access activated',
-      message: 'Your workspace is ready',
+      message: "Ready to launch",
+      credits: "Enterprise plan",
     },
     developer: {
-      credits: '100 credits activated',
-      message: 'Start building with Cortexia',
+      message: "API is ready",
+      credits: "Developer access",
     },
   };
 
   const data = content[userType];
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="text-center mb-8">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5, type: 'spring' }}
-          className="w-24 h-24 rounded-full bg-gradient-to-br from-[#F5EBE0] to-[#E3D5CA] flex items-center justify-center mx-auto mb-8"
-        >
-          <Check size={48} className="text-black" />
-        </motion.div>
+    <div className="max-w-xl mx-auto text-center">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
+        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-[#F5EBE0]/30 to-[#E3D5CA]/30 flex items-center justify-center">
+          <Sparkles className="text-[#F5EBE0]" size={40} />
+        </div>
+      </motion.div>
 
-        <h3 className="text-3xl mb-4">{data.message}</h3>
-        <p className="text-xl text-white/60 mb-2">{data.credits} activated</p>
-        
-        {userType === 'individual' && creatorOptIn && (
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-green-400 text-sm mt-2">
-            <Award size={14} />
-            <span>Creator mode enabled</span>
-          </div>
-        )}
-      </div>
-
-      {/* Individual - Show next steps based on choice */}
-      {userType === 'individual' && (
-        <div className="space-y-4 mb-8">
-          {creatorOptIn ? (
-            <motion.div
-              className="p-6 rounded-2xl bg-gradient-to-br from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h4 className="text-lg mb-4 flex items-center gap-2">
-                <TrendingUp className="text-[#F5EBE0]" size={20} />
-                <span>Your Creator Journey</span>
-              </h4>
-              <div className="space-y-3 text-sm text-white/80">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs text-[#F5EBE0]">1</span>
-                  </div>
-                  <div>
-                    <p className="text-white mb-1">Generate 60 creations this month</p>
-                    <p className="text-xs text-white/60">Use Simple mode to create images, videos, and avatars</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs text-[#F5EBE0]">2</span>
-                  </div>
-                  <div>
-                    <p className="text-white mb-1">Publish 5 posts with 5+ likes each</p>
-                    <p className="text-xs text-white/60">Share your best work in the community feed</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs text-[#F5EBE0]">3</span>
-                  </div>
-                  <div>
-                    <p className="text-white mb-1">Unlock Creator Benefits</p>
-                    <p className="text-xs text-white/60">3 Coconut generations/month • 10-15% referral commissions • Watermark-free downloads</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <h4 className="text-lg mb-4 flex items-center gap-2">
-                <Sparkles className="text-blue-400" size={20} />
-                <span>What's Next</span>
-              </h4>
-              <div className="space-y-3 text-sm text-white/80">
-                <div className="flex items-center gap-3">
-                  <Check size={16} className="text-blue-400" />
-                  <span>Explore Simple mode creation tools</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check size={16} className="text-blue-400" />
-                  <span>Browse the community feed for inspiration</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check size={16} className="text-blue-400" />
-                  <span>Generate your first AI creation</span>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <p className="text-xs text-white/60">
-                  💡 Want to unlock Coconut later? You can always join the Creator program from your profile.
-                </p>
-              </div>
-            </motion.div>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+      >
+        <div className="mb-8">
+          <h3 className="text-3xl mb-4">{data.message}</h3>
+          <p className="text-xl text-white/60 mb-2">{data.credits} activated</p>
+          
+          {userType === 'individual' && creatorOptIn && (
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30 text-green-400 text-sm mt-2">
+              <Award size={14} />
+              <span>Creator mode enabled</span>
+            </div>
           )}
         </div>
-      )}
 
-      {/* Enterprise - Show Coconut capabilities */}
-      {userType === 'enterprise' && (
-        <motion.div
-          className="p-6 rounded-2xl bg-gradient-to-br from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h4 className="text-lg mb-4">Your Coconut Workspace</h4>
-          <div className="grid grid-cols-3 gap-3 text-sm">
-            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-              <div className="text-xl mb-1">✨</div>
-              <div className="text-white/80">Image Mode</div>
-            </div>
-            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-              <div className="text-xl mb-1">🎬</div>
-              <div className="text-white/80">Video Mode</div>
-            </div>
-            <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-              <div className="text-xl mb-1">🚀</div>
-              <div className="text-white/80">Campaign Mode</div>
-            </div>
+        {/* Individual - Show next steps based on choice */}
+        {userType === 'individual' && (
+          <div className="space-y-4 mb-8">
+            {creatorOptIn ? (
+              <motion.div
+                className="p-6 rounded-2xl bg-gradient-to-br from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h4 className="text-lg mb-4 flex items-center gap-2">
+                  <TrendingUp className="text-[#F5EBE0]" size={20} />
+                  <span>Your Creator Journey</span>
+                </h4>
+                <div className="space-y-3 text-sm text-white/80">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs text-[#F5EBE0]">1</span>
+                    </div>
+                    <div>
+                      <p className="text-white mb-1">Generate 60 creations this month</p>
+                      <p className="text-xs text-white/60">Images, videos, avatars - all count</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs text-[#F5EBE0]">2</span>
+                    </div>
+                    <div>
+                      <p className="text-white mb-1">Publish 5 posts</p>
+                      <p className="text-xs text-white/60">Share your work in the community feed</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-[#F5EBE0]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs text-[#F5EBE0]">3</span>
+                    </div>
+                    <div>
+                      <p className="text-white mb-1">Unlock Creator Benefits</p>
+                      <p className="text-xs text-white/60">3 Coconut generations/month • Referral commissions • No watermark</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <p className="text-xs text-white/50">
+                      <span className="text-yellow-400">Or</span> buy 1000 credits anytime to unlock Creator status for the month
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+              >
+                <h4 className="text-lg mb-4 flex items-center gap-2">
+                  <Sparkles className="text-blue-400" size={20} />
+                  <span>What's Next</span>
+                </h4>
+                <div className="space-y-3 text-sm text-white/80">
+                  <div className="flex items-center gap-3">
+                    <Check size={16} className="text-blue-400" />
+                    <span>Create your first AI-generated image</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Check size={16} className="text-blue-400" />
+                    <span>Browse the community feed</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Check size={16} className="text-blue-400" />
+                    <span>Upgrade to premium for more models</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Award size={16} className="text-blue-400" />
+                    <span>Opt-in as Creator anytime to earn</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
-        </motion.div>
-      )}
+        )}
 
-      {/* Developer - Show API resources */}
-      {userType === 'developer' && (
-        <motion.div
-          className="p-6 rounded-2xl bg-gradient-to-br from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <h4 className="text-lg mb-4">Resources</h4>
-          <div className="space-y-2 text-sm">
-            <a href="#" className="flex items-center gap-2 text-[#F5EBE0] hover:underline">
-              <Code size={16} />
-              <span>API Documentation</span>
-            </a>
-            <a href="#" className="flex items-center gap-2 text-[#F5EBE0] hover:underline">
-              <Zap size={16} />
-              <span>Quick Start Guide</span>
-            </a>
-            <a href="#" className="flex items-center gap-2 text-[#F5EBE0] hover:underline">
-              <Sparkles size={16} />
-              <span>Code Examples</span>
-            </a>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ✅ Referral Code Section - Show for all user types */}
-      {referralCode && userType === 'individual' && (
-        <motion.div
-          className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <h4 className="text-lg mb-4 flex items-center gap-2">
-            <Gift className="text-purple-400" size={20} />
-            <span>Your Referral Code</span>
-          </h4>
-          <p className="text-sm text-white/60 mb-4">
-            Share this code with friends! They'll get bonus credits, and you'll earn rewards when they sign up.
-          </p>
-          
-          <div className="flex gap-3">
-            <div className="flex-1 p-4 rounded-xl bg-black/40 border border-purple-500/30 flex items-center justify-center">
-              <code className="text-2xl font-bold text-purple-400 tracking-wider">{referralCode}</code>
+        {/* Enterprise & Developer */}
+        {userType === 'enterprise' && (
+          <motion.div
+            className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <h4 className="text-lg mb-4 flex items-center gap-2">
+              <Building2 className="text-purple-400" size={20} />
+              <span>Your Enterprise Dashboard</span>
+            </h4>
+            <div className="space-y-3 text-sm text-white/80">
+              <div className="flex items-center gap-3">
+                <Check size={16} className="text-purple-400" />
+                <span>Access Coconut V14 orchestration</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check size={16} className="text-purple-400" />
+                <span>Team management & collaboration</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check size={16} className="text-purple-400" />
+                <span>Priority support</span>
+              </div>
             </div>
-            <button
-              onClick={handleCopyReferralCode}
-              className="px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 hover:bg-purple-500/30 transition-all flex items-center gap-2 text-purple-400"
-            >
-              <Copy size={18} />
-              <span className="hidden sm:inline">Copy</span>
-            </button>
-          </div>
+          </motion.div>
+        )}
 
-          <div className="mt-4 p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-            <p className="text-xs text-white/70">
-              💡 <strong>How it works:</strong> When someone signs up with your code, they get 5 bonus credits and you earn 2 credits per successful referral!
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      <div className="p-6 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10 text-center">
-        <p className="text-sm text-white/80">
-          You're all set! Click "Get Started" to {userType === 'enterprise' ? 'open your Coconut workspace' : userType === 'developer' ? 'see your API dashboard' : 'begin creating'}.
-        </p>
-      </div>
+        {userType === 'developer' && (
+          <motion.div
+            className="p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <h4 className="text-lg mb-4 flex items-center gap-2">
+              <Code className="text-green-400" size={20} />
+              <span>API Integration</span>
+            </h4>
+            <div className="space-y-3 text-sm text-white/80">
+              <div className="flex items-center gap-3">
+                <Check size={16} className="text-green-400" />
+                <span>Your API key is ready in settings</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check size={16} className="text-green-400" />
+                <span>Full REST API documentation</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Check size={16} className="text-green-400" />
+                <span>Webhooks for real-time updates</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 }
@@ -1028,15 +999,22 @@ function CreatorOptInStep({ optIn, onChange }: { optIn: boolean; onChange: (optI
           <div className={`p-4 rounded-xl border ${
             optIn ? 'bg-[#F5EBE0]/10 border-[#F5EBE0]/20' : 'bg-white/5 border-white/10'
           }`}>
-            <p className="text-xs text-white/60 mb-2">Monthly requirements:</p>
-            <div className="space-y-1 text-xs text-white/80">
+            <p className="text-xs text-white/60 mb-2">Monthly requirements to unlock Coconut:</p>
+            <div className="space-y-2 text-xs text-white/80">
               <div className="flex items-center gap-2">
                 <Star size={12} className={optIn ? 'text-[#F5EBE0]' : 'text-white/40'} />
                 <span>Generate 60 creations</span>
               </div>
               <div className="flex items-center gap-2">
                 <Star size={12} className={optIn ? 'text-[#F5EBE0]' : 'text-white/40'} />
-                <span>Publish 5 posts (5+ likes each)</span>
+                <span>Publish 5 posts</span>
+              </div>
+              <div className="pt-2 mt-2 border-t border-white/10">
+                <span className="text-white/60">Or</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ShoppingBag size={12} className={optIn ? 'text-[#F5EBE0]' : 'text-white/40'} />
+                <span>Buy 1,000 credits to unlock for the month</span>
               </div>
             </div>
           </div>

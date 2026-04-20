@@ -23,6 +23,10 @@ import { LanguageSwitcher } from '../LanguageSwitcher'; // ✅ NEW: Language swi
 import { useCurrentUser } from '../../lib/hooks/useCurrentUser'; // ✅ NEW: Get real user
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Get userType
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { llmCascade } from '../../lib/ai/llmCascade';
+import { selectCoconutLLM } from '../../lib/coconut/model-selector';
+import { getCondensedPrompt } from '../../lib/coconut/condensed-prompts';
+import { adaptLLMResponse, createFallbackAnalysis } from '../../lib/adapters/llm-response-adapter';
 import { toast } from 'sonner';
 // ✅ FIX 1.2: Import CocoBoard store
 import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
@@ -58,6 +62,7 @@ import { EnterpriseSubscriptionManager } from './EnterpriseSubscriptionManager';
 import { DirectionSelectorPremium } from './DirectionSelectorPremium'; // 🆕 PREMIUM VERSION
 import { TypeSelectorPremium } from './TypeSelectorPremium'; // 🆕 PREMIUM VERSION
 import { NavigationPremium } from './NavigationPremium'; // 🆕 NEW: Premium Navigation Sidebar
+import { CocoBlendCanvas } from '../cocoblend/CocoBlendCanvas'; // ✅ Infinite canvas with nodes
 import { CampaignWorkflow } from './CampaignWorkflow'; // 🆕 NEW: Campaign mode workflow
 
 // ✅ FIX: Import missing types and functions from correct locations
@@ -71,23 +76,27 @@ import type { CreativeDirection } from './DirectionSelector';
 // ============================================
 // TYPES
 // ============================================
+// SCREEN TYPES — Shared between app and navigation
+// ============================================
 
-type CoconutV14Screen = 
-  | 'dashboard'        // ✅ Point d'entrée
-  | 'boards'           // ✅ Projects list
-  | 'type-select'      // 🆕 NOUVEAU: Choix image/video/campaign (PHASE 1)
-  | 'intent-input'     // 🆕 New generation flow
-  | 'analyzing'         // 🆕 Gemini analysis loading
-  | 'direction-select'  // 🆕 NEW: Creative direction selection
-  | 'analysis-view'     // 🆕 Display Gemini results
-  | 'asset-manager'     // 🆕 Manage missing assets
-  | 'cocoboard' 
-  | 'generation'        // 🆕 Final generation
-  | 'credits' 
-  | 'settings' 
-  | 'history' 
-  | 'profile'
-  | 'video-flow';       // ✅ NEW: Video flow screen
+export type CoconutV14Screen = 
+  | 'dashboard'        // Entry point
+  | 'boards'           // Projects list
+  | 'type-select'      // Choose image/video/campaign
+  | 'intent-input'     // New generation flow
+  | 'analyzing'        // LLM analysis loading
+  | 'direction-select' // Creative direction selection
+  | 'analysis-view'    // Display analysis results
+  | 'asset-manager'    // Manage missing assets
+  | 'cocoboard'        // Edit creative plan
+  | 'cocoblend-canvas' // Infinite canvas with nodes (React Flow)
+  | 'generation'       // Final generation
+  | 'credits'          // Credits management
+  | 'settings'         // Settings panel
+  | 'history'          // History manager
+  | 'profile'          // User profile
+  | 'video-flow'       // Video generation flow
+  | 'campaign';        // Campaign generation flow
 
 // ============================================
 // PREMIUM SIDEBAR NAVIGATION
@@ -636,63 +645,153 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
       }
       
       // Step 2: Call backend analyze-intent route
-      console.log('🧠 Analyzing intent with Gemini...');
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/coconut-v14/analyze-intent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId, // ✅ Use real user ID
-            projectId: newProjectId, // ✅ Use real project ID
-            description: intentData.description,
-            references: {
-              images: intentData.references.images.map((upload, i) => ({
-                url: upload.preview, // ✅ Use signed URL from upload (not blob)
-                filename: upload.file.name,
-                description: upload.description || '',
-              })),
-              videos: intentData.references.videos.map((upload, i) => ({
-                url: upload.preview || '', // ✅ Use signed URL from upload (not blob)
-                filename: upload.file.name,
-                description: upload.description || '',
-              })),
-            },
-            format: intentData.format,
-            resolution: intentData.resolution,
-            targetUsage: intentData.targetUsage,
-          }),
+      console.log('🧠 Analyzing intent with LLM Cascade...');
+      
+      // ✅ DEMO MODE: Use condensed Coconut prompts (free models can't handle 200+ line prompts)
+      let analysisResult;
+      if (userId === 'demo-user') {
+        console.log('🥥 Demo-user detected, using condensed Coconut prompts');
+        
+        const systemPrompt = getCondensedPrompt(selectedType);
+
+        const llmModel = selectCoconutLLM(
+          selectedType === 'video' ? 'video' : selectedType === 'campaign' ? 'campaign' : 'image',
+          intentData.references.images.length + intentData.references.videos.length,
+          intentData.description.length,
+        );
+
+        // Build user prompt with assets
+        const assetList = [
+          ...intentData.references.images.map((img, i) => `- Image ${i + 1}: ${img.file.name}${img.description ? ` — ${img.description}` : ''}`),
+          ...intentData.references.videos.map((vid, i) => `- Video ${i + 1}: ${vid.file.name}${vid.description ? ` — ${vid.description}` : ''}`),
+        ].join('\n');
+
+        const userPrompt = `CREATIVE INTENT:
+${intentData.description}
+
+FORMAT: ${intentData.format || '9:16'}
+RESOLUTION: ${intentData.resolution || '1K'}
+TARGET USAGE: ${intentData.targetUsage || 'social media'}
+
+PROVIDED ASSETS (${intentData.references.images.length + intentData.references.videos.length}):
+${assetList || 'No assets provided.'}
+
+Generate a complete creative plan as valid JSON.
+Return ONLY valid JSON — no markdown, no explanation.`;
+
+        try {
+          const cascadeResult = await llmCascade.callWithFallback({
+            systemPrompt,
+            userPrompt,
+            temperature: 0.3,
+            maxTokens: 8192,
+            modelPreference: llmModel,
+          });
+
+          if (cascadeResult.success && cascadeResult.response?.content) {
+            // Clean JSON response (remove markdown code blocks if present)
+            let content = cascadeResult.response.content.trim();
+            // Remove ```json and ``` markers
+            content = content.replace(/^```json\s*/, '').replace(/```$/, '');
+            // Remove any other ``` markers
+            content = content.replace(/^```\s*/, '').replace(/```$/, '');
+
+            // Try to extract JSON if the response contains text before/after JSON
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              content = jsonMatch[0];
+            }
+
+            // Parse LLM response as JSON with fallback
+            let parsedContent;
+            try {
+              parsedContent = JSON.parse(content);
+            } catch (parseError) {
+              console.warn('⚠️ JSON parse failed, using raw text as prompt:', parseError);
+              parsedContent = {
+                finalPrompt: cascadeResult.response.content,
+                creativeDirections: [
+                  { title: 'Direction 1', description: 'Generated from LLM response' },
+                  { title: 'Direction 2', description: 'Generated from LLM response' },
+                  { title: 'Direction 3', description: 'Generated from LLM response' }
+                ],
+                suggestedFormats: ['9:16', '1:1'],
+                suggestedResolutions: ['1080x1920'],
+                missingAssets: []
+              };
+            }
+
+            // ✅ Use extracted adapter
+            analysisResult = adaptLLMResponse({
+              parsedContent,
+              intentDescription: intentData.description,
+            });
+            console.log('✅ LLM Cascade success:', cascadeResult.response.provider, cascadeResult.response.model);
+          } else {
+            throw new Error(cascadeResult.attempts[0]?.error || 'LLM Cascade failed');
+          }
+        } catch (llmError) {
+          console.error('❌ LLM Cascade error:', llmError);
+          // ✅ Use extracted fallback
+          analysisResult = createFallbackAnalysis(intentData.description);
         }
-      );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Analysis failed:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+      } else {
+        const response = await fetch(
+          `/api/coconut-v14/analyze-intent`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userId,
+              projectId: newProjectId,
+              intent: intentData.description,
+              references: {
+                images: intentData.references.images.map((upload, i) => ({
+                  url: upload.preview,
+                  filename: upload.file.name,
+                  description: upload.description || '',
+                })),
+                videos: intentData.references.videos.map((upload, i) => ({
+                  url: upload.preview || '',
+                  filename: upload.file.name,
+                  description: upload.description || '',
+                })),
+              },
+              format: intentData.format,
+              resolution: intentData.resolution,
+              targetUsage: intentData.targetUsage,
+            }),
+          }
+        );
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Analysis failed:', errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // ✅ DEBUG: Log raw response text BEFORE JSON parsing
+        const responseText = await response.text();
+        console.log('🔍 [DEBUG] Raw response (first 500 chars):', responseText.substring(0, 500));
+        
+        analysisResult = JSON.parse(responseText);
+        
+        // ✅ DEBUG: Check finalPrompt type immediately after parsing
+        console.log('🔍 [DEBUG] finalPrompt type after JSON.parse:', typeof analysisResult.data?.finalPrompt);
       }
-      
-      // ✅ DEBUG: Log raw response text BEFORE JSON parsing
-      const responseText = await response.text();
-      console.log('🔍 [DEBUG] Raw response (first 500 chars):', responseText.substring(0, 500));
-      
-      const result = JSON.parse(responseText);
-      
-      // ✅ DEBUG: Check finalPrompt type immediately after parsing
-      console.log('🔍 [DEBUG] finalPrompt type after JSON.parse:', typeof result.data?.finalPrompt);
       console.log('🔍 [DEBUG] finalPrompt preview:', 
-        typeof result.data?.finalPrompt === 'string' 
-          ? result.data.finalPrompt.substring(0, 100) + '...'
-          : JSON.stringify(result.data?.finalPrompt).substring(0, 200) + '...'
+        typeof analysisResult.data?.finalPrompt === 'string' 
+          ? analysisResult.data.finalPrompt.substring(0, 100) + '...'
+          : JSON.stringify(analysisResult.data?.finalPrompt).substring(0, 200) + '...'
       );
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to analyze intent');
+      if (!analysisResult.success) {
+        throw new Error(analysisResult.error || 'Failed to analyze intent');
       }
       
-      console.log('✅ Analysis complete', result.data);
+      console.log('✅ Analysis complete', analysisResult.data);
       
       // ✅ Store uploaded references with URLs for later use
       setUploadedReferences({
@@ -715,7 +814,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
       console.log('🎨 Generating creative directions...');
       const directions = await generateCreativeDirections(
         intentData.description,
-        result.data.concept?.direction || '',  //  FIXED: result.data is the analysis, not result.data.analysis
+        analysisResult.data.concept?.direction || '',  //  FIXED: analysisResult.data is the analysis, not result.data.analysis
         { 
           images: intentData.references.images,
           videos: intentData.references.videos 
@@ -723,8 +822,8 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
       );
       
       setAvailableDirections(directions);
-      setGeminiAnalysis(result.data);  // ✅ FIXED: result.data is the analysis
-      setCurrentProjectId(result.data.projectId || newProjectId);
+      setGeminiAnalysis(analysisResult.data);  // ✅ FIXED: analysisResult.data is the analysis
+      setCurrentProjectId(analysisResult.data.projectId || newProjectId);
       
       // ✅ Refetch credits after analysis (100 credits were deducted)
       await refetchCredits();
@@ -904,11 +1003,39 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                 uploadedReferences={uploadedReferences}
                 onGenerationStart={(generationId: string) => {
                   console.log('🎬 Generation started:', generationId);
-                  // ✅ FIX 1.1: Use state instead of navigation
                   setCurrentGenerationId(generationId);
-                  setCurrentScreen('generation');
+                  // Navigate to cocoblend-canvas first
+                  setCurrentScreen('cocoblend-canvas');
                 }}
               />
+            )}
+
+            {currentScreen === 'cocoblend-canvas' && (
+              <div className="h-screen w-screen">
+                <CocoBlendCanvas
+                  jobId={`demo-${Date.now()}`}
+                  steps={geminiAnalysis?.suggestedFormats?.map((format, i) => ({
+                    id: `step_${i + 1}`,
+                    type: 'image',
+                    model: 'flux-2-pro',
+                    prompt: geminiAnalysis.finalPrompt || '',
+                    aspectRatio: format,
+                    resolution: '2K',
+                    referenceImages: [],
+                    dependsOn: i > 0 ? [`step_${i}`] : [],
+                    creditsEstimated: 2,
+                  })) || [
+                    { id: 'step_1', type: 'image', model: 'flux-2-pro', prompt: 'Default prompt', aspectRatio: '16:9', resolution: '2K', referenceImages: [], dependsOn: [], creditsEstimated: 2 }
+                  ]}
+                  executionOrder={geminiAnalysis?.suggestedFormats?.map((_, i) => `step_${i + 1}`) || ['step_1']}
+                  onGenerateStart={() => console.log('🚀 Canvas generation started')}
+                  onGenerateComplete={(results) => {
+                    console.log('✅ Canvas generation complete:', results);
+                    // Navigate to generation screen after canvas
+                    setCurrentScreen('generation');
+                  }}
+                />
+              </div>
             )}
             
             {currentScreen === 'credits' && (
@@ -946,7 +1073,6 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
                 onBack={() => setCurrentScreen('type-select')} // ✅ PHASE 2: Back to type selector
                 isLoading={isAnalyzing}
                 userCredits={getCoconutCredits()}
-                userId={userId} // ✅ NEW: Pass real userId
               />
             )}
             
@@ -968,7 +1094,7 @@ function CoconutV14AppContent({ onNavigate }: { onNavigate?: (screen: string) =>
               <AssetManager
                 missingAssets={geminiAnalysis.assetsRequired.missing}
                 onGenerate={async (assetId: string) => {
-                  console.log('🎨 Generate asset:', assetId);
+                  console.log(' Generate asset:', assetId);
                   // TODO: Call generation API
                   await new Promise(resolve => setTimeout(resolve, 2000));
                 }}

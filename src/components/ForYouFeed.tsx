@@ -147,10 +147,10 @@ export function ForYouFeed({
       console.log(`🔗 Fetching remix chain for: ${postId}`);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${postId}/remix-chain`,
+        `/api/feed/${postId}/remix-chain`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -235,8 +235,8 @@ export function ForYouFeed({
     
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/creators/${userId}/coconut-access`,
-        { headers: { 'Authorization': `Bearer ${publicAnonKey}` } }
+        `/api/creators/${userId}/coconut-access`,
+        { headers: { 'Content-Type': 'application/json' } }
       );
       const data = await response.json();
       setPostCreatorStatus(prev => ({
@@ -261,12 +261,7 @@ export function ForYouFeed({
       console.log(`📥 Fetching feed posts: offset=${offset}, limit=${limit}`);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/community?offset=${offset}&limit=${limit}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
-        }
+        `/api/feed?offset=${offset}&limit=${limit}`
       );
       
       const data = await response.json();
@@ -478,11 +473,10 @@ export function ForYouFeed({
     // ✅ Call backend API
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/${currentPost.id}/like`,
+        `/api/feed/${currentPost.id}/like`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({

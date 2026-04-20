@@ -8,12 +8,30 @@ import { CoconutMode, createJobResponseSchema, blueprintSchema } from '../../../
 import { db } from '../../../lib/db';
 import { cocoboardJobs } from '../../../lib/db/schema';
 import { v4 as uuidv4 } from 'uuid';
+import { generationRateLimit } from '../../../lib/middleware/rateLimit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for generation
+    const ip = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
+    const authContext = getAuthContextFromHeaders(request.headers);
+    const rateLimitResult = await generationRateLimit(ip, authContext?.userId);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Limite de génération atteinte. Réessayez plus tard.', remaining: 0 },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          }
+        }
+      );
+    }
+
     // Auth check
-    const auth = getAuthContextFromHeaders(request.headers);
-    if (!auth) {
+    if (!authContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

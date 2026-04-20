@@ -103,12 +103,9 @@ export function IntentInput({ selectedType, onSubmit, onBack, isLoading = false,
       formData.append('category', category);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/upload/reference`,
+        `/api/upload/reference`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
           body: formData,
         }
       );
@@ -120,13 +117,13 @@ export function IntentInput({ selectedType, onSubmit, onBack, isLoading = false,
       
       const result = await response.json();
       
-      if (!result.success || !result.data.signedUrl) {
-        throw new Error('Upload failed: No signed URL returned');
+      if (!result.success || !result.url) {
+        throw new Error('Upload failed: No URL returned');
       }
       
       return {
-        signedUrl: result.data.signedUrl,
-        path: result.data.path,
+        signedUrl: result.url,
+        path: result.url,
       };
       
     } catch (error) {

@@ -43,6 +43,7 @@ import type {
 import { calculateCost, type GenerationSpecs } from '../../lib/utils/cost-calculator';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { useNotify } from './NotificationProvider';
+import { AssetUploader, type AssetItem } from '../cocoblend/AssetUploader';
 
 // ============================================
 // TYPES
@@ -252,12 +253,9 @@ export function IntentInputPremium({
       formData.append('category', category);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/upload/reference`,
+        `/api/upload/reference`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
           body: formData,
         }
       );
@@ -268,13 +266,13 @@ export function IntentInputPremium({
       
       const result = await response.json();
       
-      if (!result.success || !result.data.signedUrl) {
-        throw new Error('No signed URL returned');
+      if (!result.success || !result.url) {
+        throw new Error('No URL returned');
       }
       
       return {
-        signedUrl: result.data.signedUrl,
-        path: result.data.path,
+        signedUrl: result.url,
+        path: result.url,
       };
       
     } catch (error) {
@@ -283,7 +281,10 @@ export function IntentInputPremium({
     }
   };
   
-  // Handle image upload
+  // ✅ AssetUploader state
+  const [assets, setAssets] = useState<AssetItem[]>([]);
+  
+  // Handle image upload (legacy, kept for compatibility)
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -424,9 +425,32 @@ export function IntentInputPremium({
     playSuccess();
     playWhoosh();
     
+    // Convert AssetUploader assets to FileUpload format for compatibility
+    const assetImages: FileUpload[] = assets
+      .filter(a => a.type === 'image')
+      .map(a => ({
+        file: new File([], a.filename), // Placeholder - real file already uploaded
+        preview: a.url,
+        description: a.label || '',
+        uploadProgress: 100,
+      }));
+    
+    const assetVideos: FileUpload[] = assets
+      .filter(a => a.type === 'video')
+      .map(a => ({
+        file: new File([], a.filename),
+        preview: a.url,
+        description: a.label || '',
+        uploadProgress: 100,
+      }));
+    
+    // Merge legacy uploads with AssetUploader assets
+    const allImages = [...images, ...assetImages];
+    const allVideos = [...videos, ...assetVideos];
+    
     onSubmit({
       description,
-      references: { images, videos },
+      references: { images: allImages, videos: allVideos },
       format,
       resolution,
       targetUsage,
@@ -642,7 +666,7 @@ export function IntentInputPremium({
               </div>
             </div>
 
-            {/* Upload References */}
+            {/* Upload References — AssetUploader */}
             <div className="bg-white/80 backdrop-blur-2xl rounded-2xl p-6 border border-white/60 shadow-xl">
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -651,148 +675,18 @@ export function IntentInputPremium({
                     Références visuelles (optionnel)
                   </label>
                   <p className="text-xs text-[var(--coconut-husk)] mt-1">
-                    Ajoutez des images ou vidéos pour guider l'IA
+                    Ajoutez des images, vidéos, audio ou PDF pour guider l'IA
                   </p>
                 </div>
               </div>
               
-              {/* ✅ NEW: Tabs for Images / Videos */}
-              <div className="flex gap-2 mb-4">
-                <label className="flex-1 relative block cursor-pointer group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    disabled={isLoading || isUploading}
-                    className="hidden"
-                  />
-                  <div className="border-2 border-dashed border-white/40 rounded-xl p-6 text-center group-hover:border-[var(--coconut-palm)]/50 transition-all">
-                    <ImageIcon className="w-6 h-6 text-[var(--coconut-husk)]/50 mx-auto mb-2 group-hover:text-[var(--coconut-palm)] transition-colors" />
-                    <p className="text-xs text-[var(--coconut-shell)] mb-0.5">
-                      Images
-                    </p>
-                    <p className="text-xs text-[var(--coconut-husk)]">
-                      Max 10MB
-                    </p>
-                  </div>
-                </label>
-
-                <label className="flex-1 relative block cursor-pointer group">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    multiple
-                    onChange={handleVideoUpload}
-                    disabled={isLoading || isUploading}
-                    className="hidden"
-                  />
-                  <div className="border-2 border-dashed border-white/40 rounded-xl p-6 text-center group-hover:border-[var(--coconut-palm)]/50 transition-all">
-                    <VideoIcon className="w-6 h-6 text-[var(--coconut-husk)]/50 mx-auto mb-2 group-hover:text-[var(--coconut-palm)] transition-colors" />
-                    <p className="text-xs text-[var(--coconut-shell)] mb-0.5">
-                      Vidéos
-                    </p>
-                    <p className="text-xs text-[var(--coconut-husk)]">
-                      Max 50MB
-                    </p>
-                  </div>
-                </label>
-              </div>
-              
-              {/* ✅ NEW: Uploaded files with description cards */}
-              {(images.length > 0 || videos.length > 0) && (
-                <div className="mt-4 space-y-3">
-                  {/* Images */}
-                  {images.map((img, i) => (
-                    <div key={`img-${i}`} className="bg-white/60 rounded-xl p-3 border border-white/40">
-                      <div className="flex gap-3">
-                        {/* Preview */}
-                        <div className="relative flex-shrink-0">
-                          <img
-                            src={img.preview}
-                            alt=""
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                          {img.uploadProgress !== undefined && img.uploadProgress < 100 && (
-                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Description input */}
-                        <div className="flex-1 flex flex-col gap-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-[var(--coconut-shell)] flex items-center gap-1">
-                              <ImageIcon className="w-3 h-3" />
-                              {img.file.name}
-                            </span>
-                            <button
-                              onClick={() => removeFile('image', i)}
-                              className="p-1 rounded-full hover:bg-red-100 text-red-500 transition-colors"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          
-                          <input
-                            type="text"
-                            value={img.description || ''}
-                            onChange={(e) => updateFileDescription('image', i, e.target.value)}
-                            placeholder="Ajoutez une description (optionnel)..."
-                            disabled={isLoading}
-                            className="w-full px-3 py-2 text-xs rounded-lg bg-white border border-white/40 text-[var(--coconut-shell)] placeholder:text-[var(--coconut-husk)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--coconut-palm)]/30 transition-all disabled:opacity-50"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Videos */}
-                  {videos.map((vid, i) => (
-                    <div key={`vid-${i}`} className="bg-white/60 rounded-xl p-3 border border-white/40">
-                      <div className="flex gap-3">
-                        {/* Preview */}
-                        <div className="relative flex-shrink-0">
-                          <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <VideoIcon className="w-8 h-8 text-gray-400" />
-                          </div>
-                          {vid.uploadProgress !== undefined && vid.uploadProgress < 100 && (
-                            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Description input */}
-                        <div className="flex-1 flex flex-col gap-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-[var(--coconut-shell)] flex items-center gap-1">
-                              <VideoIcon className="w-3 h-3" />
-                              {vid.file.name}
-                            </span>
-                            <button
-                              onClick={() => removeFile('video', i)}
-                              className="p-1 rounded-full hover:bg-red-100 text-red-500 transition-colors"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          
-                          <input
-                            type="text"
-                            value={vid.description || ''}
-                            onChange={(e) => updateFileDescription('video', i, e.target.value)}
-                            placeholder="Ajoutez une description (optionnel)..."
-                            disabled={isLoading}
-                            className="w-full px-3 py-2 text-xs rounded-lg bg-white border border-white/40 text-[var(--coconut-shell)] placeholder:text-[var(--coconut-husk)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--coconut-palm)]/30 transition-all disabled:opacity-50"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <AssetUploader
+                assets={assets}
+                onChange={setAssets}
+                maxAssets={20}
+                maxSizeMB={selectedType === 'video' ? 50 : 10}
+                disabled={isLoading || isUploading}
+              />
             </div>
           </motion.div>
 

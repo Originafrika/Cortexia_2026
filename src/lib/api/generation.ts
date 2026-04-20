@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/generation`;
+const API_BASE = `/api/generation`;
 
 export interface GenerateImageRequest {
   layerId: string;

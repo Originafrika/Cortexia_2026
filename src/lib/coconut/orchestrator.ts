@@ -15,28 +15,26 @@ import {
   generateExecutionOrder,
   identifyParallelGroups,
 } from './schemas';
+import {
+  COCONUT_IMAGE_PROMPT,
+  COCONUT_VIDEO_PROMPT,
+  COCONUT_CAMPAIGN_PROMPT,
+} from './prompts';
+import { selectCoconutLLM } from './model-selector';
+import { calculateStepCost, type TotalCost } from './cost-calculator';
 
-// System prompt for CocoBoard generation
-const COCOBOARD_SYSTEM_PROMPT = `You are CocoBoard, an expert AI creative director for Cortexia Enterprise.
-Your task is to analyze user intent and generate structured creative plans (CocoBoard blueprints).
-
-For IMAGE mode:
-- Create 1-3 image generation steps
-- Specify FLUX-2 models (pro/flex/dev) based on quality needs
-- Include aspect ratio and resolution recommendations
-
-For VIDEO mode:
-- Create 3-6 steps: hook image → hook video → development → climax → CTA
-- Use Kling-3, Wan-2.6, or Seedance models
-- Specify T2V or I2V based on flow
-
-For CAMPAIGN mode:
-- Create a 4-week marketing campaign
-- 14-21 posts across Instagram/TikTok/Facebook
-- Each week has a theme: Teaser → Launch → Social Proof → Conversion
-
-Output valid JSON matching the CocoBoardBlueprint schema.
-Include estimated credits for each step.`;
+function getSystemPromptForMode(mode: CoconutMode): string {
+  switch (mode) {
+    case 'image':
+      return COCONUT_IMAGE_PROMPT;
+    case 'video':
+      return COCONUT_VIDEO_PROMPT;
+    case 'campaign':
+      return COCONUT_CAMPAIGN_PROMPT;
+    default:
+      return COCONUT_IMAGE_PROMPT;
+  }
+}
 
 interface GenerateBlueprintParams {
   mode: CoconutMode;
@@ -75,14 +73,23 @@ class CoconutOrchestrator {
    */
   async generateBlueprint(params: GenerateBlueprintParams): Promise<GenerateBlueprintResult> {
     try {
+      const systemPrompt = getSystemPromptForMode(params.mode);
       const userPrompt = this.buildUserPrompt(params);
       
+      const llmModel = selectCoconutLLM(
+        params.mode,
+        params.assets?.length || 0,
+        params.intent.length,
+      );
+
+      console.log(`🧠 [CoconutOrchestrator] Generating blueprint — mode: ${params.mode}, LLM: ${llmModel}, assets: ${params.assets?.length || 0}, intent: ${params.intent.length} chars`);
+      
       const llmResult = await llmCascade.callWithFallback({
-        systemPrompt: COCOBOARD_SYSTEM_PROMPT,
+        systemPrompt,
         userPrompt,
-        temperature: 0.7,
-        maxTokens: 4096,
-        modelPreference: 'smart',
+        temperature: 0.3,
+        maxTokens: 8192,
+        modelPreference: llmModel,
       });
 
       if (!llmResult.success || !llmResult.response?.content) {
@@ -135,20 +142,16 @@ class CoconutOrchestrator {
    */
   private buildUserPrompt(params: GenerateBlueprintParams): string {
     const assetContext = params.assets?.length 
-      ? `\nReference assets provided: ${params.assets.length} images`
-      : '';
+      ? `\n\nPROVIDED ASSETS (${params.assets.length}):\n${params.assets.map((a, i) => `  ${i + 1}. ${a}`).join('\n')}`
+      : '\n\nPROVIDED ASSETS: None';
 
-    return `MODE: ${params.mode}
-INTENT: ${params.intent}${assetContext}
+    return `CREATIVE INTENT:
+${params.intent}
+${assetContext}
 
-Generate a complete CocoBoard blueprint as valid JSON with:
-- title: Campaign/project title
-- description: Brief overview
-- complexity: simple|medium|complex
-- steps: Array of generation steps with IDs, prompts, models, and credit estimates
-- executionOrder: Step IDs in dependency order
-
-For campaigns, include the campaign object with phases and posts.`;
+Generate a complete CocoBoard blueprint as valid JSON following the mode-specific guidelines.
+For campaigns, include the campaign object with phases, posts, and visualSteps.
+Return ONLY valid JSON — no markdown, no explanation.`;
   }
 
   /**
@@ -424,7 +427,59 @@ For campaigns, include the campaign object with phases and posts.`;
   }
 
   /**
-   * Execute blend batch - run all steps respecting dependencies
+   * Topological sort with cycle detection.
+   * Returns ordered step IDs respecting dependencies.
+   * If circular dependencies detected, falls back to natural order.
+   */
+  private topologicalSort(steps: Step[]): { order: string[]; hasCycle: boolean } {
+    const graph = new Map<string, string[]>();
+    const inDegree = new Map<string, number>();
+    const allIds = new Set<string>();
+
+    for (const step of steps) {
+      allIds.add(step.id);
+      if (!graph.has(step.id)) graph.set(step.id, []);
+      if (!inDegree.has(step.id)) inDegree.set(step.id, 0);
+
+      for (const dep of step.dependsOn || []) {
+        if (!graph.has(dep)) graph.set(dep, []);
+        if (!inDegree.has(dep)) inDegree.set(dep, 0);
+        graph.get(dep)!.push(step.id);
+        inDegree.set(step.id, (inDegree.get(step.id) || 0) + 1);
+      }
+    }
+
+    const queue: string[] = [];
+    for (const [id, degree] of inDegree) {
+      if (degree === 0) queue.push(id);
+    }
+
+    const order: string[] = [];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      order.push(current);
+      for (const neighbor of graph.get(current) || []) {
+        inDegree.set(neighbor, inDegree.get(neighbor)! - 1);
+        if (inDegree.get(neighbor) === 0) queue.push(neighbor);
+      }
+    }
+
+    const hasCycle = order.length < allIds.size;
+    if (hasCycle) {
+      console.warn('⚠️ [CoconutOrchestrator] Circular dependencies detected, falling back to natural order');
+      return { order: steps.map(s => s.id), hasCycle: true };
+    }
+
+    return { order, hasCycle: false };
+  }
+
+  /**
+   * Execute blend batch — run all steps respecting dependencies.
+   * Features:
+   * - Topological sort with cycle detection
+   * - Retry logic for failed steps (up to 2 retries)
+   * - Continue execution if non-critical step fails
+   * - Detailed progress reporting via onProgress callback
    */
   async executeBlendBatch(
     jobId: string,
@@ -432,54 +487,73 @@ For campaigns, include the campaign object with phases and posts.`;
     userId: string,
     apiKey: string,
     onProgress?: (stepId: string, status: string, outputUrl?: string) => void
-  ): Promise<{ success: boolean; completed: number; failed: number; totalCredits: number }> {
-    const executionOrder = generateExecutionOrder(steps);
+  ): Promise<{ success: boolean; completed: number; failed: number; skipped: number; totalCredits: number }> {
+    const { order, hasCycle } = this.topologicalSort(steps);
     const completedSteps = new Map<string, { success: boolean; outputUrl?: string }>();
     let totalCredits = 0;
     let failed = 0;
+    let skipped = 0;
 
-    for (const stepId of executionOrder) {
+    console.log(`🔄 [CoconutOrchestrator] Executing blend batch — ${order.length} steps, cycle: ${hasCycle}`);
+
+    for (const stepId of order) {
       const step = steps.find(s => s.id === stepId);
       if (!step) continue;
 
-      // Resolve dependencies
-      if (step.dependsOn) {
-        for (const depId of step.dependsOn) {
-          const dep = completedSteps.get(depId);
-          if (!dep?.success) {
-            // Skip this step - dependency failed
-            onProgress?.(stepId, 'skipped');
-            failed++;
-            continue;
-          }
-        }
-      }
-
-      onProgress?.(stepId, 'processing');
-
-      const result = await this.executeStep({
-        jobId,
-        step,
-        userId,
-        apiKey,
+      // Check if all dependencies succeeded
+      const failedDeps = (step.dependsOn || []).filter(depId => {
+        const dep = completedSteps.get(depId);
+        return !dep?.success;
       });
 
-      totalCredits += result.creditsConsumed;
+      if (failedDeps.length > 0) {
+        console.warn(`⏭️ [CoconutOrchestrator] Skipping step ${stepId} — dependencies failed: ${failedDeps.join(', ')}`);
+        completedSteps.set(stepId, { success: false });
+        skipped++;
+        onProgress?.(stepId, 'skipped');
+        continue;
+      }
 
-      if (result.success) {
+      // Execute with retry logic (up to 2 retries)
+      let result: ExecuteStepResult | null = null;
+      const maxRetries = 2;
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        if (attempt > 0) {
+          console.log(`🔄 [CoconutOrchestrator] Retrying step ${stepId} — attempt ${attempt + 1}/${maxRetries + 1}`);
+          await new Promise(r => setTimeout(r, 2000 * attempt)); // Exponential backoff
+        }
+
+        onProgress?.(stepId, attempt === 0 ? 'processing' : 'retrying');
+        result = await this.executeStep({ jobId, step, userId, apiKey });
+
+        if (result.success) break;
+        console.warn(`⚠️ [CoconutOrchestrator] Step ${stepId} failed (attempt ${attempt + 1}): ${result.error}`);
+      }
+
+      totalCredits += result?.creditsConsumed || 0;
+
+      if (result?.success) {
         completedSteps.set(stepId, { success: true, outputUrl: result.outputUrl });
         onProgress?.(stepId, 'completed', result.outputUrl);
+        const actualCost = calculateStepCost(step);
+        console.log(`✅ [CoconutOrchestrator] Step ${stepId} completed — estimated: ${step.creditsEstimated}cr, actual: ${actualCost.credits}cr (${actualCost.breakdown})`);
       } else {
         completedSteps.set(stepId, { success: false });
         failed++;
         onProgress?.(stepId, 'failed');
+        console.error(`❌ [CoconutOrchestrator] Step ${stepId} failed after ${maxRetries + 1} attempts: ${result?.error}`);
       }
     }
 
+    const completed = order.length - failed - skipped;
+    console.log(`📊 [CoconutOrchestrator] Blend batch complete — ${completed}/${order.length} succeeded, ${failed} failed, ${skipped} skipped, ${totalCredits} credits`);
+
     return {
       success: failed === 0,
-      completed: completedSteps.size - failed,
+      completed,
       failed,
+      skipped,
       totalCredits,
     };
   }

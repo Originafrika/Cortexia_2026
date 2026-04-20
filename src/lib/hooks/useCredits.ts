@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
+const API_BASE = '/api';
+
 export interface UserCredits {
   free: number;
   paid: number;
@@ -38,10 +40,9 @@ export function useCredits(userId: string): UseCreditsReturn {
       setError(null);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/credits/${userId}`,
+        `${API_BASE}/credits?userId=${encodeURIComponent(userId)}`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json'
           }
         }

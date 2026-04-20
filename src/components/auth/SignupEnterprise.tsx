@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Building2, Briefcase, Users, Gift, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
-import { Auth0SocialButtons } from './Auth0SocialButtons';
-import { supabase } from '../../lib/services/auth0-service';
-import { fetchUserProfile, storeProfileData } from '../../lib/utils/profile-fetch';
+import { NeonSocialButtons } from './NeonSocialButtons';
+import { neonSignUp } from '../../lib/auth';
 import { toast } from 'sonner';
+import { useAuth } from '../../lib/contexts/AuthContext';
 
 interface SignupEnterpriseProps {
   onSuccess: (userId: string, accessToken: string) => void;
@@ -14,6 +13,7 @@ interface SignupEnterpriseProps {
 }
 
 export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupEnterpriseProps) {
+  const { refreshUser } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -54,12 +54,11 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
     setError('');
 
     try {
-      // 1. Call backend signup endpoint
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/auth/signup-enterprise`, {
+      // Use local signup API
+      const response = await fetch(`/api/auth/signup`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify(formData),
       });
@@ -78,7 +77,7 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
         throw new Error(data.error || 'Signup failed');
       }
 
-      console.log('✅ [SignupEnterprise] Backend signup successful:', data.userId);
+      console.log('✅ [SignupEnterprise] Backend signup successful:', data.user);
 
       // ✅ CRITICAL: Create Supabase session FIRST before fetching profile
       console.log('🔐 [SignupEnterprise] Creating Supabase session...');
@@ -119,12 +118,15 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
         sessionStorage.setItem('cortexia_user_type', 'enterprise');
       }
 
-      // ✅ Store referral code in sessionStorage for display in onboarding
+// ✅ Store referral code in sessionStorage for display in onboarding
       if (data.referralCode) {
         sessionStorage.setItem('cortexia_referral_code', data.referralCode);
         console.log('✅ Stored referral code:', data.referralCode);
       }
-
+      
+      // ✅ CRITICAL: Refresh auth context to detect new user
+      refreshUser();
+      
       onSuccess(data.userId, sessionAccessToken);
     } catch (err: any) {
       console.error('❌ [SignupEnterprise] Signup error:', err);
@@ -400,19 +402,11 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
             )}
           </button>
 
-          {/* ✅ Auth0 Social Signup Buttons */}
-          <Auth0SocialButtons 
+          {/* ✅ Neon Auth Social Signup Buttons */}
+          <NeonSocialButtons
             userType="enterprise"
             companyData={{
               companyName: formData.companyName,
-              industry: formData.industry,
-              companySize: formData.companySize,
-            }}
-            onSuccess={(userId, accessToken) => {
-              onSuccess(userId, accessToken);
-            }}
-            onError={(err) => {
-              setError(err);
             }}
           />
         </form>

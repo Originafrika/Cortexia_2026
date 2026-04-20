@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '../../lib/db';
 import { stripeSubscriptions, enterpriseWallets, enterpriseCreditPackPurchases } from '../../lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -94,31 +95,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Initialize or update enterprise wallet
     const existingWallet = await db.select()
       .from(enterpriseWallets)
-      .where(eq(enterpriseWallets.userId, userId))
+      .where(eq(enterpriseWallets.organizationId, organizationId || ''))
       .limit(1);
 
     if (existingWallet.length === 0) {
       await db.insert(enterpriseWallets).values({
         id: crypto.randomUUID(),
-        userId,
-        organizationId: organizationId || null,
-        creditsBalance: 10000,
-        creditsUsed: 0,
-        monthlyCreditsIncluded: 10000,
-        monthlyCreditsUsed: 0,
-        subscriptionRenewsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        createdAt: new Date(),
+        organizationId: organizationId || crypto.randomUUID(),
+        monthlyCredits: 10000,
+        monthlyCreditsConsumed: 0,
+        monthlyResetAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        packCredits: 0,
+        packCreditsConsumed: 0,
+        totalConsumed: 0,
         updatedAt: new Date(),
       });
     } else {
       await db.update(enterpriseWallets)
         .set({
-          creditsBalance: existingWallet[0].creditsBalance + 10000,
-          monthlyCreditsIncluded: 10000,
-          subscriptionRenewsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          monthlyCredits: 10000,
+          monthlyResetAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           updatedAt: new Date(),
         })
-        .where(eq(enterpriseWallets.userId, userId));
+        .where(eq(enterpriseWallets.organizationId, organizationId || ''));
     }
   } else if (type.startsWith('credits_')) {
     // Credit pack purchase
@@ -143,16 +142,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Add credits to wallet
     const wallet = await db.select()
       .from(enterpriseWallets)
-      .where(eq(enterpriseWallets.userId, userId))
+      .where(eq(enterpriseWallets.organizationId, organizationId || ''))
       .limit(1);
 
     if (wallet.length > 0) {
       await db.update(enterpriseWallets)
         .set({
-          creditsBalance: wallet[0].creditsBalance + creditsPurchased,
+          packCredits: wallet[0].packCredits + creditsPurchased,
           updatedAt: new Date(),
         })
-        .where(eq(enterpriseWallets.userId, userId));
+        .where(eq(enterpriseWallets.organizationId, organizationId || ''));
     }
   }
 }

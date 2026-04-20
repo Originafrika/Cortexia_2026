@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Gift, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
-import { Auth0SocialButtons } from './Auth0SocialButtons';
-import { supabase } from '../../lib/services/auth0-service';
-import { fetchUserProfile, storeProfileData } from '../../lib/utils/profile-fetch';
+import { NeonSocialButtons } from './NeonSocialButtons';
+import { neonSignUp } from '../../lib/auth';
+import { useAuth } from '../../lib/contexts/AuthContext';
 
 interface SignupIndividualProps {
   onSuccess: (userId: string, accessToken: string) => void;
@@ -12,7 +11,11 @@ interface SignupIndividualProps {
   onBack: () => void;
 }
 
+// Use local proxy server (port 3001)
+const LOCAL_API = 'http://localhost:3001';
+
 export function SignupIndividual({ onSuccess, onSwitchToLogin, onBack }: SignupIndividualProps) {
+  const { refreshUser } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,78 +32,28 @@ export function SignupIndividual({ onSuccess, onSwitchToLogin, onBack }: SignupI
     setError('');
 
     try {
-      // 1. Call backend signup endpoint
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/auth/signup-individual`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify(formData),
+      console.log('🔐 [SignupIndividual] Signing up via Neon Auth...');
+      
+      // Use Neon Auth
+      const result = await neonSignUp(formData.email, formData.password, 'individual', {
+        name: formData.name,
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned invalid response. Please check server logs.');
+      if (!result.success) {
+        throw new Error(result.error || 'Signup failed');
       }
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
-      }
-
-      console.log('✅ [SignupIndividual] Backend signup successful:', data.userId);
-
-      // ✅ CRITICAL: Create Supabase session FIRST before fetching profile
-      console.log('🔐 [SignupIndividual] Creating Supabase session...');
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (signInError || !authData.session) {
-        console.error('❌ [SignupIndividual] Failed to create session:', signInError);
-        throw new Error('Failed to create session. Please try logging in manually.');
-      }
-
-      console.log('✅ [SignupIndividual] Supabase session created:', authData.user.id);
-      const sessionAccessToken = authData.session.access_token;
-
-      // ✅ NOW fetch complete profile from backend using session token
-      console.log('📥 [SignupIndividual] Fetching complete profile from backend...');
-      const profileData = await fetchUserProfile(data.userId, sessionAccessToken, {
-        maxRetries: 3,
-        retryDelay: 1000,
-        timeout: 5000,
-      });
-
-      if (profileData) {
-        console.log('✅ [SignupIndividual] Profile fetched:', {
-          accountType: profileData.accountType,
-          displayName: profileData.displayName,
-          referralCode: profileData.referralCode,
-        });
-
-        // ✅ Store complete profile data in sessionStorage
-        storeProfileData(profileData);
-        console.log('✅ [SignupIndividual] Stored complete profile data');
-      } else {
-        console.warn('⚠️ [SignupIndividual] Failed to fetch profile after retries, using fallback');
-        // Fallback: Store basic data from signup response
+      console.log('✅ [SignupIndividual] Signup successful:', result.user);
+      
+      if (result.user) {
+        sessionStorage.setItem('cortexia_user_id', result.user.id);
         sessionStorage.setItem('cortexia_user_type', 'individual');
+        
+        // ✅ CRITICAL: Refresh auth context to detect new user
+        refreshUser();
       }
-
-      // ✅ Store referral code in sessionStorage for display in onboarding
-      if (data.referralCode) {
-        sessionStorage.setItem('cortexia_referral_code', data.referralCode);
-        console.log('✅ Stored referral code:', data.referralCode);
-      }
-
-      onSuccess(data.userId, sessionAccessToken);
+      
+      onSuccess(result.user?.id || 'user', 'neon-token');
     } catch (err: any) {
       console.error('❌ [SignupIndividual] Signup error:', err);
       setError(err.message || 'An error occurred during signup');
@@ -284,15 +237,9 @@ export function SignupIndividual({ onSuccess, onSwitchToLogin, onBack }: SignupI
             )}
           </button>
 
-          {/* ✅ Auth0 Social Signup Buttons */}
-          <Auth0SocialButtons 
+          {/* ✅ Neon Auth Social Signup Buttons */}
+          <NeonSocialButtons
             userType="individual"
-            onSuccess={() => {
-              // Will be handled by Auth0CallbackPage
-            }}
-            onError={(err) => {
-              setError(err);
-            }}
           />
         </form>
 

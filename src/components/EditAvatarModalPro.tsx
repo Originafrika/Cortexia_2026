@@ -194,7 +194,7 @@ export function EditAvatarModalPro({ userId, currentAvatar, onClose, onSuccess }
       formData.append('avatar', selectedFile);
       formData.append('userId', userId);
 
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
       
       // Simulate progress (since we can't track real upload progress with fetch easily)
       const progressInterval = setInterval(() => {
@@ -203,9 +203,6 @@ export function EditAvatarModalPro({ userId, currentAvatar, onClose, onSuccess }
 
       const response = await fetch(`${apiUrl}/avatar/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
         body: formData
       });
 
@@ -242,7 +239,7 @@ export function EditAvatarModalPro({ userId, currentAvatar, onClose, onSuccess }
     setError(null);
 
     try {
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
       const response = await fetch(`${apiUrl}/avatar/${userId}`, {
         method: 'DELETE',
         headers: {

@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Database, Trash2, Play, Activity, Clock, HardDrive, RefreshCw } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage-cleanup`;
+const API_BASE = '/api/storage-cleanup';
 const ADMIN_TOKEN = 'migration-secret-token-2026'; // Same token as migration
 
 interface CleanupStats {

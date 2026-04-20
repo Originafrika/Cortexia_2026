@@ -163,13 +163,11 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
         return;
       }
 
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
 
       // Load Origins wallet
       console.log('📞 [CreatorDashboard] Fetching Origins wallet...');
-      const walletRes = await fetch(`${apiUrl}/origins/wallet/${userId}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const walletRes = await fetch(`${apiUrl}/origins/wallet/${userId}`);
       console.log('📥 [CreatorDashboard] Wallet response status:', walletRes.status);
       
       if (walletRes.ok) {
@@ -183,9 +181,7 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
 
       // Load Compensation status
       console.log('📞 [CreatorDashboard] Fetching Compensation status...');
-      const compensationRes = await fetch(`${apiUrl}/compensation/${userId}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const compensationRes = await fetch(`${apiUrl}/compensation/${userId}`);
       console.log('📥 [CreatorDashboard] Compensation response status:', compensationRes.status);
       
       if (compensationRes.ok) {

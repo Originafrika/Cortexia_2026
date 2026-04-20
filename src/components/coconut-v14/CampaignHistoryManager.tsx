@@ -93,12 +93,11 @@ export function CampaignHistoryManager({ userId, onViewCampaign }: CampaignHisto
       console.log('📥 [Campaign History] Fetching campaigns for user:', userId);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/list?userId=${encodeURIComponent(userId)}`,
+        `/api/campaign/list?userId=${encodeURIComponent(userId)}`,
         {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
         }
       );
@@ -128,13 +127,12 @@ export function CampaignHistoryManager({ userId, onViewCampaign }: CampaignHisto
     try {
       console.log('🗑️ [Campaign History] Deleting campaign:', id);
       
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/${id}?userId=${encodeURIComponent(userId)}`,
+const response = await fetch(
+        `/api/campaign/${id}?userId=${encodeURIComponent(userId)}`,
         {
-          method: 'DELETE',
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
         }
       );

@@ -3,13 +3,35 @@
  * For rate limiting, caching, and temporary storage
  */
 
-const UPSTASH_REDIS_URL = typeof window !== 'undefined' 
-  ? (import.meta as any).env?.VITE_UPSTASH_REDIS_URL 
+// Server-side (Node.js)
+const UPSTASH_REDIS_URL = typeof window === 'undefined' 
+  ? process.env.UPSTASH_REDIS_REST_URL || ''
   : '';
 
-const UPSTASH_REDIS_TOKEN = typeof window !== 'undefined'
-  ? (import.meta as any).env?.VITE_UPSTASH_REDIS_TOKEN
+// Client-side (Browser - from Vite env)
+const CLIENT_UPSTASH_REDIS_URL = typeof window !== 'undefined'
+  ? (import.meta as any).env?.VITE_UPSTASH_REDIS_URL || (import.meta as any).env?.NEXT_PUBLIC_UPSTASH_REDIS_URL || ''
   : '';
+
+const UPSTASH_REDIS_TOKEN = typeof window === 'undefined'
+  ? process.env.UPSTASH_REDIS_REST_TOKEN || ''
+  : '';
+
+const CLIENT_UPSTASH_REDIS_TOKEN = typeof window !== 'undefined'
+  ? (import.meta as any).env?.VITE_UPSTASH_REDIS_TOKEN || (import.meta as any).env?.NEXT_PUBLIC_UPSTASH_REDIS_TOKEN || ''
+  : '';
+
+const getRedisUrl = () => {
+  const url = UPSTASH_REDIS_URL || CLIENT_UPSTASH_REDIS_URL;
+  console.log('[Redis] getRedisUrl:', { UPSTASH_REDIS_URL, CLIENT_UPSTASH_REDIS_URL, result: url });
+  return url;
+};
+
+const getRedisToken = () => {
+  const token = UPSTASH_REDIS_TOKEN || CLIENT_UPSTASH_REDIS_TOKEN;
+  console.log('[Redis] getRedisToken:', { hasToken: !!token });
+  return token;
+};
 
 interface RedisCommand {
   command: string;
@@ -20,14 +42,18 @@ interface RedisCommand {
  * Execute a Redis command via Upstash REST API
  */
 async function redisCommand(command: string, ...args: (string | number)[]): Promise<any> {
-  if (!UPSTASH_REDIS_URL || !UPSTASH_REDIS_TOKEN) {
-    throw new Error('Upstash Redis credentials not configured');
+  const redisUrl = getRedisUrl();
+  const redisToken = getRedisToken();
+  
+  if (!redisUrl || !redisToken) {
+    console.warn('Upstash Redis credentials not configured');
+    return null;
   }
 
-  const response = await fetch(`${UPSTASH_REDIS_URL}`, {
+  const response = await fetch(`${redisUrl}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${UPSTASH_REDIS_TOKEN}`,
+      'Authorization': `Bearer ${redisToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify([command, ...args]),

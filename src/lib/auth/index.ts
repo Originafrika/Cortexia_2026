@@ -1,18 +1,27 @@
-// Auth exports
 export {
   initNeonAuth,
-  signUp,
-  signIn,
-  signOut,
+  neonSignUp as signUp,
+  neonSignIn as signIn,
+  neonSignOut as signOut,
   getSession,
-  getCurrentUser,
-  refreshToken,
-  requestPasswordReset,
-  updateProfile,
-  linkOAuthProvider,
+  getUser,
   isAuthenticated,
-  requireAuth,
+  getCurrentUser,
+  restoreSession,
+  updateProfile,
+  requestPasswordReset,
+  canAccessRoute,
 } from './neon-auth';
+
+export {
+  auth,
+  neonSignUp,
+  neonSignIn,
+  neonSignOut,
+  signInWithGoogle,
+  signInWithGitHub,
+  signInWithVercel,
+} from './auth';
 
 export type {
   NeonAuthUser,

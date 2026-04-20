@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Bug, RefreshCw, CheckCircle, XCircle, Zap } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const API_BASE = '/api';
 
 interface DebugCreditsPanelProps {
   userId: string;

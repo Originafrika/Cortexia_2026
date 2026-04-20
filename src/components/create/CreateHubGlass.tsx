@@ -46,6 +46,7 @@ import { ResultModal } from './ResultModal';
 
 // ✅ Import singleton Supabase client (prevents multiple instances warning)
 import { supabase as supabaseClient } from '../../lib/services/auth0-service';
+import { r2Storage } from '../../lib/services/r2Storage';
 
 import { VideoResultModal } from '../VideoResultModal';
 import { CreatorBenefitsPanel } from '../CreatorBenefitsPanel'; // ✅ NEW: Creator benefits panel
@@ -445,22 +446,24 @@ export function CreateHubGlass({
       console.log('🎨 Remix mode activated, setting reference image:', remixImage);
       setReferenceImages([remixImage]);
       
-      // Immediately select the right model for remix
+      // ✅ Free tier = Flux, Paid = Flux 2 Pro
       if (paidCredits > 0) {
         console.log('💎 Selecting Flux 2 Pro for paid user remix');
         setSelectedModel('flux-2-pro');
       } else {
-        console.log('🆓 Selecting Kontext for free user remix');
-        setSelectedModel('kontext');
+        console.log('🆓 Selecting Flux for free user remix');
+        setSelectedModel('flux-schnell');
       }
     } else {
-      // ✅ NORMAL MODE: Default selection based on credits only
+      // ✅ NORMAL MODE: 
+      // - Free tier (paidCredits = 0) → Flux
+      // - Paid users (paidCredits > 0) → Flux 2 Pro (default paid model)
       if (paidCredits > 0) {
         console.log('💎 Selecting Flux 2 Pro for paid user (normal mode)');
         setSelectedModel('flux-2-pro');
       } else {
-        console.log('🆓 Selecting Z-Image for free user (normal mode)');
-        setSelectedModel('zimage');
+        console.log('🆓 Selecting Flux for free user (normal mode)');
+        setSelectedModel('flux-schnell');
       }
     }
   }, [remixImage, paidCredits]);
@@ -468,7 +471,7 @@ export function CreateHubGlass({
   // ✅ Show toast when remix mode auto-selects a model
   useEffect(() => {
     if (remixImage) {
-      const modelName = paidCredits > 0 ? 'Flux 2 Pro' : 'Kontext';
+      const modelName = paidCredits > 0 ? 'Flux 2 Pro' : 'Flux';
       toast.info(`🎨 Remix mode: ${modelName} selected for image-to-image generation`, {
         duration: 3000,
       });
@@ -505,8 +508,8 @@ export function CreateHubGlass({
     } else {
       // ✅ IMAGE GENERATION COSTS
       
-      // Free models (Pollinations) - 1 free credit each
-      if (['zimage', 'seedream', 'kontext', 'nanobanana'].includes(selectedModel)) {
+      // ✅ FREE MODELS (Pollinations cascade via Cloudflare) - use FREE credits
+      if (['zimage', 'seedream', 'kontext', 'nanobanana', 'flux', 'flux-1', 'flux-schnell'].includes(selectedModel)) {
         baseCost = 1; // 1 free credit
       }
       // Premium models (Kie AI) - paid credits
@@ -540,9 +543,9 @@ export function CreateHubGlass({
   const canUseModel = (modelId: string): boolean => {
     const cost = calculateGenerationCost();
     
-    // Free models require free credits
-    if (['zimage', 'seedream', 'kontext', 'nanobanana'].includes(modelId)) {
-      return freeCredits >= cost;
+    // ✅ FREE MODELS (Pollinations/Flux) - no credit check needed
+    if (['zimage', 'seedream', 'kontext', 'nanobanana', 'flux', 'flux-1', 'flux-schnell'].includes(modelId)) {
+      return true; // Free models always work
     }
     
     // Premium models require paid credits
@@ -550,11 +553,18 @@ export function CreateHubGlass({
       return paidCredits >= cost;
     }
     
-    return false;
+    return true; // Default to true
   };
   
-  // ✅ Check if user has enough credits for current mode
+// ✅ Check if user has enough credits for current mode
   const hasEnoughCredits = (): { ok: boolean; error?: string } => {
+    // ✅ FIX: For free tier users with Flux models, always allow (uses Pollinations free API)
+    const isFreeModel = ['zimage', 'seedream', 'kontext', 'nanobanana', 'flux', 'flux-1', 'flux-schnell'].includes(selectedModel);
+    if (isFreeModel) {
+      console.log('🎨 [hasEnoughCredits] Free model (Flux/Pollinations) - allowing generation');
+      return { ok: true };
+    }
+    
     const cost = calculateGenerationCost();
     
     if (mode === 'video' || mode === 'avatar') {
@@ -568,17 +578,8 @@ export function CreateHubGlass({
       return { ok: true };
     }
     
-    // Image generation
-    const isFreeModel = ['zimage', 'seedream', 'kontext', 'nanobanana'].includes(selectedModel);
-    
-    if (isFreeModel && freeCredits < cost) {
-      return { 
-        ok: false, 
-        error: `Insufficient free credits. Need ${cost}, have ${freeCredits}` 
-      };
-    }
-    
-    if (!isFreeModel && paidCredits < cost) {
+    // Premium image models require paid credits
+    if (paidCredits < cost) {
       return { 
         ok: false, 
         error: `Insufficient paid credits. Need ${cost}, have ${paidCredits}` 
@@ -652,11 +653,10 @@ export function CreateHubGlass({
             };
             console.log('💎 Sending Kie AI request:', requestBody);
             
-            const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/image/kie-ai/generate`, {
+            const response = await fetch(`/api/image/kie-ai/generate`, {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${publicAnonKey}`
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify(requestBody)
             });
@@ -687,14 +687,13 @@ export function CreateHubGlass({
               // ✅ Reload credits from context
               await refetchCredits();
 
-              // ✅ Track creator stats
-              await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/creators/track/creation`, {
+// ✅ Track creator stats
+              await fetch(`/api/creators/track/creation`, {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${publicAnonKey}`
+                  'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ userId: userId || 'anonymous' }) // ✅ Use real userId
+                body: JSON.stringify({ userId: userId || 'anonymous' })
               }).catch(err => console.warn('Failed to track creation:', err));
             } else {
               throw new Error(data.error || 'Kie AI generation failed');
@@ -724,11 +723,10 @@ export function CreateHubGlass({
             };
             console.log('🍌 Sending Nano Banana Pro request:', requestBody);
             
-            const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/image/kie-ai/nano-banana`, {
+            const response = await fetch(`/api/image/kie-ai/nano-banana`, {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${publicAnonKey}`
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify(requestBody)
             });
@@ -985,12 +983,7 @@ export function CreateHubGlass({
       if (userId) {
         try {
           const profileResponse = await fetch(
-            `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/user/profile/${userId}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${publicAnonKey}`
-              }
-            }
+            `/api/auth/profile/${userId}`
           );
           
           if (profileResponse.ok) {
@@ -1015,11 +1008,10 @@ export function CreateHubGlass({
         userAvatar // ✅ Log avatar for debugging
       });
 
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/feed/publish`, {
+      const response = await fetch(`/api/feed/publish`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           userId: userId || 'anonymous', // ✅ Use real userId
@@ -1056,16 +1048,20 @@ export function CreateHubGlass({
       playSuccessSound();
       light();
 
+      // ✅ Refresh the feed by navigating away and back
+      setTimeout(() => {
+        window.location.reload(); // Simple refresh to show new post
+      }, 1500);
+
       setGenerationResult(null);
       
-      await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/creators/track/post`, {
+      await fetch(`/api/creators/track/post`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: userId || 'anonymous', // ✅ Use real userId
+          userId: userId || 'anonymous',
           postId: data.creationId
         })
       }).catch(err => console.warn('Failed to track creator post:', err));
@@ -1132,7 +1128,7 @@ export function CreateHubGlass({
           const timeoutId = setTimeout(() => controller.abort(), 30000); // ✅ 30s timeout (was 10s)
           
           console.log('🚀 [UPLOAD] Calling edge function...', {
-            url: `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`,
+            url: `/api/storage/upload`,
             userId: userId || 'anonymous',
             accountType: profile?.accountType || 'individual',
             filename: file.name,
@@ -1141,7 +1137,7 @@ export function CreateHubGlass({
           
           try {
             const response = await fetch(
-              `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`,
+              `/api/storage/upload`,
               {
                 method: 'POST',
                 headers: {
@@ -1303,19 +1299,18 @@ export function CreateHubGlass({
       reader.onload = async () => {
         const base64 = reader.result as string;
         
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`, {
+        const response = await fetch(`/api/storage/upload`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             imageData: base64,
             filename: processedFile.name,
             contentType: processedFile.type,
-            userId: userId || 'anonymous', // ✅ Use real userId
-            projectId: `avatar-${userId || 'anonymous'}-${Date.now()}`, // ✅ NEW: Pass projectId
-            accountType: profile?.accountType || 'individual' // ✅ NEW: Pass accountType
+            userId: userId || 'anonymous',
+            projectId: `avatar-${userId || 'anonymous'}-${Date.now()}`,
+            accountType: profile?.accountType || 'individual'
           })
         });
         
@@ -1396,17 +1391,16 @@ export function CreateHubGlass({
       reader.onload = async () => {
         const base64 = reader.result as string;
         
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload-audio`, {
+        const response = await fetch(`/api/storage/upload-audio`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             audioData: base64,
             filename: file.name,
             contentType: file.type,
-            userId: userId || 'anonymous' // ✅ Use real userId
+            userId: userId || 'anonymous'
           })
         });
         
@@ -2246,39 +2240,15 @@ export function CreateHubGlass({
                         </div>
                       </div>
                       <div className="space-y-2">
-                        {/* FREE MODELS - Only show if user has NO paid credits */}
+                        {/* FREE TIER: Only show Flux for users WITHOUT paid credits */}
                         {paidCredits === 0 && [
                           { 
-                            value: 'zimage', 
-                            label: 'Zimage', 
-                            description: 'Text-to-Image generation',
+                            value: 'flux-schnell', 
+                            label: 'Flux', 
+                            description: 'Fast text-to-image via Cloudflare + Pollinations',
                             speed: '~3s', 
                             free: true,
                             recommended: true
-                          },
-                          { 
-                            value: 'seedream', 
-                            label: 'SeeDream', 
-                            description: 'Multi-Image composition (4-10 imgs)',
-                            speed: '~4s', 
-                            free: true,
-                            badge: 'MULTI'
-                          },
-                          { 
-                            value: 'kontext', 
-                            label: 'Kontext', 
-                            description: 'Image-to-Image transformation',
-                            speed: '~4s', 
-                            free: true,
-                            badge: 'IMG2IMG'
-                          },
-                          { 
-                            value: 'nanobanana', 
-                            label: 'NanoBanana', 
-                            description: '2-3 Images blend & upscale',
-                            speed: '~5s', 
-                            free: true,
-                            badge: 'UPSCALE'
                           },
                         ].map((model) => (
                           <button

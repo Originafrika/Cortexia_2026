@@ -69,11 +69,10 @@ export function EnterpriseSubscriptionManager() {
       setLoading(true);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/enterprise/subscription/status?userId=${user.id}`,
+        `/api/enterprise/subscription/status?userId=${user.id}`,
         {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json',
           },
         }
@@ -104,13 +103,12 @@ export function EnterpriseSubscriptionManager() {
       playClick();
       setSubscribing(true);
 
-      const url = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/enterprise/subscription/create`;
+      const url = `/api/enterprise/subscription/create`;
       console.log('🔵 [Enterprise] Calling:', url);
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userId: user.id }),
@@ -157,11 +155,10 @@ export function EnterpriseSubscriptionManager() {
       setPurchasing(true);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/enterprise/addon/purchase`,
+        `/api/enterprise/addon/purchase`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({

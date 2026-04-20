@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { NeonSocialButtons } from './NeonSocialButtons';
 import { useAuth } from '../../lib/contexts/AuthContext';
-import { Auth0SocialButtons } from './Auth0SocialButtons';
 
 interface LoginFormProps {
   onSuccess: (userId: string, accessToken: string, userType: 'individual' | 'enterprise' | 'developer') => void;
@@ -24,16 +24,24 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
     setError('');
 
     try {
-      // ✅ NEW: Use AuthContext signIn
+      console.log('🔐 [LoginForm] Signing in via Neon Auth...');
+      
+      // ✅ Use AuthContext signIn which uses Neon Auth internally
       const result = await signIn(formData.email, formData.password);
       
       if (!result.success || !result.user) {
         throw new Error(result.error || 'Login failed');
       }
       
-      // Call onSuccess with user data
-      onSuccess(result.user.id, 'mock-token', result.user.type);
+      console.log('✅ [LoginForm] Sign-in successful:', result.user);
+      
+      // Store token
+      const token = localStorage.getItem('cortexia_token') || 'neon-auth';
+      localStorage.setItem('cortexia_token', token);
+      
+      onSuccess(result.user.id, token, result.user.type || 'individual');
     } catch (err: any) {
+      console.error('[LoginForm] Signin error:', err);
       setError(err.message || 'An error occurred during login');
     } finally {
       setLoading(false);
@@ -131,12 +139,9 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
             )}
           </button>
           
-          {/* ✅ Auth0 Social Login Buttons */}
-          <Auth0SocialButtons 
-            onSuccess={() => {
-              // Will be handled by Auth0CallbackPage
-            }}
-            onError={(err) => setError(err)}
+          {/* ✅ Neon Auth Social Login Buttons */}
+          <NeonSocialButtons 
+            userType="individual"
           />
         </form>
 

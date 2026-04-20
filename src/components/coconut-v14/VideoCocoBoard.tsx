@@ -95,10 +95,10 @@ export function VideoCocoBoard({ cocoBoardId, jobId, onClose }: VideoCocoBoardVi
       // Load CocoBoard
       console.log('📦 Loading CocoBoard:', cocoBoardId);
       const boardRes = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/coconut-v14/video/cocoboard/${cocoBoardId}`,
+        `/api/coconut-v14/video/cocoboard/${cocoBoardId}`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -121,10 +121,10 @@ export function VideoCocoBoard({ cocoBoardId, jobId, onClose }: VideoCocoBoardVi
       if (jobId) {
         console.log('📊 Loading job status:', jobId);
         const jobRes = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/coconut-v14/video/generate/${jobId}/status`,
+          `/api/coconut-v14/video/generate/${jobId}/status`,
           {
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
+              'Content-Type': 'application/json'
             }
           }
         );

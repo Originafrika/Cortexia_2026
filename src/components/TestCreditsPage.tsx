@@ -19,18 +19,18 @@ interface TestResult {
 export default function TestCreditsPage() {
   const [results, setResults] = useState<TestResult[]>([
     {
-      name: 'Test 1: Routes Working',
-      url: 'https://emhevkgyqmsxqejbfgoq.supabase.co/functions/v1/make-server-e55aa214/credits/test',
+      name: 'Test 1: Credits API',
+      url: '/api/credits?userId=test-user',
       status: 'pending',
     },
     {
-      name: 'Test 2: Debug DB',
-      url: 'https://emhevkgyqmsxqejbfgoq.supabase.co/functions/v1/make-server-e55aa214/credits/debug/google-oauth2%7C116660587569924383844',
+      name: 'Test 2: Feed API',
+      url: '/api/feed?offset=0&limit=10',
       status: 'pending',
     },
     {
-      name: 'Test 3: Normal Endpoint',
-      url: 'https://emhevkgyqmsxqejbfgoq.supabase.co/functions/v1/make-server-e55aa214/credits/google-oauth2%7C116660587569924383844',
+      name: 'Test 3: Auth Profile',
+      url: '/api/auth/profile/test-user',
       status: 'pending',
     },
   ]);
@@ -49,7 +49,6 @@ export default function TestCreditsPage() {
         console.log(`🧪 Running ${test.name}...`);
         const response = await fetch(test.url, {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json',
           },
         });

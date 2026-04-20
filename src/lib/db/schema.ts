@@ -45,6 +45,10 @@ export const users = pgTable("users", {
   freeGenerationsToday: integer("free_generations_today").default(0),
   freeGenerationsDate: date("free_generations_date"),
   
+  // Referral system (Rule of 25/35)
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
@@ -311,6 +315,43 @@ export const creatorCoconutUsage = pgTable("creator_coconut_usage", {
 }));
 
 // ============================================
+// CREATOR STATS (Monthly stats for Rule of 60)
+export const creatorStats = pgTable("creator_stats", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  month: text("month").notNull(),
+  generationsCount: integer("generations_count").default(0),
+  postsPublished: integer("posts_published").default(0),
+  creditsPurchased: integer("credits_purchased").default(0),
+  creditsSpent: integer("credits_spent").default(0),
+  earningsXOF: integer("earnings_xof").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userMonthIdx: index("creator_stats_user_month_idx").on(table.userId, table.month),
+}));
+
+// ============================================
+// GENERATION JOBS (Image/Video/Cocoboard generation tracking)
+export const generationJobs = pgTable("generation_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  type: text("type").notNull(),
+  model: text("model"),
+  prompt: text("prompt"),
+  status: text("status").default("pending"),
+  cost: integer("cost").default(0),
+  creditsUsed: integer("credits_used").default(0),
+  resultUrl: text("result_url"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  userIdx: index("generation_jobs_user_idx").on(table.userId),
+  statusIdx: index("generation_jobs_status_idx").on(table.status),
+}));
+
+// ============================================
 // ENTERPRISE WALLETS (Credit packs tracking)
 // ============================================
 export const enterpriseWallets = pgTable("enterprise_wallets", {
@@ -492,3 +533,182 @@ export type NewEnterpriseWallet = typeof enterpriseWallets.$inferInsert;
 
 export type EnterpriseCreditPackPurchase = typeof enterpriseCreditPackPurchases.$inferSelect;
 export type NewEnterpriseCreditPackPurchase = typeof enterpriseCreditPackPurchases.$inferInsert;
+
+export type UserSession = typeof userSessions.$inferSelect;
+export type NewUserSession = typeof userSessions.$inferInsert;
+
+export type PasswordReset = typeof passwordResets.$inferSelect;
+export type NewPasswordReset = typeof passwordResets.$inferInsert;
+
+export type EmailVerification = typeof emailVerifications.$inferSelect;
+export type NewEmailVerification = typeof emailVerifications.$inferInsert;
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;
+
+export type OrganizationInvitation = typeof organizationInvitations.$inferSelect;
+export type NewOrganizationInvitation = typeof organizationInvitations.$inferInsert;
+
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
+
+export type ContentReport = typeof contentReports.$inferSelect;
+export type NewContentReport = typeof contentReports.$inferInsert;
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type NewSupportTicket = typeof supportTickets.$inferInsert;
+
+export type CreatorStats = typeof creatorStats.$inferSelect;
+export type NewCreatorStats = typeof creatorStats.$inferInsert;
+
+export type GenerationJob = typeof generationJobs.$inferSelect;
+export type NewGenerationJob = typeof generationJobs.$inferInsert;
+
+// ============================================
+// USER SESSIONS (JWT tokens)
+// ============================================
+export const userSessions = pgTable("user_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  refreshToken: text("refresh_token"),
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  userIdx: index("sessions_user_idx").on(table.userId),
+  tokenIdx: index("sessions_token_idx").on(table.token),
+}));
+
+// ============================================
+// PASSWORD RESETS
+// ============================================
+export const passwordResets = pgTable("password_resets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  used: boolean("used").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  usedAt: timestamp("used_at"),
+}, (table) => ({
+  userIdx: index("pwd_reset_user_idx").on(table.userId),
+  tokenIdx: index("pwd_reset_token_idx").on(table.token),
+}));
+
+// ============================================
+// EMAIL VERIFICATIONS
+// ============================================
+export const emailVerifications = pgTable("email_verifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  verified: boolean("verified").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  verifiedAt: timestamp("verified_at"),
+}, (table) => ({
+  userIdx: index("email_verif_user_idx").on(table.userId),
+  tokenIdx: index("email_verif_token_idx").on(table.token),
+}));
+
+// ============================================
+// API KEYS (Enterprise API Access)
+// ============================================
+export const apiKeys = pgTable("api_keys", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id").notNull(),
+  createdBy: uuid("created_by").notNull(),
+  name: text("name").notNull(),
+  keyPrefix: text("key_prefix").notNull(),
+  keyHash: text("key_hash").notNull().unique(),
+  permissions: jsonb("permissions").default({ read: true, write: true }),
+  rateLimitPerHour: integer("rate_limit_per_hour").default(1000),
+  active: boolean("active").default(true),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  revokedAt: timestamp("revoked_at"),
+}, (table) => ({
+  orgIdx: index("api_keys_org_idx").on(table.organizationId),
+}));
+
+// ============================================
+// ORGANIZATION INVITATIONS
+// ============================================
+export const organizationInvitations = pgTable("organization_invitations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id").notNull(),
+  inviterId: uuid("inviter_id").notNull(),
+  email: text("email").notNull(),
+  role: text("role").default("member"),
+  token: text("token").notNull().unique(),
+  status: text("status").default("pending"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  acceptedAt: timestamp("accepted_at"),
+}, (table) => ({
+  orgIdx: index("invites_org_idx").on(table.organizationId),
+  emailIdx: index("invites_email_idx").on(table.email),
+}));
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  data: jsonb("data").default({}),
+  read: boolean("read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  readAt: timestamp("read_at"),
+}, (table) => ({
+  userIdx: index("notifications_user_idx").on(table.userId),
+  readIdx: index("notifications_read_idx").on(table.userId, table.read),
+}));
+
+// ============================================
+// CONTENT REPORTS (Feed moderation)
+// ============================================
+export const contentReports = pgTable("content_reports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  contentType: text("content_type").notNull(),
+  contentId: uuid("content_id").notNull(),
+  reporterId: uuid("reporter_id").notNull(),
+  reason: text("reason").notNull(),
+  description: text("description"),
+  status: text("status").default("pending"),
+  reviewedBy: uuid("reviewed_by"),
+  resolution: text("resolution"),
+  createdAt: timestamp("created_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => ({
+  contentIdx: index("reports_content_idx").on(table.contentType, table.contentId),
+  reporterIdx: index("reports_reporter_idx").on(table.reporterId),
+}));
+
+// ============================================
+// SUPPORT TICKETS
+// ============================================
+export const supportTickets = pgTable("support_tickets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull(),
+  organizationId: uuid("organization_id"),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  priority: text("priority").default("normal"),
+  status: text("status").default("open"),
+  resolution: text("resolution"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+}, (table) => ({
+  userIdx: index("tickets_user_idx").on(table.userId),
+  statusIdx: index("tickets_status_idx").on(table.status),
+}));

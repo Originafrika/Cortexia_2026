@@ -56,7 +56,7 @@ import { useCredits } from '../../lib/contexts/CreditsContext';
 import { tokens, TRANSITIONS } from '../../lib/design/tokens';
 import { handleError, showSuccess, showWarning } from '../../lib/utils/errorHandler';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const API_BASE = '/api';
 
 interface CocoBoardProps {
   projectId: string;

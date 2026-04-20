@@ -9,6 +9,7 @@ import { CampaignBriefing } from './CampaignBriefing';
 import { AnalyzingLoaderPremium } from './AnalyzingLoaderPremium';
 import { CampaignCocoBoardPremium } from './CampaignCocoBoardPremium';
 import { CampaignGenerationViewPremium } from './CampaignGenerationViewPremium';
+import { CampaignCalendar, type CampaignPost } from '../cocoblend/CampaignCalendar';
 import { useNotify } from './NotificationProvider';
 import type { 
   CampaignBriefingInput,
@@ -60,12 +61,11 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
     try {
       // Fetch CocoBoard data
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/cocoboard?cocoBoardId=${cocoBoardIdToLoad}&userId=${userId}`,
+        `/api/campaign/cocoboard?cocoBoardId=${cocoBoardIdToLoad}&userId=${userId}`,
         {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
         }
       );
@@ -106,12 +106,11 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/analyze`,
+        `/api/campaign/analyze`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ briefing: briefingData }),
         }
@@ -153,12 +152,11 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/generate`,
+        `/api/campaign/generate`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             userId,
@@ -191,10 +189,10 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/${campId}/status`,
+          `/api/campaign/${campId}/status`,
           {
             headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
+              'Content-Type': 'application/json'
             },
           }
         );
@@ -226,12 +224,11 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
       const dehydrated = dehydrateCampaignData(updatedData);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/cocoboard/save`,
+        `/api/campaign/cocoboard/save`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             userId,
@@ -292,7 +289,7 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
     );
   }
 
-  if (step === 'generating' || step === 'results') {
+  if (step === 'generating') {
     return (
       <CampaignGenerationViewPremium
         campaignId={campaignId}
@@ -300,6 +297,75 @@ export function CampaignWorkflow({ userId, onBack, existingCocoBoardId }: Campai
         onComplete={() => setStep('results')}
         results={campaignResults}
       />
+    );
+  }
+
+  if (step === 'results') {
+    // Convert campaign data to Calendar format
+    const calendarPosts: CampaignPost[] = [];
+    
+    if (analysis?.timeline?.weeks) {
+      for (const week of analysis.timeline.weeks) {
+        for (const day of week.days || []) {
+          for (const asset of day.assets || []) {
+            calendarPosts.push({
+              id: asset.assetId,
+              date: day.date || new Date().toISOString().split('T')[0],
+              time: '12:00',
+              platform: asset.platform || 'instagram',
+              type: asset.format || 'image',
+              contentBrief: asset.brief || asset.name || '',
+              caption: asset.caption || '',
+              hashtags: asset.hashtags || [],
+              cta: asset.cta,
+              status: asset.status === 'generated' ? 'generated' : 
+                      asset.status === 'failed' ? 'failed' : 'pending',
+            });
+          }
+        }
+      }
+    }
+
+    const generatedCount = calendarPosts.filter(p => p.status === 'generated').length;
+    const totalCredits = calendarPosts.reduce((sum, p) => sum + (p.cocoboardSteps?.reduce((s, step) => s + step.creditsEstimated, 0) || 0), 0);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[var(--coconut-cream)] via-[var(--coconut-milk)] to-[var(--coconut-white)] p-4 sm:p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--coconut-shell)]">
+                {analysis?.campaign?.name || briefing?.brandName || 'Campagne'}
+              </h1>
+              <p className="text-sm text-[var(--coconut-husk)]">
+                {calendarPosts.length} posts planifiés · {generatedCount} générés
+              </p>
+            </div>
+            <button
+              onClick={onBack}
+              className="px-4 py-2 text-sm text-[var(--coconut-husk)] hover:text-[var(--coconut-shell)] transition-colors"
+            >
+              Retour au dashboard
+            </button>
+          </div>
+
+          <CampaignCalendar
+            posts={calendarPosts}
+            campaignName={analysis?.campaign?.name || briefing?.brandName || 'Campagne'}
+            campaignMonth={new Date()}
+            totalEstimatedCredits={totalCredits}
+            generatedCount={generatedCount}
+            onGeneratePost={(postId) => {
+              console.log('Generate post:', postId);
+              notify?.info('Génération', `Génération du post ${postId} en cours...`);
+            }}
+            onGenerateAll={() => {
+              console.log('Generate all posts');
+              handleStartGeneration();
+            }}
+          />
+        </div>
+      </div>
     );
   }
 

@@ -266,12 +266,9 @@ async function uploadTemplateImages(
     });
     
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/upload`,
+      `/api/upload`,
       {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
         body: formData
       }
     );
@@ -341,11 +338,10 @@ async function generateFromTemplate(
     });
     
     const response = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/generate`,
+      `/api/generation`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)

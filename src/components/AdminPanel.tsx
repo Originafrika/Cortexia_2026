@@ -64,12 +64,7 @@ export function AdminPanel() {
     try {
       setLoading(true);
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/admin/list-all`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-        }
+        `/api/users/admin/list-all`
       );
 
       if (!response.ok) {
@@ -95,12 +90,9 @@ export function AdminPanel() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/admin/hard-delete/${userId}`,
+        `/api/users/admin/hard-delete/${userId}`,
         {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
+          method: 'DELETE'
         }
       );
 
@@ -131,12 +123,9 @@ export function AdminPanel() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/admin/clear-all`,
+        `/api/users/admin/clear-all`,
         {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
+          method: 'DELETE'
         }
       );
 
@@ -211,11 +200,10 @@ export function AdminPanel() {
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/admin/update/${editingUser.userId}`,
+        `/api/users/admin/update/${editingUser.userId}`,
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(editForm),

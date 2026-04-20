@@ -12,7 +12,7 @@ interface CocoblendStepNodeData {
   error?: string;
 }
 
-function CocoblendStepNode({ data, selected }: NodeProps<CocoblendStepNodeData>) {
+function CocoblendStepNodeInner({ data, selected }: NodeProps<CocoblendStepNodeData>) {
   const { step, status, outputUrl, progress = 0 } = data;
 
   const getStatusIcon = () => {
@@ -167,4 +167,4 @@ function CocoblendStepNode({ data, selected }: NodeProps<CocoblendStepNodeData>)
   );
 }
 
-export default memo(CocoblendStepNode);
+export const CocoblendStepNode = memo(CocoblendStepNodeInner);

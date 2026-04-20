@@ -107,12 +107,11 @@ export function HistoryManager({ userId, projectId: filterProjectId }: HistoryMa
       console.log('📥 [History] Fetching generations for user:', userId);
       
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/coconut/history/list?userId=${encodeURIComponent(userId)}`,
+        `/api/coconut/history/list?userId=${encodeURIComponent(userId)}`,
         {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
         }
       );

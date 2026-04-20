@@ -1,6 +1,6 @@
 // Upload Service - Handle image uploads with validation and compression
 
-import { projectId, publicAnonKey } from '../../utils/supabase/info'; // ✅ FIX: Remove .tsx extension
+const API_BASE = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
 
 export interface UploadOptions {
   maxSize?: number; // in MB
@@ -41,17 +41,14 @@ class UploadService {
         });
       }
 
-      // ✅ Upload to Supabase Storage via backend
+      // ✅ Upload to R2 via our API
       const formData = new FormData();
       formData.append('file', processedFile);
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/upload`,
+        `${API_BASE}/api/upload`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          },
           body: formData
         }
       );

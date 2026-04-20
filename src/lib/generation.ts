@@ -1,14 +1,12 @@
 // AI Generation API Integration
-// ✅ FIXED: Now uses Supabase backend for authenticated Pollinations API calls
-// The backend handles API key authentication securely
-// ✅ SMART MODEL SELECTION: Automatically chooses best model for face quality
+// ✅ FIXED: Now uses local Express server (localhost:3001) via Vite proxy
+// Routes to /api/generation which handles Pollinations + Kie AI
 
 import type { MediaType, GenerationOptions } from "./types";
-import { projectId, publicAnonKey } from '../utils/supabase/info'; // ✅ FIX: Remove .tsx extension
 import { selectBestModel } from './modelSelector'; // ✅ Smart model selection
 
-const BACKEND_URL = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
-const REQUEST_TIMEOUT = 120000; // 120 seconds (2 minutes) - matches backend timeout
+const API_BASE = ''; // Use Vite proxy - requests to /api/* go to localhost:3001
+const REQUEST_TIMEOUT = 120000; // 120 seconds (2 minutes)
 
 export interface GenerationResult {
   success: boolean;
@@ -119,18 +117,33 @@ export async function generateImage(
       options: payload.options
     });
     
-    // ✅ Call backend /generate endpoint
+    // ✅ Call backend /api/generation endpoint via Vite proxy
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
     
     try {
-      const response = await fetch(`${BACKEND_URL}/generate`, {
+      const response = await fetch(`/api/generation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          prompt: enhancedPrompt,
+          options: {
+            seed: options?.seed || Math.floor(Math.random() * 1000000),
+            width: dimensions.width,
+            height: dimensions.height,
+            model: selectedModel, // ✅ Use provided or auto-selected model
+            quality: options?.quality === 'ultra' ? 'high' : (options?.quality || 'high'),
+            enhance: false,
+            safe: true,
+            private: true,
+            nologo: true,
+            referenceImages: options?.referenceImages || [],
+            enhancePrompt: options?.enhancePrompt ?? true,
+            userId: options?.userId
+          }
+        }),
         signal: controller.signal
       });
       

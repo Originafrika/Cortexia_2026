@@ -1,22 +1,38 @@
 /**
  * NEON AUTH INTEGRATION
- * Using Neon Auth (Beta) for authentication
- * Documentation: https://neon.tech/docs/guides/neon-auth
+ * Primary authentication client for Cortexia
+ * Uses official @neondatabase/auth SDK with Better Auth adapter
  */
 
-import { neon } from '@neondatabase/serverless';
+import { createAuthClient, type NeonAuth, type BetterAuthUser } from '@neondatabase/auth';
+import { BetterAuthVanillaAdapter } from '@neondatabase/auth/vanilla/adapters';
 
-const DATABASE_URL = typeof window !== 'undefined'
-  ? (import.meta as any).env?.VITE_NEON_DATABASE_URL
-  : '';
+const NEON_AUTH_URL = import.meta.env.VITE_NEON_AUTH_URL || '';
+
+const authClient = NEON_AUTH_URL ? createAuthClient(NEON_AUTH_URL, {
+  adapter: BetterAuthVanillaAdapter(),
+}) : null;
+
+const SESSION_KEY = 'neon_auth_session';
+const USERS_KEY = 'neon_auth_users';
 
 export interface NeonAuthUser {
   id: string;
   email: string;
   name?: string;
-  avatarUrl?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  type: 'individual' | 'enterprise' | 'developer';
+  onboardingComplete: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  
+  companyLogo?: string | null;
+  brandColors?: string[];
+  companyName?: string;
+  
+  subscription?: {
+    plan: 'free' | 'pro' | 'enterprise';
+    credits: number;
+  };
 }
 
 export interface AuthSession {
@@ -26,133 +42,64 @@ export interface AuthSession {
   expiresAt: number | null;
 }
 
-// Initialize Neon client
-const sql = neon(DATABASE_URL || '');
-
-/**
- * Initialize Neon Auth
- * This should be called once when the app starts
- */
-export async function initNeonAuth(): Promise<boolean> {
-  if (!DATABASE_URL) {
-    console.error('Neon Auth: DATABASE_URL not configured');
-    return false;
-  }
-
-  try {
-    // Test connection
-    const result = await sql`SELECT 1 as connected`;
-    console.log('Neon Auth: Connected successfully', result);
-    return true;
-  } catch (error) {
-    console.error('Neon Auth: Connection failed', error);
-    return false;
-  }
+function convertToNeonUser(user: BetterAuthUser): NeonAuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name || undefined,
+    type: 'individual',
+    onboardingComplete: false,
+    createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
+  };
 }
 
-/**
- * Sign up a new user
- */
-export async function signUp(
-  email: string,
-  password: string,
-  metadata?: { name?: string; avatarUrl?: string }
-): Promise<{ success: boolean; user?: NeonAuthUser; error?: string }> {
-  try {
-    // Note: In production, this should be handled server-side
-    // This is a simplified client-side version for demonstration
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, metadata }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      return { success: false, error };
-    }
-
-    const user = await response.json();
-    return { success: true, user };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Signup failed',
-    };
-  }
+function convertSessionToAuthSession(
+  session: { session: { accessToken: string; expiresAt: Date; refreshToken?: string } | null; user: BetterAuthUser | null }
+): AuthSession {
+  return {
+    user: session.user ? convertToNeonUser(session.user) : null,
+    accessToken: session.session?.accessToken || null,
+    refreshToken: session.session?.refreshToken || null,
+    expiresAt: session.session?.expiresAt?.getTime() || null,
+  };
 }
 
-/**
- * Sign in existing user
- */
-export async function signIn(
-  email: string,
-  password: string
-): Promise<{ success: boolean; session?: AuthSession; error?: string }> {
-  try {
-    const response = await fetch('/api/auth/signin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+const getStoredUsers = (): NeonAuthUser[] => {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(USERS_KEY);
+  return stored ? JSON.parse(stored) : [];
+};
 
-    if (!response.ok) {
-      const error = await response.text();
-      return { success: false, error };
-    }
-
-    const session = await response.json();
-    
-    // Store session
-    storeSession(session);
-    
-    return { success: true, session };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Signin failed',
-    };
-  }
-}
-
-/**
- * Sign out current user
- */
-export async function signOut(): Promise<void> {
-  const session = getSession();
+const saveUser = (user: NeonAuthUser) => {
+  if (typeof window === 'undefined') return;
+  const users = getStoredUsers();
+  const existingIndex = users.findIndex(u => u.email === user.email);
   
-  if (session?.accessToken) {
-    try {
-      await fetch('/api/auth/signout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.accessToken}`,
-        },
-      });
-    } catch (error) {
-      console.error('Signout error:', error);
-    }
+  if (existingIndex !== -1) {
+    users[existingIndex] = user;
+  } else {
+    users.push(user);
   }
+  
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+};
 
-  // Clear local storage
-  localStorage.removeItem('neon_auth_session');
+function storeSession(session: AuthSession): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
 
-/**
- * Get current session
- */
 export function getSession(): AuthSession | null {
   if (typeof window === 'undefined') return null;
   
-  const stored = localStorage.getItem('neon_auth_session');
+  const stored = localStorage.getItem(SESSION_KEY);
   if (!stored) return null;
 
   try {
     const session: AuthSession = JSON.parse(stored);
     
-    // Check if expired
     if (session.expiresAt && Date.now() > session.expiresAt) {
-      localStorage.removeItem('neon_auth_session');
+      localStorage.removeItem(SESSION_KEY);
       return null;
     }
     
@@ -162,80 +109,269 @@ export function getSession(): AuthSession | null {
   }
 }
 
-/**
- * Get current user
- */
-export async function getCurrentUser(): Promise<NeonAuthUser | null> {
-  const session = getSession();
-  
-  if (!session?.accessToken) return null;
+function clearSession(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(SESSION_KEY);
+}
+
+export function isAuthenticated(): boolean {
+  return getSession() !== null;
+}
+
+export async function neonSignUp(
+  email: string,
+  password: string,
+  type: 'individual' | 'enterprise' | 'developer' = 'individual',
+  metadata?: { name?: string; companyName?: string }
+): Promise<{ success: boolean; user?: NeonAuthUser; session?: AuthSession; error?: string }> {
+  if (!authClient) {
+    return { success: false, error: 'Auth not configured' };
+  }
 
   try {
-    const response = await fetch('/api/auth/me', {
-      headers: {
-        'Authorization': `Bearer ${session.accessToken}`,
+    const adapter = authClient.adapter as {
+      signUp: (options: { email: string; password: string; name?: string; metadata?: Record<string, unknown> }) => Promise<{ error?: { message: string } }>;
+      getSession: () => Promise<{ data?: { session: { session: { accessToken: string; expiresAt: Date; refreshToken?: string } | null; user: BetterAuthUser | null } } }>;
+    };
+
+    const result = await adapter.signUp.email({
+      email,
+      password,
+      name: metadata?.name || email.split('@')[0],
+      metadata: {
+        type,
+        companyName: metadata?.companyName,
       },
     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Token expired, clear session
-        localStorage.removeItem('neon_auth_session');
-      }
-      return null;
+    if (result.error) {
+      return { success: false, error: result.error.message };
     }
 
-    return await response.json();
+    const sessionResult = await adapter.getSession();
+    
+    if (sessionResult.data?.session && sessionResult.data?.session.user) {
+      const authSession = convertSessionToAuthSession(sessionResult.data.session);
+      storeSession(authSession);
+      
+      const neonUser = convertToNeonUser(sessionResult.data.session.user);
+      saveUser(neonUser);
+
+      return {
+        success: true,
+        user: neonUser,
+        session: authSession,
+      };
+    }
+
+    return { success: true };
   } catch (error) {
-    console.error('Get current user error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Signup failed',
+    };
+  }
+}
+
+export async function neonSignIn(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: NeonAuthUser; session?: AuthSession; error?: string }> {
+  if (!authClient) {
+    return { success: false, error: 'Auth not configured' };
+  }
+
+  try {
+    const adapter = authClient.adapter as {
+      signIn: (options: { email: string; password: string }) => Promise<{ error?: { message: string } }>;
+      getSession: () => Promise<{ data?: { session: { session: { accessToken: string; expiresAt: Date; refreshToken?: string } | null; user: BetterAuthUser | null } } }>;
+    };
+
+    const result = await adapter.signIn.email({
+      email,
+      password,
+    });
+
+    if (result.error) {
+      const errorMessage = result.error.message.toLowerCase();
+      if (errorMessage.includes('invalid') || errorMessage.includes('incorrect')) {
+        return { success: false, error: 'Identifiants invalides' };
+      }
+      return { success: false, error: result.error.message };
+    }
+
+    const sessionResult = await adapter.getSession();
+    
+    if (sessionResult.data?.session && sessionResult.data?.session.user) {
+      const authSession = convertSessionToAuthSession(sessionResult.data.session);
+      storeSession(authSession);
+      
+      const neonUser = convertToNeonUser(sessionResult.data.session.user);
+
+      console.log('[NeonAuth] Signed in successfully:', neonUser.email);
+
+      return {
+        success: true,
+        user: neonUser,
+        session: authSession,
+      };
+    }
+
+    return { success: false, error: 'Failed to get session' };
+  } catch (error) {
+    console.error('[NeonAuth] Sign in error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Erreur lors de la connexion',
+    };
+  }
+}
+
+export async function neonSignOut(): Promise<void> {
+  if (authClient) {
+    try {
+      (authClient.adapter as { signOut: () => Promise<{ error?: { message: string } }> }).signOut();
+    } catch (error) {
+      console.error('[NeonAuth] Signout error:', error);
+    }
+  }
+
+  clearSession();
+  sessionStorage.removeItem('cortexia_user_type');
+  sessionStorage.removeItem('cortexia_pending_user_type');
+  
+  console.log('[NeonAuth] Signed out');
+}
+
+export async function getCurrentUser(): Promise<NeonAuthUser | null> {
+  if (!authClient) return null;
+
+  try {
+    const adapter = authClient.adapter as {
+      getSession: () => Promise<{ data?: { session: { user: BetterAuthUser | null } } }>;
+    };
+
+    const result = await adapter.getSession();
+    
+    if (result.data?.session?.user) {
+      return convertToNeonUser(result.data.session.user);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[NeonAuth] Get current user error:', error);
     return null;
   }
 }
 
-/**
- * Refresh access token
- */
-export async function refreshToken(): Promise<boolean> {
+export function getUser(): { user: NeonAuthUser | null; accessToken: string | null } {
   const session = getSession();
   
-  if (!session?.refreshToken) return false;
+  if (session?.user) {
+    return {
+      user: session.user,
+      accessToken: session.accessToken,
+    };
+  }
+  
+  return { user: null, accessToken: null };
+}
+
+export function restoreSession(): { user: NeonAuthUser | null; accessToken: string | null } {
+  if (typeof window === 'undefined') return { user: null, accessToken: null };
+  
+  // Check localStorage first (new format from auth.ts)
+  const storedUser = localStorage.getItem('cortexia_user');
+  console.log('[NeonAuth] restoreSession called, storedUser exists:', !!storedUser);
+  if (storedUser) {
+    try {
+      const userData = JSON.parse(storedUser);
+      return {
+        user: {
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+          type: userData.type || 'individual',
+          onboardingComplete: userData.onboardingComplete || false,
+          createdAt: userData.createdAt,
+        },
+        accessToken: 'neon-auth',
+      };
+    } catch (e) {
+      console.error('[NeonAuth] restoreSession parse error:', e);
+      // Ignore parse error
+    }
+  }
+  
+  // Check old session format
+  const session = getSession();
+  if (session?.user) {
+    return {
+      user: session.user,
+      accessToken: session.accessToken,
+    };
+  }
+  
+  return { user: null, accessToken: null };
+}
+
+export async function updateProfile(
+  updates: Partial<NeonAuthUser>
+): Promise<{ success: boolean; user?: NeonAuthUser; error?: string }> {
+  if (!authClient) {
+    return { success: false, error: 'Auth not configured' };
+  }
 
   try {
-    const response = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: session.refreshToken }),
-    });
-
-    if (!response.ok) {
-      localStorage.removeItem('neon_auth_session');
-      return false;
+    const session = getSession();
+    if (!session?.accessToken) {
+      return { success: false, error: 'Not authenticated' };
     }
 
-    const newSession = await response.json();
+    const adapter = authClient.adapter as {
+      updateUser: (options: Record<string, unknown>) => Promise<{ error?: { message: string }; data?: BetterAuthUser }>;
+    };
+
+    const result = await adapter.updateUser({
+      ...updates,
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message };
+    }
+
+    const updatedUser = convertToNeonUser(result.data!);
+    const newSession: AuthSession = {
+      ...session,
+      user: updatedUser,
+    };
     storeSession(newSession);
-    
-    return true;
+
+    return { success: true, user: updatedUser };
   } catch (error) {
-    console.error('Token refresh error:', error);
-    return false;
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Profile update failed',
+    };
   }
 }
 
-/**
- * Request password reset
- */
 export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+  if (!authClient) {
+    return { success: false, error: 'Auth not configured' };
+  }
+
   try {
-    const response = await fetch('/api/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+    const adapter = authClient.adapter as {
+      sendPasswordResetEmail: (options: { email: string }) => Promise<{ error?: { message: string } }>;
+    };
+
+    const result = await adapter.sendPasswordResetEmail({
+      email,
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      return { success: false, error };
+    if (result.error) {
+      return { success: false, error: result.error.message };
     }
 
     return { success: true };
@@ -247,86 +383,41 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
   }
 }
 
-/**
- * Update user profile
- */
-export async function updateProfile(
-  updates: Partial<Pick<NeonAuthUser, 'name' | 'avatarUrl'>>
-): Promise<{ success: boolean; user?: NeonAuthUser; error?: string }> {
-  const session = getSession();
+export function canAccessRoute(route: string, userType: 'individual' | 'enterprise' | 'developer' | null): boolean {
+  const allowedRoutes: Record<string, string[]> = {
+    individual: ['feed', 'discovery', 'create', 'create-v4', 'profile', 'messages', 'new-message', 'wallet', 'creator-dashboard', 'settings', 'coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard'],
+    enterprise: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'],
+    developer: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'],
+  };
+
+  if (['landing', 'login', 'signup-individual', 'signup-enterprise', 'signup-developer', 'feed', 'discovery', 'onboarding', 'auth-callback'].includes(route)) {
+    return true;
+  }
+
+  if (!userType) return false;
   
-  if (!session?.accessToken) {
-    return { success: false, error: 'Not authenticated' };
-  }
+  return allowedRoutes[userType]?.includes(route) || false;
+}
 
-  try {
-    const response = await fetch('/api/auth/profile', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`,
-      },
-      body: JSON.stringify(updates),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      return { success: false, error };
-    }
-
-    const user = await response.json();
-    return { success: true, user };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Profile update failed',
-    };
+export function initNeonAuth() {
+  if (!NEON_AUTH_URL) {
+    console.warn('[NeonAuth] VITE_NEON_AUTH_URL not configured');
+  } else if (authClient) {
+    console.log('[NeonAuth] Initialized with:', NEON_AUTH_URL);
   }
 }
 
-/**
- * Link OAuth provider (Google, GitHub, etc.)
- */
-export async function linkOAuthProvider(provider: 'google' | 'github' | 'apple'): Promise<void> {
-  const session = getSession();
-  
-  if (!session?.accessToken) {
-    throw new Error('Not authenticated');
-  }
-
-  // Redirect to OAuth provider
-  const response = await fetch(`/api/auth/link/${provider}`, {
-    headers: {
-      'Authorization': `Bearer ${session.accessToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to initiate OAuth linking');
-  }
-
-  const { url } = await response.json();
-  window.location.href = url;
-}
-
-// Helper function to store session
-function storeSession(session: AuthSession): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('neon_auth_session', JSON.stringify(session));
-}
-
-// Helper function to check if user is authenticated
-export function isAuthenticated(): boolean {
-  return getSession() !== null;
-}
-
-// Helper function to require authentication
-export async function requireAuth(): Promise<NeonAuthUser> {
-  const user = await getCurrentUser();
-  
-  if (!user) {
-    throw new Error('Authentication required');
-  }
-  
-  return user;
-}
+export default {
+  initNeonAuth,
+  signUp: neonSignUp,
+  signIn: neonSignIn,
+  signOut: neonSignOut,
+  getSession,
+  getUser,
+  isAuthenticated,
+  getCurrentUser,
+  restoreSession,
+  updateProfile,
+  requestPasswordReset,
+  canAccessRoute,
+};

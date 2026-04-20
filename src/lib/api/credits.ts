@@ -1,6 +1,6 @@
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const API_BASE = `/api`;
 
 export interface UserCredits {
   free: number;
@@ -15,16 +15,10 @@ export async function getUserCredits(
   userId: string
 ): Promise<{ success: boolean; credits?: UserCredits; daysUntilReset?: number; error?: string }> {
   try {
-    // ✅ Encode userId to handle special characters like | in google-oauth2|123456
-    const encodedUserId = encodeURIComponent(userId);
-    const url = `${API_BASE}/credits/${encodedUserId}`;
+    const url = `${API_BASE}/credits?userId=${encodeURIComponent(userId)}`;
     console.log('📞 Fetching credits from:', url);
     
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${publicAnonKey}`,
-      },
-    });
+    const response = await fetch(url);
 
     console.log('📥 Credits response status:', response.status);
     
@@ -36,15 +30,19 @@ export async function getUserCredits(
 
     const data = await response.json();
     console.log('✅ Credits data:', data);
-    return data;
+    return {
+      success: true,
+      credits: {
+        free: data.credits?.free || 0,
+        paid: data.credits?.premium || 0
+      }
+    };
   } catch (error) {
     console.error('Get user credits error:', error);
-    
-    // ✅ Return fallback credits instead of error to prevent app crash
     return {
-      success: true, // ✅ Mark as success to prevent error toast spam
+      success: true,
       credits: {
-        free: 10, // ✅ Fallback: 10 free credits
+        free: 10,
         paid: 0,
         lastReset: new Date().toISOString()
       },
@@ -62,13 +60,12 @@ export async function addPaidCredits(
   amount: number
 ): Promise<{ success: boolean; credits?: UserCredits; daysUntilReset?: number; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE}/credits/add-paid`, {
+    const response = await fetch(`${API_BASE}/credits`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${publicAnonKey}`,
       },
-      body: JSON.stringify({ userId, amount }),
+      body: JSON.stringify({ userId, amount, type: 'premium', reason: 'purchase' }),
     });
 
     const data = await response.json();
@@ -91,13 +88,13 @@ export async function deductCredits(
   type: 'free' | 'paid' = 'paid'
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   try {
-    const response = await fetch(`${API_BASE}/credits/deduct`, {
+    const creditType = type === 'paid' ? 'premium' : 'free';
+    const response = await fetch(`${API_BASE}/credits`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${publicAnonKey}`,
       },
-      body: JSON.stringify({ userId, amount, type }),
+      body: JSON.stringify({ userId, amount: -amount, type: creditType, reason: 'usage' }),
     });
 
     const data = await response.json();

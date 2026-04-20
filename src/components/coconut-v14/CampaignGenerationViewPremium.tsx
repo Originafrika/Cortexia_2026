@@ -84,10 +84,10 @@ export function CampaignGenerationViewPremium({
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/${campaignId}/status`,
+          `/api/campaign/${campaignId}/status`,
           {
             headers: {
-              Authorization: `Bearer ${publicAnonKey}`,
+              'Content-Type': 'application/json'
             },
           }
         );
@@ -167,12 +167,11 @@ export function CampaignGenerationViewPremium({
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/${campaignId}/export`,
+        `/api/campaign/${campaignId}/export`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
         }
       );
@@ -207,12 +206,11 @@ export function CampaignGenerationViewPremium({
 
     try {
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/campaign/${campaignId}/calendar/export`,
+        `/api/campaign/${campaignId}/calendar/export`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ format: 'pdf' }),
         }

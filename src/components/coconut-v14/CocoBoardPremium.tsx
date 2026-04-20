@@ -34,6 +34,7 @@ import { CocoBoardSidebarPremium } from './CocoBoardSidebarPremium';
 import { PromptEditor } from './PromptEditor';
 import { ReferencesManager } from './ReferencesManager';
 import { SpecsAdjuster } from './SpecsAdjuster';
+import { CocoboardModify } from '../cocoblend/CocoboardModify';
 import { ColorPalettePicker } from './ColorPalettePicker';
 import { GenerationView } from './GenerationView';
 import { SpecsInputModal } from './SpecsInputModal';
@@ -53,7 +54,7 @@ import { useAutoSave } from '../../lib/hooks/useAutoSave';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { handleError, showSuccess, showWarning } from '../../lib/utils/errorHandler';
 
-const API_BASE = `https://${supabaseProjectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const API_BASE = '/api';
 
 // ============================================
 // ANIMATION VARIANTS - BDS COMPLIANT
@@ -145,7 +146,7 @@ function CocoBoardPremiumContent({
   } = useCocoBoardStore();
 
   // Credits for cost widget
-  const { getCoconutCredits } = useCredits();
+  const { getCoconutCredits, deductCredits } = useCredits();
   const totalCredits = getCoconutCredits(); // ✅ Coconut V14 uses ONLY paid credits
 
   // Local state
@@ -229,6 +230,26 @@ function CocoBoardPremiumContent({
   const loadCocoBoard = async () => {
     setLoading(true);
     setError(null);
+    
+    // ✅ DEMO MODE: Load from localStorage for demo-user
+    if (userId === 'demo-user') {
+      console.log('🥥 Demo-user loading CocoBoard from localStorage');
+      try {
+        const demoCocoBoards = JSON.parse(localStorage.getItem('demo-cocoboards') || '[]');
+        const board = demoCocoBoards.find((b: any) => b.id === cocoBoardId);
+        if (board) {
+          setCurrentBoard(board);
+        } else {
+          setError('CocoBoard not found in demo storage');
+        }
+      } catch (err) {
+        setError('Failed to load demo CocoBoard');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    
     try {
       const response = await fetch(`${API_BASE}/coconut/cocoboard/get?id=${cocoBoardId}`, {
         headers: { 'Authorization': `Bearer ${publicAnonKey}` }
@@ -246,18 +267,96 @@ function CocoBoardPremiumContent({
   const createCocoBoardFromAnalysis = async (geminiAnalysis: GeminiAnalysisResponse) => {
     setLoading(true);
     setError(null);
+    
+    // ✅ DEMO MODE: Save to localStorage for demo-user
+    if (userId === 'demo-user') {
+      console.log('🥥 Demo-user creating CocoBoard in localStorage');
+      try {
+        const referencesWithUrls = uploadedReferences?.images || [];
+        const generatedId = `cocoboard-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        let cleanFinalPrompt: string = '';
+        if (geminiAnalysis.finalPrompt) {
+          if (typeof geminiAnalysis.finalPrompt === 'object' && 'text' in geminiAnalysis.finalPrompt) {
+            cleanFinalPrompt = String(geminiAnalysis.finalPrompt.text);
+          } else {
+            cleanFinalPrompt = String(geminiAnalysis.finalPrompt);
+          }
+        }
+        // ✅ Fallback: use concept description if finalPrompt is empty
+        if (!cleanFinalPrompt || cleanFinalPrompt.trim().length === 0) {
+          cleanFinalPrompt = geminiAnalysis.concept?.mainConcept || geminiAnalysis.concept?.direction || 'Creative concept for the project';
+        }
+        
+        const newCocoBoard = {
+          id: generatedId,
+          projectId,
+          userId,
+          analysis: {
+            projectTitle: geminiAnalysis.projectTitle || 'Demo Project',
+            concept: geminiAnalysis.concept || { mainConcept: 'Demo concept', visualStyle: 'minimal', targetEmotion: 'neutral', keyMessage: 'Demo' },
+            colorPalette: geminiAnalysis.colorPalette || { primary: ['#000000'], accent: ['#ffffff'], background: ['#f5f5f5'], text: ['#000000'], rationale: 'Demo' },
+            assetsRequired: {
+              missing: geminiAnalysis.assetsRequired?.missing || [],
+              canGenerate: geminiAnalysis.assetsRequired?.missing?.some((a: any) => a.canBeGenerated) || false,
+              multiPassNeeded: geminiAnalysis.recommendations?.generationApproach === 'multi-pass',
+            },
+            finalPrompt: cleanFinalPrompt,
+            technicalSpecs: geminiAnalysis.technicalSpecs || { format: '9:16', resolution: '1080x1920', style: 'photorealistic' },
+            estimatedCost: geminiAnalysis.estimatedCost || { credits: 100, time: '2min' },
+          },
+          finalPrompt: cleanFinalPrompt,
+          references: referencesWithUrls,
+          specs: {
+            format: geminiAnalysis.technicalSpecs?.format || '9:16',
+            resolution: geminiAnalysis.technicalSpecs?.resolution || '1080x1920',
+            style: geminiAnalysis.technicalSpecs?.style || 'photorealistic',
+          },
+          cost: {
+            analysis: geminiAnalysis.estimatedCost?.analysis || 50,
+            backgroundGeneration: 0,
+            assetGeneration: 0,
+            finalGeneration: geminiAnalysis.estimatedCost?.finalGeneration || 100,
+            total: geminiAnalysis.estimatedCost?.total || 150,
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        // Save to localStorage
+        const demoCocoBoards = JSON.parse(localStorage.getItem('demo-cocoboards') || '[]');
+        demoCocoBoards.push(newCocoBoard);
+        localStorage.setItem('demo-cocoboards', JSON.stringify(demoCocoBoards));
+        
+        setCurrentBoard(newCocoBoard);
+        playSuccess();
+        showSuccess('CocoBoard créé (mode démo)', 'Prêt pour la génération');
+        
+      } catch (err) {
+        playError();
+        setError(err instanceof Error ? err.message : 'Failed to create demo CocoBoard');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    
     try {
       const referencesWithUrls = uploadedReferences?.images || [];
       const generatedId = `cocoboard-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // Clean finalPrompt if needed
       let cleanFinalPrompt: string = '';
-      if (typeof geminiAnalysis.finalPrompt === 'object' && '0' in geminiAnalysis.finalPrompt) {
-        cleanFinalPrompt = Object.values(geminiAnalysis.finalPrompt).join('');
-      } else if (typeof geminiAnalysis.finalPrompt === 'string') {
-        cleanFinalPrompt = geminiAnalysis.finalPrompt;
-      } else {
-        cleanFinalPrompt = String(geminiAnalysis.finalPrompt);
+      if (geminiAnalysis.finalPrompt) {
+        if (typeof geminiAnalysis.finalPrompt === 'object' && 'text' in geminiAnalysis.finalPrompt) {
+          cleanFinalPrompt = String(geminiAnalysis.finalPrompt.text);
+        } else {
+          cleanFinalPrompt = String(geminiAnalysis.finalPrompt);
+        }
+      }
+      // ✅ Fallback: use concept description if finalPrompt is empty
+      if (!cleanFinalPrompt || cleanFinalPrompt.trim().length === 0) {
+        cleanFinalPrompt = geminiAnalysis.concept?.mainConcept || geminiAnalysis.concept?.direction || 'Creative concept for the project';
       }
       
       const newCocoBoard = {
@@ -265,54 +364,32 @@ function CocoBoardPremiumContent({
         projectId,
         userId,
         analysis: {
-          projectTitle: geminiAnalysis.projectTitle,
-          concept: {
-            mainConcept: geminiAnalysis.concept.direction,
-            visualStyle: geminiAnalysis.concept.keyMessage,
-            targetEmotion: geminiAnalysis.concept.mood,
-            keyMessage: geminiAnalysis.concept.keyMessage,
-          },
-          referenceAnalysis: {
-            patterns: geminiAnalysis.referenceAnalysis?.availableAssets?.map((a: any) => a.usage) || [],
-          },
-          composition: {
-            layout: geminiAnalysis.composition?.zones?.map((z: any) => z.name || '').join(', ') || '',
-            hierarchy: geminiAnalysis.composition?.zones?.map((z: any) => z.description) || [],
-            zones: geminiAnalysis.composition?.zones || [],
-          },
-          colorPalette: geminiAnalysis.colorPalette,
+          projectTitle: geminiAnalysis.projectTitle || 'Untitled Project',
+          concept: geminiAnalysis.concept || { mainConcept: '', visualStyle: '', targetEmotion: '', keyMessage: '' },
+          colorPalette: geminiAnalysis.colorPalette || { primary: [], accent: [], background: [], text: [], rationale: '' },
           assetsRequired: {
             missing: geminiAnalysis.assetsRequired?.missing || [],
             canGenerate: geminiAnalysis.assetsRequired?.missing?.some((a: any) => a.canBeGenerated) || false,
             multiPassNeeded: geminiAnalysis.recommendations?.generationApproach === 'multi-pass',
           },
           finalPrompt: cleanFinalPrompt,
-          technicalSpecs: geminiAnalysis.technicalSpecs,
-          estimatedCost: geminiAnalysis.estimatedCost,
-          recommendations: geminiAnalysis.recommendations,
+          technicalSpecs: geminiAnalysis.technicalSpecs || { format: '9:16', resolution: '1080x1920', style: 'photorealistic' },
+          estimatedCost: geminiAnalysis.estimatedCost || { credits: 100, time: '2min' },
         },
         finalPrompt: cleanFinalPrompt,
-        references: referencesWithUrls.map((ref, index) => ({
-          id: `user-ref-img-${index + 1}`,
-          url: ref.url,
-          type: 'image' as const,
-          description: ref.description,
-          filename: ref.filename,
-          order: index,
-        })),
+        references: referencesWithUrls,
         specs: {
-          model: geminiAnalysis.technicalSpecs.model,
-          mode: geminiAnalysis.technicalSpecs.mode,
-          ratio: geminiAnalysis.technicalSpecs.ratio,
-          resolution: geminiAnalysis.technicalSpecs.resolution,
-          referenceUrls: referencesWithUrls.map((ref, idx) => ({
-            id: `user-ref-img-${idx + 1}`,
-            url: ref.url,
-            filename: ref.filename,
-          })),
+          format: geminiAnalysis.technicalSpecs?.format || '9:16',
+          resolution: geminiAnalysis.technicalSpecs?.resolution || '1080x1920',
+          style: geminiAnalysis.technicalSpecs?.style || 'photorealistic',
         },
-        cost: geminiAnalysis.estimatedCost,
-        status: 'validated' as const,
+        cost: {
+          analysis: geminiAnalysis.estimatedCost?.analysis || 50,
+          backgroundGeneration: 0,
+          assetGeneration: 0,
+          finalGeneration: geminiAnalysis.estimatedCost?.finalGeneration || 100,
+          total: geminiAnalysis.estimatedCost?.total || 150,
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -455,6 +532,38 @@ function CocoBoardPremiumContent({
 
   const handleManualSave = async () => {
     if (!currentBoard) return;
+    
+    // ✅ DEMO MODE: Save to localStorage for demo-user
+    if (userId === 'demo-user') {
+      console.log('🥥 Demo-user saving CocoBoard to localStorage');
+      try {
+        setIsSaving(true);
+        playClick();
+        
+        const demoCocoBoards = JSON.parse(localStorage.getItem('demo-cocoboards') || '[]');
+        const boardIndex = demoCocoBoards.findIndex((b: any) => b.id === currentBoard.id);
+        
+        if (boardIndex !== -1) {
+          demoCocoBoards[boardIndex] = { ...currentBoard, updatedAt: new Date().toISOString() };
+        } else {
+          demoCocoBoards.push({ ...currentBoard, updatedAt: new Date().toISOString() });
+        }
+        
+        localStorage.setItem('demo-cocoboards', JSON.stringify(demoCocoBoards));
+        
+        setIsDirty(false);
+        setLastSaved(new Date());
+        playSuccess();
+        toast.success('Sauvegardé (mode démo)');
+      } catch (error) {
+        playError();
+        toast.error('Erreur de sauvegarde');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+    
     try {
       setIsSaving(true);
       playClick();
@@ -828,6 +937,66 @@ function CocoBoardPremiumContent({
               </div>
             </motion.section>
 
+            {/* Section 4b: Modify Cocoboard */}
+            <motion.section
+              variants={sectionVariants}
+              onMouseEnter={() => { playHover(); setActiveSection('modify'); }}
+              onMouseLeave={() => setActiveSection(null)}
+              className="relative group"
+            >
+              <div className="absolute -inset-2 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-3xl blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500" />
+              
+              <div className="relative bg-white/75 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/60 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1200" />
+                
+                <div className="relative p-6 sm:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl blur-md opacity-40" />
+                        <div className="relative w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                          <Wand2 className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-semibold text-[var(--coconut-dark)]">Modifier le Cocoboard</h2>
+                        <p className="text-sm text-[var(--coconut-husk)]">Ajustez avec l'IA</p>
+                      </div>
+                    </div>
+                    
+                    {activeSection === 'modify' && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"
+                      />
+                    )}
+                  </div>
+
+                  <CocoboardModify
+                    mode={currentBoard.specs?.mode === 'image-to-image' ? 'image' : 'image'}
+                    modificationCost={5}
+                    userCredits={totalCredits}
+                    onModify={async (modification: string) => {
+                      console.log('📝 Modifying cocoboard:', modification);
+                      
+                      // ✅ Local modification: append to prompt and deduct credits
+                      if (userId === 'demo-user') {
+                        const updatedPrompt = `${currentBoard.finalPrompt}\n\n[Modification: ${modification}]`;
+                        setCurrentBoard({ ...currentBoard, finalPrompt: updatedPrompt });
+                        deductCredits(5);
+                        toast.success('Cocoboard modifié', { description: modification });
+                      } else {
+                        // TODO: Call backend modify endpoint for authenticated users
+                        toast.info('Modification envoyée au serveur', { description: modification });
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </motion.section>
+
             {/* Section 5: References Premium */}
             <motion.section
               variants={sectionVariants}
@@ -899,15 +1068,17 @@ function CocoBoardPremiumContent({
             <div className="sticky top-24">
               <CocoBoardSidebarPremium
                 board={currentBoard}
-                totalCredits={totalCredits}
+                userCredits={totalCredits}
                 isDirty={isDirty}
                 isSaving={isSaving}
                 lastSaved={lastSaved}
                 onSave={handleManualSave}
                 onGenerate={() => {
                   playWhoosh();
-                  // Trigger generation logic here
-                  toast.success('Génération lancée !');
+                  if (onGenerationStart) {
+                    onGenerationStart(`gen-${Date.now()}`);
+                  }
+                  toast.success('Génération lancé vers CocoBlend Canvas');
                 }}
               />
             </div>

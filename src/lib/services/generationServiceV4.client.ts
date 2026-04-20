@@ -7,7 +7,7 @@
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import type { GenerationConfig, GenerationResult } from '../types/create-v4';
 
-const SERVER_URL = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const SERVER_URL = '/api';
 
 interface GenerateOptions {
   prompt: string;

@@ -128,26 +128,57 @@ export default function App() {
 function CreditsProviderWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   
-  // ✅ CRITICAL: Stable userId that only updates when user truly changes
-  // This prevents flickering between demo-user and real user
   const [stableUserId, setStableUserId] = React.useState<string | null>(null);
   
   React.useEffect(() => {
-    // Only update userId when NOT loading
-    if (!loading) {
-      if (user?.id) {
-        // User is authenticated - update to real userId
-        console.log('🔐 [CreditsProviderWrapper] Setting stable userId:', user.id);
+    // ✅ ALWAYS check localStorage fresh - don't trust cached values
+    // This ensures we pick up the user even after signup
+    
+    // Priority 1: User from context (if available)
+    if (user?.id && user.id !== 'demo-user') {
+      if (stableUserId !== user.id) {
+        console.log('🔐 [CreditsProviderWrapper] Setting stable userId from context:', user.id);
         setStableUserId(user.id);
-      } else if (!stableUserId) {
-        // No user and no stableUserId yet - use demo-user
-        console.log('🔐 [CreditsProviderWrapper] No user, using demo-user');
-        setStableUserId('demo-user');
       }
-      // ✅ IMPORTANT: If stableUserId exists but user is null, DON'T change it
-      // This prevents losing the user during temporary auth refreshes
+      return;
     }
-  }, [user, loading, stableUserId]);
+    
+    // Priority 2: User from localStorage (check fresh each time)
+    const storedUserStr = localStorage.getItem('cortexia_user');
+    if (storedUserStr) {
+      try {
+        const storedUser = JSON.parse(storedUserStr);
+        if (storedUser?.id && storedUser.id !== stableUserId) {
+          console.log('🔐 [CreditsProviderWrapper] Setting stable userId from localStorage:', storedUser.id);
+          setStableUserId(storedUser.id);
+          return;
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+    
+    // Priority 3: Auth0 user from localStorage
+    const auth0UserStr = localStorage.getItem('cortexia_auth0_user');
+    if (auth0UserStr) {
+      try {
+        const auth0User = JSON.parse(auth0UserStr);
+        if (auth0User?.id && auth0User.id !== stableUserId) {
+          console.log('🔐 [CreditsProviderWrapper] Setting stable userId from auth0 localStorage:', auth0User.id);
+          setStableUserId(auth0User.id);
+          return;
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+    
+    // Priority 4: demo-user only when loading is complete AND no stored user
+    if (!loading && !storedUserStr && !auth0UserStr && !user?.id && !stableUserId) {
+      console.log('🔐 [CreditsProviderWrapper] No user found, using demo-user');
+      setStableUserId('demo-user');
+    }
+  }, [user, loading]);
   
   // ✅ Wait for initial userId to be set
   if (!stableUserId) {
@@ -300,7 +331,7 @@ function AppContent() {
     }
   }, [location.pathname]); // ✅ REMOVED currentScreen from dependencies to prevent loop
   
-  // ✅ NEW: Auto-navigate based on auth state changes
+// ✅ NEW: Auto-navigate based on auth state changes
   useEffect(() => {
     // ⚠️ TEMPORARY: Allow access to coconut-v14 without auth for testing
     if (currentScreen === 'coconut-v14') {
@@ -308,9 +339,14 @@ function AppContent() {
       return;
     }
     
-    // ✅ CRITICAL: Wait for auth to finish loading
-    if (loading) {
-      console.log('⏳ Auth still loading, skipping route protection');
+    // ✅ CRITICAL: Check if auth is fully initialized
+    // For Neon users, we need to check localStorage to know if we should wait or proceed
+    const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
+    const isAuthFullyLoaded = !loading && (user || hasNeonUser);
+    
+    // ✅ Skip if still loading - will show in render
+    if (!isAuthFullyLoaded) {
+      console.log('⏳ [RouteProtection] Auth initializing');
       return;
     }
     
@@ -320,20 +356,24 @@ function AppContent() {
       return;
     }
     
+    // ✅ CRITICAL: Also check localStorage directly to fix race conditions with Neon Auth
+    const hasAuth0User = !!localStorage.getItem('cortexia_auth0_user');
+    const hasAnyUser = hasAuth0User || hasNeonUser;
+    
     // ✅ SKIP route protection for onboarding and callback
     if (currentScreen === 'onboarding' || currentScreen === 'auth-callback') {
       return;
     }
     
     // ✅ IMPORTANT: Use direct navigate instead of handleNavigate to avoid dependency loop
-    if (!isAuthenticated && requiresAuth(currentScreen)) {
+    if (!isAuthenticated && !hasAnyUser && requiresAuth(currentScreen)) {
       // ✅ Redirect to login if trying to access protected route without auth
       console.log('🔒 Route protected, redirecting to login');
       setCurrentScreen('login');
       if (location.pathname !== '/login') {
         navigate('/login');
       }
-    } else if (isAuthenticated && !canAccessRoute(currentScreen)) {
+    } else if ((isAuthenticated || hasAnyUser) && !canAccessRoute(currentScreen)) {
       // ✅ Redirect to appropriate dashboard if wrong route for user type
       console.log('⚠️ Access denied for user type, redirecting');
       if (userType === 'enterprise' || userType === 'developer') {
@@ -352,11 +392,39 @@ function AppContent() {
   
   // ✅ NEW: Handle onboarding redirect when no user/userType
   useEffect(() => {
-    if (!loading && currentScreen === 'onboarding' && (!user || !userType)) {
-      console.warn('⚠️ Onboarding without user/userType, redirecting to landing');
-      setCurrentScreen('landing');
-      if (location.pathname !== '/') {
-        navigate('/');
+    if (!loading && currentScreen === 'onboarding') {
+      // Check for user in localStorage (from Neon Auth)
+      const storedUser = localStorage.getItem('cortexia_user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        console.log('[App] User found in localStorage:', userData.email, 'onboardingComplete:', userData.onboardingComplete);
+        
+        // Only redirect to feed if onboarding is complete
+        if (userData.onboardingComplete === true) {
+          if (userData.type === 'enterprise' || userData.type === 'developer') {
+            setCurrentScreen('coconut-v14');
+          } else {
+            setCurrentScreen('feed');
+          }
+          return;
+        }
+        
+        // Onboarding not complete - stay on onboarding screen
+        // Even if AuthContext doesn't have user yet, keep on onboarding
+        console.log('[App] Onboarding not complete, staying on onboarding screen');
+        
+        // Don't redirect to landing if user exists in localStorage
+        // The user will be populated by AuthContext later
+        return;
+      }
+      
+      // No user in localStorage AND on onboarding screen → redirect
+      if (!user || !userType) {
+        console.warn('⚠️ Onboarding without user/userType, redirecting to landing');
+        setCurrentScreen('landing');
+        if (location.pathname !== '/') {
+          navigate('/');
+        }
       }
     }
   }, [loading, currentScreen, user, userType, navigate, location.pathname]);
@@ -378,10 +446,12 @@ function AppContent() {
   const handleOpenCreate = (prefillPrompt?: string) => {
     // ✅ CRITICAL FIX: Check localStorage directly to avoid race conditions
     const auth0User = localStorage.getItem('cortexia_auth0_user');
+    const neonUser = localStorage.getItem('cortexia_user');
     const hasAuth0User = !!auth0User;
+    const hasNeonUser = !!neonUser;
     
     // ✅ DEBUG: Log auth state
-    console.log('🎨 [handleOpenCreate] isAuthenticated:', isAuthenticated, 'user:', user?.id, 'loading:', loading, 'hasAuth0User:', hasAuth0User);
+    console.log('🎨 [handleOpenCreate] isAuthenticated:', isAuthenticated, 'user:', user?.id, 'loading:', loading, 'hasAuth0User:', hasAuth0User, 'hasNeonUser:', hasNeonUser);
     
     // ✅ IMPORTANT: Also check loading state
     if (loading) {
@@ -389,8 +459,10 @@ function AppContent() {
       return;
     }
     
-    // ✅ NEW: Check auth (either from context OR localStorage)
-    if (!isAuthenticated && !hasAuth0User) {
+    // ✅ NEW: Check auth (either from context OR localStorage for Neon/Auth0)
+    
+    // ✅ Allow access if user in context OR localStorage
+    if (!isAuthenticated && !hasAuth0User && !hasNeonUser) {
       console.log('🔒 Create requires auth, redirecting to login');
       handleNavigate('login');
       return;
@@ -413,14 +485,16 @@ function AppContent() {
   const handleOpenRemix = (imageUrl: string, prefillPrompt?: string, parentCreationId?: string) => {
     // ✅ Check auth
     const auth0User = localStorage.getItem('cortexia_auth0_user');
+    const neonUser = localStorage.getItem('cortexia_user');
     const hasAuth0User = !!auth0User;
+    const hasNeonUser = !!neonUser;
     
     if (loading) {
       console.log('⏳ Auth still loading, please wait...');
       return;
     }
     
-    if (!isAuthenticated && !hasAuth0User) {
+    if (!isAuthenticated && !hasAuth0User && !hasNeonUser) {
       console.log('🔒 Remix requires auth, redirecting to login');
       handleNavigate('login');
       return;
@@ -467,6 +541,10 @@ function AppContent() {
   };
 
   const renderScreen = () => {
+    // ✅ Simpler approach: just check localStorage directly
+    // If user was here before, let them through (no loading screen for now)
+    // The auth loading is fast enough that users won't notice
+    
     // ✅ NEW: Landing & Auth flow
     if (currentScreen === 'landing') {
       return <LandingPage onNavigate={handleNavigate} />;
@@ -529,7 +607,30 @@ function AppContent() {
         );
       }
       
-      // ✅ Check if user exists and has type (redirection handled by useEffect above)
+      // Check localStorage first - if user exists there, stay on onboarding
+      const storedUser = localStorage.getItem('cortexia_user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        // Even if auth isn't fully loaded yet, show onboarding if user is in localStorage
+        return (
+          <OnboardingFlow 
+            userType={userData.type || 'individual'}
+            onComplete={async () => {
+              console.log('[App] Onboarding complete, routing to dashboard for:', userData.type);
+              
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
+              if (userData.type === 'enterprise' || userData.type === 'developer') {
+                handleNavigate('coconut-v14');
+              } else {
+                handleNavigate('feed');
+              }
+            }}
+          />
+        );
+      }
+      
+      // No user in localStorage AND no auth loaded → redirect
       if (!user || !userType) {
         return (
           <div className="flex items-center justify-center h-screen bg-black">

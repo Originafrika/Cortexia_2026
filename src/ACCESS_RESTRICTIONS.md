@@ -366,7 +366,7 @@ const ProtectedRoute = ({
 
 <Route path="/coconut-v14" element={
   <ProtectedRoute 
-    component={CoconutV14Page} 
+    component={CoconutV14App} 
     allowedAccountTypes={['individual', 'enterprise']} // Individual needs Creator check
   />
 } />

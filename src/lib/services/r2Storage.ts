@@ -197,6 +197,35 @@ class R2StorageService {
     }
     return null;
   }
+
+  /**
+   * Download file from URL and upload to R2
+   * Used by cocoblend to download AI outputs to R2
+   */
+  async uploadFromUrl(
+    sourceUrl: string,
+    key: string,
+    contentType: string = 'image/png'
+  ): Promise<R2UploadResult> {
+    try {
+      const response = await fetch(sourceUrl);
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Failed to download from source: ${response.status} ${response.statusText}`,
+        };
+      }
+
+      const blob = await response.blob();
+      return this.uploadFile(key, blob, contentType);
+    } catch (error) {
+      console.error('R2 uploadFromUrl error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to upload from URL',
+      };
+    }
+  }
 }
 
 export const r2Storage = new R2StorageService();

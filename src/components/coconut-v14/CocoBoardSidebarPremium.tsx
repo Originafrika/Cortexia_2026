@@ -58,7 +58,18 @@ export function CocoBoardSidebarPremium({
 }: CocoBoardSidebarPremiumProps) {
   const { playClick, playSuccess } = useSoundContext();
 
-  const canAfford = userCredits >= board.cost.total;
+  // ✅ FIX: board.cost can be a number or an object — normalize it
+  const costObj = typeof board.cost === 'number'
+    ? { analysis: 50, backgroundGeneration: 0, assetGeneration: 0, finalGeneration: board.cost, total: board.cost }
+    : {
+        analysis: board.cost?.analysis ?? 50,
+        backgroundGeneration: board.cost?.backgroundGeneration ?? 0,
+        assetGeneration: board.cost?.assetGeneration ?? 0,
+        finalGeneration: board.cost?.finalGeneration ?? board.cost?.credits ?? 100,
+        total: board.cost?.total ?? board.cost?.analysis ?? board.cost?.finalGeneration ?? board.cost?.credits ?? 150,
+      };
+
+  const canAfford = userCredits >= costObj.total;
   const completionPercentage = calculateCompletionPercentage(board);
 
   return (
@@ -165,25 +176,25 @@ export function CocoBoardSidebarPremium({
           <div className="flex items-center justify-between text-sm">
             <span className="text-[var(--coconut-husk)]">Analyse Gemini</span>
             <span className="font-medium text-[var(--coconut-palm)] flex items-center gap-1">
-              {board.cost.analysis} cr
+              {costObj.analysis} cr
               <CheckCircle className="w-3.5 h-3.5" />
             </span>
           </div>
 
-          {board.cost.backgroundGeneration > 0 && (
+          {costObj.backgroundGeneration > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-[var(--coconut-husk)]">Génération fond</span>
               <span className="font-medium text-[var(--coconut-shell)]">
-                {board.cost.backgroundGeneration} cr
+                {costObj.backgroundGeneration} cr
               </span>
             </div>
           )}
 
-          {board.cost.assetGeneration > 0 && (
+          {costObj.assetGeneration > 0 && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-[var(--coconut-husk)]">Génération assets</span>
               <span className="font-medium text-[var(--coconut-shell)]">
-                {board.cost.assetGeneration} cr
+                {costObj.assetGeneration} cr
               </span>
             </div>
           )}
@@ -191,7 +202,7 @@ export function CocoBoardSidebarPremium({
           <div className="flex items-center justify-between text-sm">
             <span className="text-[var(--coconut-husk)]">Génération finale</span>
             <span className="font-medium text-[var(--coconut-shell)]">
-              {board.cost.finalGeneration} cr
+              {costObj.finalGeneration} cr
             </span>
           </div>
         </div>
@@ -199,7 +210,7 @@ export function CocoBoardSidebarPremium({
         <div className="pt-3 border-t border-white/30 flex items-center justify-between mb-4">
           <span className="font-semibold text-[var(--coconut-shell)]">Total</span>
           <span className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
-            {board.cost.total} cr
+            {costObj.total} cr
           </span>
         </div>
 

@@ -27,22 +27,10 @@ import {
 } from 'lucide-react';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { useSoundContext } from './SoundProvider';
-import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth
+import { useAuth } from '../../lib/contexts/AuthContext';
+import type { CoconutV14Screen } from './CoconutV14App';
 
-type CoconutScreen = 
-  | 'dashboard'
-  | 'type-select'
-  | 'intent-input'
-  | 'analyzing'
-  | 'direction-select'
-  | 'analysis-view'
-  | 'asset-manager'
-  | 'cocoboard'
-  | 'generation'
-  | 'history'
-  | 'credits'
-  | 'settings'
-  | 'profile';
+type CoconutScreen = CoconutV14Screen;
 
 interface NavigationPremiumProps {
   currentScreen: CoconutScreen;

@@ -30,11 +30,10 @@ export function EnterpriseAddonSuccess() {
 
         // Call backend to verify and add credits
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/enterprise/addon/verify?session_id=${sessionId}`,
+          `/api/enterprise/addon/verify?session_id=${sessionId}`,
           {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
               'Content-Type': 'application/json',
             },
           }

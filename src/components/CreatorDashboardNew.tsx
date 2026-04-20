@@ -87,15 +87,15 @@ export function CreatorDashboard({ onNavigate }: CreatorDashboardProps) {
       const userId = user?.id;
       if (!userId) return;
 
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
 
       // Load all data
       const [walletRes, compensationRes, statsRes, limitsRes, referralRes] = await Promise.all([
-        fetch(`${apiUrl}/origins/wallet/${userId}`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` }}),
-        fetch(`${apiUrl}/compensation/${userId}`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` }}),
-        fetch(`${apiUrl}/user-stats/${userId}/stats`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` }}),
-        fetch(`${apiUrl}/withdrawal/${userId}/limits`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` }}),
-        fetch(`${apiUrl}/referral/${userId}/link`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` }})
+        fetch(`${apiUrl}/origins/wallet/${userId}`),
+        fetch(`${apiUrl}/compensation/${userId}`),
+        fetch(`${apiUrl}/user-stats/${userId}/stats`),
+        fetch(`${apiUrl}/withdrawal/${userId}/limits`),
+        fetch(`${apiUrl}/referral/${userId}/link`)
       ]);
 
       if (walletRes.ok) {

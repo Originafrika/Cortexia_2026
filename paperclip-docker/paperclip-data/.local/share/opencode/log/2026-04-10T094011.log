@@ -1,0 +1,21 @@
+INFO  2026-04-10T09:40:11 +1180ms service=default version=1.4.2 args=["models"] opencode
+INFO  2026-04-10T09:40:11 +4ms service=db path=/paperclip/.local/share/opencode/opencode.db opening database
+INFO  2026-04-10T09:40:11 +123ms service=db count=10 mode=bundled applying migrations
+INFO  2026-04-10T09:40:11 +53ms service=json-migration storage directory does not exist, skipping migration
+INFO  2026-04-10T09:40:11 +1ms service=default directory=/app creating instance
+INFO  2026-04-10T09:40:11 +18ms service=project directory=/app fromDirectory
+INFO  2026-04-10T09:40:11 +137ms service=provider status=started state
+INFO  2026-04-10T09:40:11 +18ms service=config path=/paperclip/.config/opencode/config.json loading
+INFO  2026-04-10T09:40:11 +12ms service=config path=/paperclip/.config/opencode/opencode.json loading
+INFO  2026-04-10T09:40:11 +4ms service=config path=/paperclip/.config/opencode/opencode.jsonc loading
+INFO  2026-04-10T09:40:11 +313ms service=provider init
+INFO  2026-04-10T09:40:11 +7ms service=plugin name=CodexAuthPlugin loading internal plugin
+INFO  2026-04-10T09:40:11 +3ms service=plugin name=CopilotAuthPlugin loading internal plugin
+INFO  2026-04-10T09:40:11 +0ms service=plugin name=gitlabAuthPlugin loading internal plugin
+INFO  2026-04-10T09:40:11 +1ms service=plugin name=PoeAuthPlugin loading internal plugin
+INFO  2026-04-10T09:40:11 +0ms service=plugin name=CloudflareWorkersAuthPlugin loading internal plugin
+INFO  2026-04-10T09:40:11 +1ms service=plugin name=CloudflareAIGatewayAuthPlugin loading internal plugin
+INFO  2026-04-10T09:40:11 +2ms service=bus type=* subscribing
+INFO  2026-04-10T09:40:11 +71ms service=npm dir=/paperclip/.config/opencode checking dependencies
+INFO  2026-04-10T09:40:11 +4ms service=npm node_modules missing, reifying
+INFO  2026-04-10T09:40:11 +57ms service=provider providerID=opencode found

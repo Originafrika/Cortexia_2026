@@ -244,42 +244,18 @@ export function applyDirectionToAnalysis(
     direction.colorPalette;
   
   // ✅ FIX P0.2 + P1.2: Apply direction coherently across ALL properties
+  // ✅ CRITICAL: finalPrompt must remain a STRING, not an object
+  const originalFinalPrompt = typeof analysis.finalPrompt === 'string'
+    ? analysis.finalPrompt
+    : String(analysis.finalPrompt?.text || analysis.finalPrompt || '');
+
   return {
     ...analysis,
     concept: {
       ...analysis.concept,
-      mood: direction.mood, // ✅ Replace mood completely
+      mood: direction.mood,
     },
     colorPalette: finalPalette,
-    finalPrompt: {
-      ...analysis.finalPrompt,
-      mood: direction.mood, // ✅ Replace mood completely
-      // ✅ FIX: PRESERVE Gemini's creative style if it's detailed (more than 5 words)
-      // Only use direction style if Gemini's style is generic/short
-      style: (() => {
-        const geminiStyle = analysis.finalPrompt.style || '';
-        const isGeminiStyleDetailed = geminiStyle.split(/[,;]/).length >= 3; // 3+ descriptors = detailed
-        const isGeminiStyleCreative = geminiStyle.toLowerCase().includes('realistic') || 
-                                      geminiStyle.toLowerCase().includes('cinematic') ||
-                                      geminiStyle.toLowerCase().includes('hyper') ||
-                                      geminiStyle.toLowerCase().includes('advertising');
-        
-        // PRESERVE Gemini's creative style if detailed or creative
-        if (isGeminiStyleDetailed || isGeminiStyleCreative) {
-          console.log('✅ Preserving Gemini creative style:', geminiStyle);
-          return geminiStyle;
-        }
-        
-        // Otherwise use direction style
-        console.log('⚠️ Using direction style (Gemini style was generic)');
-        return direction.styleKeywords.join(', ');
-      })(),
-      color_palette: finalColorArray, // ✅ Global palette (Gemini if product-specific, else direction)
-      // ✅ FIX P0.2: Update ALL subjects' color_palette to match global palette
-      subjects: analysis.finalPrompt.subjects?.map((subject: any) => ({
-        ...subject,
-        color_palette: finalColorArray, // ✅ Apply merged palette to each subject
-      })) || [],
-    },
+    finalPrompt: originalFinalPrompt,
   };
 }

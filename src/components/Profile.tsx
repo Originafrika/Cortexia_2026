@@ -58,23 +58,19 @@ export function Profile({ onNavigate }: ProfileProps) {
     }
 
     try {
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
       
       // ✅ NEW: Load full user profile first
-      const profileRes = await fetch(`${apiUrl}/users/${user.id}/profile`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const profileRes = await fetch(`${apiUrl}/auth/profile/${user.id}`);
       
       if (profileRes.ok) {
-        const { profile } = await profileRes.json();
+        const profile = await profileRes.json();
         setUserProfile(profile);
         console.log('✅ Loaded user profile:', profile);
       }
       
       // ✅ NEW: Load generation stats
-      const statsRes = await fetch(`${apiUrl}/user-stats/${user.id}/stats`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const statsRes = await fetch(`${apiUrl}/user-stats/${user.id}/stats`);
       
       if (statsRes.ok) {
         const { stats: genStats } = await statsRes.json();
@@ -83,9 +79,7 @@ export function Profile({ onNavigate }: ProfileProps) {
       }
       
       // Load user's posts/creations
-      const postsRes = await fetch(`${apiUrl}/feed/user/${user.id}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const postsRes = await fetch(`${apiUrl}/feed/user/${user.id}`);
       
       if (postsRes.ok) {
         const data = await postsRes.json();

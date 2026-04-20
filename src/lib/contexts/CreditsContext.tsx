@@ -68,6 +68,12 @@ export function CreditsProvider({ children, userId = 'demo-user' }: CreditsProvi
 
   // Fetch credits from backend (with fallback)
   const refetchCredits = useCallback(async () => {
+    // ✅ Skip backend fetch for demo-user - credits are initialized locally
+    if (userId === 'demo-user') {
+      console.log('🥥 Skipping refetchCredits for demo-user - using local credits');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 

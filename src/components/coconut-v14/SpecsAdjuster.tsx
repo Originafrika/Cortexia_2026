@@ -86,6 +86,15 @@ const PRESETS = [
 export function SpecsAdjuster({ specs, onChange, disabled = false }: SpecsAdjusterProps) {
   // 🔊 PHASE 2A: Sound context
   const { playPop, playClick } = useSoundContext();
+
+  // Guard against undefined specs (board not yet initialized)
+  if (!specs) {
+    return (
+      <div className="flex items-center justify-center p-8 text-slate-500">
+        <div className="text-sm">Loading specs...</div>
+      </div>
+    );
+  }
   
   const handleModelChange = (model: 'flux-2-pro' | 'flux-2-dev') => {
     playPop(); // 🔊 Sound feedback for selection
@@ -339,7 +348,7 @@ export function SpecsAdjuster({ specs, onChange, disabled = false }: SpecsAdjust
           </div>
           <div>
             <span className="text-slate-600">Mode:</span>
-            <span className="ml-2 text-slate-900 capitalize">{specs.mode.replace('-', ' ')}</span>
+            <span className="ml-2 text-slate-900 capitalize">{(specs.mode || 'text-to-image').replace('-', ' ')}</span>
           </div>
           <div>
             <span className="text-slate-600">Ratio:</span>

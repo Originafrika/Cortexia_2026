@@ -70,8 +70,8 @@ export const neonSignUp = async (
       type,
       onboardingComplete: false,
       createdAt: new Date().toISOString(),
-      premiumBalance: localUser?.premiumBalance || 25,
-      freeBalance: localUser?.freeBalance || 25,
+      premiumBalance: 0, // ✅ FREE TIER: No paid credits for new users
+      freeBalance: 25,
     };
     
     localStorage.setItem('cortexia_user', JSON.stringify(userData));

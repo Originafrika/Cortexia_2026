@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../lib/contexts/AuthContext';
-import { Auth0SocialButtons } from './Auth0SocialButtons';
+import { NeonSocialButtons } from './NeonSocialButtons';
 
 interface LoginIndividualProps {
   onSuccess: (userId: string, accessToken: string) => void;
@@ -174,12 +174,9 @@ export function LoginIndividual({ onSuccess, onSwitchToSignup, onBack }: LoginIn
             )}
           </button>
           
-          {/* ✅ Auth0 Social Login Buttons */}
-          <Auth0SocialButtons 
-            onSuccess={() => {
-              // Will be handled by Auth0CallbackPage
-            }}
-            onError={(err) => setError(err)}
+          {/* ✅ Neon Auth Social Login Buttons */}
+          <NeonSocialButtons
+            userType="individual"
           />
         </form>
 

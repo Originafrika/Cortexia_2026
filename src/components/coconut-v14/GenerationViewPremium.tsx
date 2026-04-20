@@ -32,7 +32,7 @@ import {
 import { handleError, showSuccess, showWarning } from '../../lib/utils/errorHandler';
 import { toast } from 'sonner';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+const API_BASE = '/api';
 
 // ============================================
 // ANIMATION VARIANTS - BDS COMPLIANT

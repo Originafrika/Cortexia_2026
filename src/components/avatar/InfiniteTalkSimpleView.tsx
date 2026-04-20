@@ -128,16 +128,15 @@ export default function InfiniteTalkSimpleView({
     
     // Choose the correct upload endpoint
     const endpoint = type === 'image' 
-      ? `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload`
-      : `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/storage/upload-audio`;
+      ? `/api/storage/upload`
+      : `/api/storage/upload-audio`;
     
     const dataKey = type === 'image' ? 'imageData' : 'audioData';
     
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${publicAnonKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         userId,
@@ -315,12 +314,11 @@ export default function InfiniteTalkSimpleView({
 
       // Step 1: Start generation (returns immediately with taskId)
       const startResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/avatar/kie-ai/infinitalk/start`,
+        `/api/avatar/kie-ai/infinitalk/start`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             userId,
@@ -353,10 +351,10 @@ export default function InfiniteTalkSimpleView({
         }
 
         const statusResponse = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/avatar/kie-ai/infinitalk/status/${taskId}`,
+          `/api/avatar/kie-ai/infinitalk/status/${taskId}`,
           {
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
+              'Content-Type': 'application/json'
             }
           }
         );

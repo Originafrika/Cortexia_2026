@@ -7,8 +7,17 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, handleAuth0Callback, signOutAuth0, updateAuth0UserMetadata, onAuth0StateChange, getAuth0Session } from '../services/auth0-service';
-import { projectId, publicAnonKey } from '../../utils/supabase/info'; // ✅ FIX: Correct path
-import { preloadCoconutAccess } from '../hooks/useCoconutAccess'; // ✅ NEW: Preload Coconut data
+import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { preloadCoconutAccess } from '../hooks/useCoconutAccess';
+import { 
+  neonSignIn, 
+  neonSignUp, 
+  neonSignOut, 
+  getSession as getNeonSession,
+  restoreSession,
+  getUser,
+  type NeonAuthUser 
+} from '../auth/neon-auth';
 
 // ============================================
 // TYPES
@@ -54,6 +63,7 @@ export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signUp: (email: string, password: string, type: UserType, name?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
   signOut: () => Promise<void>;
+  refreshUser: () => void; // ✅ NEW: Force refresh user from localStorage
   
   // ✅ NEW: Update user from OAuth callback
   updateUserFromCallback: (user: User) => Promise<{ isNewUser: boolean }>;
@@ -65,6 +75,7 @@ export interface AuthContextType {
   // Access control
   canAccessRoute: (route: string) => boolean;
   requiresAuth: (route: string) => boolean;
+  refreshUser: () => void;
 }
 
 // ============================================
@@ -112,7 +123,7 @@ const findUser = (email: string, password: string): StoredUser | null => {
   return null;
 };
 
-const getSession = (): string | null => {
+const getLocalSession = (): string | null => {
   return localStorage.getItem(SESSION_KEY);
 };
 
@@ -122,6 +133,11 @@ const setSession = (userId: string) => {
 
 const clearSession = () => {
   localStorage.removeItem(SESSION_KEY);
+  // Also clear Neon Auth session
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('neon_auth_session');
+    localStorage.removeItem('neon_auth_users');
+  }
 };
 
 const getUserById = (id: string): StoredUser | null => {
@@ -175,9 +191,9 @@ const PROTECTED_ROUTES = [
 
 // Routes accessible by user type
 const TYPE_ROUTES: Record<UserType, string[]> = {
-  individual: ['feed', 'discovery', 'create', 'create-v4', 'profile', 'messages', 'wallet', 'creator-dashboard', 'settings', 'coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard'], // ✅ Individual can access Coconut IF they're Creators (checked in CoconutV14App)
-  enterprise: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'], // ✅ Enterprise = Coconut ONLY
-  developer: ['coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'] // ✅ Developer = API + Coconut
+  individual: ['landing', 'feed', 'discovery', 'create', 'create-v4', 'profile', 'messages', 'wallet', 'creator-dashboard', 'settings', 'coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard'], // ✅ Individual can access Coconut IF they're Creators (checked in CoconutV14App)
+  enterprise: ['landing', 'coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'], // ✅ Enterprise = Coconut ONLY
+  developer: ['landing', 'coconut-v14', 'coconut-campaign', 'coconut-v14-cocoboard', 'settings'] // ✅ Developer = API + Coconut
 };
 
 // ============================================
@@ -190,14 +206,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userType, setUserType] = useState<UserType | null>(null);
 
-  // ✅ Auto-restore session on mount (Supabase Auth + localStorage fallback)
+  // ✅ Auto-restore session on mount (Neon Auth + localStorage)
   useEffect(() => {
     let mounted = true;
     
     const initAuth = async () => {
       try {
-        // 1. Check for Supabase session first (priority)
+        // 1. Check for Neon session first (priority)
+        const { user, accessToken } = restoreSession();
+        
+        if (user && accessToken) {
+          // Neon session found
+          console.log('[AuthContext] ✅ Restored Neon session for:', user.email);
+          
+          const userData: User = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            type: user.type,
+            onboardingComplete: user.onboardingComplete,
+            createdAt: user.createdAt,
+            companyLogo: user.companyLogo,
+            brandColors: user.brandColors,
+            companyName: user.companyName,
+            provider: 'supabase',
+          };
+          
+          setUser(userData);
+          setIsAuthenticated(true);
+          setUserType(userData.type);
+          
+          console.log('[AuthContext] ✅ Auth initialized successfully (Neon user)');
+          return;
+        }
+        
+        // 2. Fallback: Check Supabase session (for OAuth users still using old auth)
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!error && session?.user) {
@@ -314,7 +360,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           // 2. Fallback to localStorage session (for email/password users)
-          const sessionUserId = getSession();
+          const sessionUserId = getLocalSession();
           if (sessionUserId) {
             const storedUser = getUserById(sessionUserId);
             if (storedUser) {
@@ -443,89 +489,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       authListener?.subscription?.unsubscribe();
-    };
+};
   }, []);
 
-  // ✅ Sign In
+  // ✅ Sign In - Use local API instead of Neon Auth (which returns 404)
   const signIn = async (email: string, password: string) => {
     try {
       console.log('[AuthContext] Signing in with email:', email);
       
-      // ✅ Use Supabase auth instead of localStorage
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Use local Express server (port 3001)
+      const response = await fetch('http://localhost:3001/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      
-      if (error) {
-        console.error('[AuthContext] Sign in error:', error);
-        return { success: false, error: 'Email ou mot de passe incorrect' };
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        console.error('[AuthContext] Sign in error:', data.error);
+        return { success: false, error: data.error || 'Email ou mot de passe incorrect' };
       }
-      
-      if (!data.user || !data.session) {
-        return { success: false, error: 'Erreur lors de la connexion' };
-      }
-      
-      // Extract user data from Supabase
-      const supabaseUser = data.user;
-      const metadata = supabaseUser.user_metadata || {};
-      
-      // ✅ CRITICAL FIX: Fetch user type from backend KV store
-      let userType: UserType = (metadata.user_type || 'individual') as UserType;
-      let onboardingComplete = metadata.onboarding_complete || false;
-      
-      try {
-        const typeResponse = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/users/${supabaseUser.id}/type`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
-            },
-          }
-        );
-        
-        if (typeResponse.ok) {
-          const typeData = await typeResponse.json();
-          if (typeData.success && typeData.type) {
-            console.log(`✅ [AuthContext] User type from backend: ${typeData.type}`);
-            userType = typeData.type as UserType; // ✅ Use backend value
-            onboardingComplete = typeData.onboardingComplete;
-            
-            // ✅ CRITICAL: Update sessionStorage for AuthFlow redirect
-            sessionStorage.setItem('cortexia_user_type', userType);
-          }
-        }
-      } catch (typeErr) {
-        console.warn('⚠️ [AuthContext] Failed to fetch user type from backend during sign in');
-      }
-      
-      const userData: User = {
-        id: supabaseUser.id,
-        email: supabaseUser.email!,
-        name: metadata.name || supabaseUser.email?.split('@')[0],
-        type: userType, // ✅ Use backend value
-        onboardingComplete: onboardingComplete,
-        createdAt: supabaseUser.created_at,
-        companyLogo: metadata.company_logo,
-        brandColors: metadata.brand_colors,
-        companyName: metadata.company_name,
-        provider: 'supabase',
+
+      const user: User = {
+        id: data.user?.id || 'user',
+        email: data.user?.email || email,
+        name: data.user?.name || email.split('@')[0],
+        type: data.user?.type || 'individual',
+        onboardingComplete: true,
+        createdAt: new Date().toISOString(),
+        provider: 'local',
       };
+
+      // Save token
+      if (data.token) {
+        localStorage.setItem('cortexia_token', data.token);
+      }
+
+      sessionStorage.setItem('cortexia_user_type', user.type);
+      sessionStorage.setItem('cortexia_user_id', user.id);
+      localStorage.setItem('cortexia_user', JSON.stringify(user));
+
+      console.log('[AuthContext] Sign in successful:', user);
       
-      console.log('[AuthContext] Sign in successful:', userData);
-      
-      setUser(userData);
-      setSession(supabaseUser.id);
-      saveOrUpdateAuth0User(userData); // Sync to localStorage for compatibility
-      
-      // ✅ OPTIMIZATION: Preload Coconut access data for instant loading
-      preloadCoconutAccess(userData.id).catch(err => 
-        console.warn('⚠️ Failed to preload Coconut data (non-critical):', err)
-      );
-      
-      return { success: true, user: userData };
-    } catch (error: any) {
-      console.error('[AuthContext] Sign in exception:', error);
+      return { success: true, user };
+} catch (error) {
+      console.error('[AuthContext] Sign in error:', error);
       return { success: false, error: 'Erreur lors de la connexion' };
     }
   };
@@ -535,95 +544,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] Signing up with email:', email, 'type:', type);
       
-      // ✅ CRITICAL FIX: Call backend signup endpoint to create user profile in KV store
-      const endpoint = type === 'individual' 
-        ? '/auth/signup-individual'
-        : type === 'enterprise'
-        ? '/auth/signup-enterprise'
-        : '/auth/signup-developer';
+      // ✅ Use Neon Auth instead of Supabase Edge Functions
+      const result = await neonSignUp(email, password, type, { name });
       
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          name,
-          // Add type-specific fields if needed in the future
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('[AuthContext] Backend signup error:', errorData);
+      if (!result.success) {
+        console.error('[AuthContext] Sign up error:', result.error);
         return { 
           success: false, 
-          error: errorData.error || 'Erreur lors de la création du compte' 
+          error: result.error || 'Erreur lors de la création du compte' 
         };
       }
       
-      const data = await response.json();
-      
-      if (!data.success || !data.userId) {
+      if (!result.user) {
         return { 
           success: false, 
-          error: data.error || 'Erreur lors de la création du compte' 
+          error: 'Erreur lors de la création du compte' 
         };
       }
       
-      console.log('[AuthContext] Backend signup successful:', data);
-      
-      // ✅ Now sign in with Supabase to get session
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (signInError || !authData.user) {
-        console.error('[AuthContext] Auto sign-in after signup failed:', signInError);
-        // User was created but auto sign-in failed - that's okay
-        return { 
-          success: true, 
-          user: {
-            id: data.userId,
-            email,
-            name: name || email.split('@')[0],
-            type,
-            onboardingComplete: false,
-            createdAt: new Date().toISOString(),
-            provider: 'supabase',
-          }
-        };
-      }
-      
-      // Extract user data from Supabase
-      const supabaseUser = authData.user;
-      const metadata = supabaseUser.user_metadata || {};
-      
-      const userData: User = {
-        id: supabaseUser.id,
-        email: supabaseUser.email!,
-        name: metadata.name || name || supabaseUser.email?.split('@')[0],
-        type: type,
-        onboardingComplete: false,
-        createdAt: supabaseUser.created_at,
+      // Convert Neon user to app User format
+      const user: User = {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name || name,
+        type: type, // Use the type passed to the function
+        onboardingComplete: false, // New users need onboarding
+        createdAt: result.user.createdAt,
         provider: 'supabase',
       };
       
-      console.log('[AuthContext] Sign up successful:', userData);
+      // Save user type to sessionStorage for AuthFlow redirect
+      sessionStorage.setItem('cortexia_user_type', type);
+      sessionStorage.setItem('cortexia_user_id', user.id);
       
-      setUser(userData);
-      setSession(supabaseUser.id);
-      saveOrUpdateAuth0User(userData); // Sync to localStorage for compatibility
+      // Set user state
+      setUser(user);
+      setIsAuthenticated(true);
+      setUserType(type);
+      setIsNewUser(true); // Mark as new user for onboarding flow
       
-      // ✅ NEW: Mark user as new
-      setIsNewUser(true);
+      console.log('[AuthContext] ✅ Neon Auth sign up successful:', user.email);
       
-      return { success: true, user: userData };
-    } catch (error: any) {
+      return { success: true, user };
+    } catch (error) {
       console.error('[AuthContext] Sign up exception:', error);
       return { success: false, error: 'Erreur lors de la création du compte' };
     }
@@ -631,13 +594,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ✅ Sign Out
   const signOut = async () => {
-    // ✅ Check if user is Auth0 user
+    // ✅ Use Neon Auth for sign out
+    await neonSignOut();
+    
+    // Check if user is Auth0 user - still call signOutAuth0 for OAuth users
     if (user?.provider === 'auth0') {
       await signOutAuth0();
     }
     
     setUser(null);
+    setIsAuthenticated(false);
+    setUserType(null);
     clearSession();
+  };
+
+  // ✅ Force refresh user from localStorage (for after signup/onboarding)
+  const refreshUser = () => {
+    console.log('[AuthContext] 🔄 Force refreshing user from localStorage...');
+    const storedUserStr = localStorage.getItem('cortexia_user');
+    if (storedUserStr) {
+      try {
+        const userData = JSON.parse(storedUserStr);
+        console.log('[AuthContext] 🔄 Found user in localStorage:', userData.email);
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          name: userData.name,
+          type: userData.type || 'individual',
+          onboardingComplete: userData.onboardingComplete || false,
+          createdAt: userData.createdAt,
+          provider: 'supabase',
+        });
+        setIsAuthenticated(true);
+        setUserType(userData.type || 'individual');
+      } catch (e) {
+        console.error('[AuthContext] ❌ Failed to parse stored user:', e);
+      }
+    }
   };
 
   // ✅ Check if route requires authentication
@@ -647,8 +640,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ✅ Check if user can access route
   const canAccessRoute = (route: string): boolean => {
+    // ✅ CRITICAL: Landing is accessible to everyone (including authenticated users)
+    if (route === 'landing') {
+      return true;
+    }
+    
     // Public routes (accessible without auth)
-    if (['landing', 'login', 'signup-individual', 'signup-enterprise', 'signup-developer', 'feed', 'discovery'].includes(route)) {
+    if (['login', 'signup-individual', 'signup-enterprise', 'signup-developer', 'feed', 'discovery'].includes(route)) {
       return true;
     }
     
@@ -663,13 +661,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
     
-    // Protected routes require auth
-    if (!user) {
+    // ✅ NEW: Also check localStorage for Neon/Auth0 users when user context is null
+    const hasAuth0User = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_auth0_user');
+    const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
+    const hasAnyUser = user || hasAuth0User || hasNeonUser;
+    
+    // Protected routes require auth (either from context OR localStorage)
+    if (!hasAnyUser) {
       return false;
     }
     
     // Check type-specific access
-    const allowedRoutes = TYPE_ROUTES[user.type] || [];
+    // For users in localStorage, use stored type or default to individual
+    const userType = user?.type || (hasNeonUser ? 'individual' : null);
+    const allowedRoutes = TYPE_ROUTES[userType as keyof typeof TYPE_ROUTES] || [];
     return allowedRoutes.includes(route);
   };
 
@@ -976,10 +981,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value: AuthContextType = {
+  // ✅ CRITICAL: Also check localStorage for Neon users since they don't use Supabase auth
+    const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
+    console.log('[AuthContext] isAuthenticated check:', 'user:', !!user, 'hasNeonUser:', hasNeonUser, 'user.id:', user?.id);
+    
+    const value: AuthContextType = {
     user,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user || hasNeonUser,
     userType: user?.type || null,
     isNewUser,
     signIn,
@@ -989,7 +998,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateUserProfile,
     completeOnboarding,
     canAccessRoute,
-    requiresAuth
+    requiresAuth,
+    refreshUser
   };
 
   return (

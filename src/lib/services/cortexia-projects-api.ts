@@ -6,7 +6,7 @@
 
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
-const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/projects`;
+const BASE_URL = '/api/projects';
 
 // Types (matching backend)
 export interface Project {
@@ -37,6 +37,30 @@ export async function createProject(data: {
   assets?: Array<{ type: string; url: string }>;
   metadata?: Record<string, any>;
 }): Promise<Project> {
+  // ✅ DEMO MODE: Use localStorage fallback for demo-user
+  if (data.userId === 'demo-user') {
+    console.log('🥥 [createProject] Demo-user detected, using localStorage fallback');
+    const project: Project = {
+      id: `demo-project-${Date.now()}`,
+      userId: data.userId,
+      type: data.type,
+      status: 'draft',
+      intent: data.intent,
+      objective: data.objective,
+      assets: data.assets,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      metadata: data.metadata
+    };
+    
+    // Store in localStorage
+    const demoProjects = JSON.parse(localStorage.getItem('demo-projects') || '[]');
+    demoProjects.push(project);
+    localStorage.setItem('demo-projects', JSON.stringify(demoProjects));
+    
+    return project;
+  }
+
   const response = await fetch(`${BASE_URL}/create`, {
     method: 'POST',
     headers: {
@@ -59,6 +83,17 @@ export async function createProject(data: {
 // GET PROJECT BY ID
 // ============================================================================
 export async function getProject(projectId: string): Promise<Project> {
+  // ✅ DEMO MODE: Use localStorage fallback for demo projects
+  if (projectId.startsWith('demo-project-')) {
+    console.log('🥥 [getProject] Demo project detected, using localStorage');
+    const demoProjects = JSON.parse(localStorage.getItem('demo-projects') || '[]');
+    const project = demoProjects.find((p: Project) => p.id === projectId);
+    if (!project) {
+      throw new Error('Demo project not found');
+    }
+    return project;
+  }
+
   const response = await fetch(`${BASE_URL}/${projectId}`, {
     method: 'GET',
     headers: {
@@ -88,6 +123,24 @@ export async function updateProjectStatus(
     error?: string;
   }
 ): Promise<Project> {
+  // ✅ DEMO MODE: Use localStorage fallback for demo projects
+  if (projectId.startsWith('demo-project-')) {
+    console.log('🥥 [updateProjectStatus] Demo project detected, using localStorage');
+    const demoProjects = JSON.parse(localStorage.getItem('demo-projects') || '[]');
+    const projectIndex = demoProjects.findIndex((p: Project) => p.id === projectId);
+    if (projectIndex === -1) {
+      throw new Error('Demo project not found');
+    }
+    
+    demoProjects[projectIndex] = {
+      ...demoProjects[projectIndex],
+      ...updates,
+      updatedAt: Date.now()
+    };
+    localStorage.setItem('demo-projects', JSON.stringify(demoProjects));
+    return demoProjects[projectIndex];
+  }
+
   const response = await fetch(`${BASE_URL}/${projectId}/status`, {
     method: 'PUT',
     headers: {

@@ -126,6 +126,49 @@ const CREDIT_PACKS = [
   { credits: 5000, price: '$299.99', bonus: '+1000 bonus', popular: false },
 ];
 
+// Individual Africa: Custom amount purchase (Fedapay)
+const handlePurchaseCredits = async (amount: number, customAmount?: number) => {
+  if (!user) return;
+  
+  // Enterprise: Stripe
+  if (user.type === 'enterprise' || user.type === 'enterprise_admin') {
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'credits',
+          credits: amount,
+        }),
+      });
+      const { url } = await response.json();
+      if (url) window.location.href = url;
+    } catch (err) {
+      console.error('Stripe checkout error:', err);
+    }
+    return;
+  }
+  
+  // Individual: Fedapay (Africa) or custom
+  try {
+    const country = user.fedapayCountry || 'CI';
+    const response = await fetch('/api/fedapay/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: customAmount || (amount * 0.10), // Approximate XOF
+        phone: user.fedapayPhoneNumber || '',
+        country: country,
+        credits: amount,
+      }),
+    });
+    const { checkoutUrl } = await response.json();
+    if (checkoutUrl) window.location.href = checkoutUrl;
+  } catch (err) {
+    console.error('Fedapay checkout error:', err);
+  }
+};
+
 const GENERATION_COSTS = [
   { type: 'Image', icon: ImageIcon, cost: '1 credit', duration: null },
   { type: 'Video 5s', icon: Video, cost: '5 credits', duration: '5s' },
@@ -172,12 +215,10 @@ export function Wallet({ onNavigate }: WalletProps) {
         return;
       }
 
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
 
       // ✅ Load credits info including expiration
-      const creditsRes = await fetch(`${apiUrl}/credits/${userId}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const creditsRes = await fetch(`${apiUrl}/credits?userId=${userId}`);
       if (creditsRes.ok) {
         const { credits: creditsData } = await creditsRes.json();
         if (creditsData?.expiresAt) {
@@ -420,7 +461,10 @@ export function Wallet({ onNavigate }: WalletProps) {
                             </div>
                             <span className="text-white text-xl">{pack.price}</span>
                           </div>
-                          <button className="w-full py-3 bg-[#6366f1] rounded-lg text-white hover:bg-[#6366f1]/90 transition-colors">
+                          <button 
+                            className="w-full py-3 bg-[#6366f1] rounded-lg text-white hover:bg-[#6366f1]/90 transition-colors"
+                            onClick={() => handlePurchaseCredits(pack.credits)}
+                          >
                             Acheter
                           </button>
                         </div>

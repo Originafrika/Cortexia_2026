@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Code, Gift, ArrowRight, ArrowLeft, AlertCircle, Loader2, Github } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
-import { Auth0SocialButtons } from './Auth0SocialButtons';
+import { NeonSocialButtons } from './NeonSocialButtons';
 import { supabase } from '../../lib/services/auth0-service';
 import { fetchUserProfile, storeProfileData } from '../../lib/utils/profile-fetch';
 
@@ -42,12 +42,11 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
     setError('');
 
     try {
-      // 1. Call backend signup endpoint
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e55aa214/auth/signup-developer`, {
+      // Use local signup API
+      const response = await fetch(`/api/auth/signup`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify(formData),
       });
@@ -345,19 +344,9 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
             )}
           </button>
 
-          {/* ✅ Auth0 Social Signup Buttons */}
-          <Auth0SocialButtons 
+          {/* ✅ Neon Auth Social Signup Buttons */}
+          <NeonSocialButtons
             userType="developer"
-            developerData={{
-              useCase: formData.useCase,
-              githubUsername: formData.githubUsername,
-            }}
-            onSuccess={(userId, accessToken) => {
-              onSuccess(userId, accessToken);
-            }}
-            onError={(err) => {
-              setError(err);
-            }}
           />
         </form>
 

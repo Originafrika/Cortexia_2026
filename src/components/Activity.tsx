@@ -42,11 +42,9 @@ export function Activity({ onNavigate }: ActivityProps) {
     }
 
     try {
-      const apiUrl = `https://${projectId}.supabase.co/functions/v1/make-server-e55aa214`;
+      const apiUrl = '/api';
       
-      const response = await fetch(`${apiUrl}/activity/${user.id}?limit=50`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
+      const response = await fetch(`${apiUrl}/activity/${user.id}?limit=50`);
 
       if (response.ok) {
         const data = await response.json();
