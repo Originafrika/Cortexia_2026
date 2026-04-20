@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import vercel from 'vite-plugin-vercel';
+import vercelAdapter from 'vite-plugin-vercel';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), vercel()],
+  plugins: [react(), tailwindcss(), vercelAdapter],
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {
