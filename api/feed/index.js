@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL || '');
+const SQL = neon(process.env.DATABASE_URL || '');
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const rawResult = await sql(
+      const rawResult = await SQL.query(
         `SELECT * FROM creations ORDER BY created_at DESC LIMIT 20`
       );
       
@@ -36,14 +36,15 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { userId, username, userAvatar, assetUrl, caption, model } = req.body;
+      const body = req.body || {};
+      const { userId, username, userAvatar, assetUrl, caption, model } = body;
       
       if (!userId || !assetUrl) {
         return res.status(400).json({ error: 'userId and assetUrl required' });
       }
 
       const creationId = crypto.randomUUID();
-      await sql(
+      await SQL.query(
         `INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, NOW())`,
         [creationId, userId, username, userAvatar, assetUrl, caption, model]
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
-    console.error('[Feed] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('[Feed] Error:', error.message);
+    return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };

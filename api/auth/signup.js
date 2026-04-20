@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL || '');
+const SQL = neon(process.env.DATABASE_URL || '');
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,13 +16,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, password, name } = req.body;
+    let body = req.body;
+    if (!body || typeof body === 'string') {
+      body = JSON.parse(req.body || '{}');
+    }
+    
+    const { email, password, name } = body;
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
 
-    const existing = await sql(
+    const existing = await SQL.query(
       `SELECT id FROM users WHERE email = $1`,
       [email]
     );
@@ -33,7 +38,7 @@ export default async function handler(req, res) {
     }
 
     const userId = crypto.randomUUID();
-    await sql(
+    await SQL.query(
       `INSERT INTO users (id, email, password, name, type, free_balance, created_at) 
        VALUES ($1, $2, $3, $4, 'individual', 20, NOW())`,
       [userId, email, password, name || email.split('@')[0]]
@@ -45,7 +50,7 @@ export default async function handler(req, res) {
       user: { id: userId, email, name: name || email.split('@')[0], type: 'individual' }
     });
   } catch (error) {
-    console.error('[Signup] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('[Signup] Error:', error.message);
+    return res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 };
