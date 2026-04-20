@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../lib/db';
-import { users } from '../../../lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { neon } from '@neondatabase/serverless';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, username, userAvatar, type, assetUrl, thumbnailUrl, prompt, caption, model, tags, isPublic, parentCreationId, metadata } = body;
+    const { userId, username, userAvatar, type, assetUrl, caption, model } = body;
 
     if (!userId || !assetUrl) {
       return NextResponse.json(
@@ -15,28 +13,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const sql = neon(process.env.DATABASE_URL!);
+    
     const creationId = crypto.randomUUID();
     const now = new Date();
 
-    // In a real implementation, you'd insert into a creations table
-    // For now, return success with mock data
-    console.log('[FeedPublish] Creating creation:', {
-      id: creationId,
+    console.log('[FeedPublish] Inserting creation:', {
+      creationId,
       userId,
       username,
       assetUrl,
-      prompt: caption || prompt
+      caption,
+      model
     });
+
+    await sql.query(`
+      INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, $8)
+    `, [creationId, userId, username, userAvatar, assetUrl, caption, model, now]);
 
     return NextResponse.json({
       success: true,
-      creationId,
-      message: 'Creation published to feed'
+      creationId
     });
   } catch (error) {
     console.error('[FeedPublish] Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to publish to feed' },
+      { success: false, error: 'Failed to publish to feed: ' + (error as Error).message },
       { status: 500 }
     );
   }
