@@ -6,7 +6,10 @@ import { neon } from '@neondatabase/serverless';
 const sql = neon(process.env.DATABASE_URL);
 
 export default async function handler(req: any, res: any) {
-  const { pathname } = new URL(req.url, 'https://example.com');
+  console.log('[API] Request:', req.method, req.url);
+  
+  const url = new URL(req.url, 'https://example.com');
+  const pathname = url.pathname;
   const method = req.method;
   
   // Set CORS headers
@@ -26,7 +29,8 @@ export default async function handler(req: any, res: any) {
 
     // Auth routes
     if (pathname === '/api/auth/signin' && method === 'POST') {
-      const { email, password } = await req.json();
+      const body = await req.text();
+      const { email, password } = JSON.parse(body);
       const result = sql.query(
         `SELECT * FROM users WHERE email = $1 AND password = $2`,
         [email, password]
@@ -38,7 +42,8 @@ export default async function handler(req: any, res: any) {
     }
 
     if (pathname === '/api/auth/signup' && method === 'POST') {
-      const { email, password, name } = await req.json();
+      const body = await req.text();
+      const { email, password, name } = JSON.parse(body);
       const userId = crypto.randomUUID();
       await sql.query(
         `INSERT INTO users (id, email, password, name, type, created_at) VALUES ($1, $2, $3, $4, 'individual', NOW())`,
@@ -76,7 +81,8 @@ export default async function handler(req: any, res: any) {
     }
 
     if (pathname === '/api/feed/publish' && method === 'POST') {
-      const { userId, username, userAvatar, assetUrl, caption, model } = await req.json();
+      const body = await req.text();
+      const { userId, username, userAvatar, assetUrl, caption, model } = JSON.parse(body);
       const creationId = crypto.randomUUID();
       await sql.query(
         `INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
@@ -88,7 +94,7 @@ export default async function handler(req: any, res: any) {
 
     // Credits routes
     if (pathname === '/api/credits' && method === 'GET') {
-      const userId = req.headers.get('authorization')?.replace('Bearer ', '') || req.query.userId;
+      const userId = req.headers.get('authorization')?.replace('Bearer ', '') || url.searchParams.get('userId');
       if (!userId) {
         return res.status(400).json({ error: 'User ID required' });
       }
@@ -107,7 +113,8 @@ export default async function handler(req: any, res: any) {
     }
 
     if (pathname === '/api/credits' && method === 'POST') {
-      const { userId, amount, type } = await req.json();
+      const body = await req.text();
+      const { userId, amount, type } = JSON.parse(body);
       const balanceCol = type === 'paid' ? 'premium_balance' : 'free_balance';
       await sql.query(
         `UPDATE users SET ${balanceCol} = ${balanceCol} + $1, updated_at = NOW() WHERE id = $2`,
