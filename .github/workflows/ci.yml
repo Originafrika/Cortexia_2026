@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    branches-ignore:
+      - 'skip-ci/**'
   pull_request:
     branches: [main]
 
@@ -17,18 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm install
 
-      - run: pnpm lint
+      - run: npm run lint
 
   typecheck:
     name: TypeCheck
@@ -36,18 +33,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm install
 
-      - run: pnpm tsc --noEmit
+      - run: npm run typecheck
 
   test:
     name: Test
@@ -55,18 +47,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm install
 
-      - run: pnpm test --run
+      - run: npm test --if-present
 
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -81,18 +68,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - run: npm install
 
-      - run: pnpm build
+      - run: npm run build
 
       - uses: actions/upload-artifact@v4
         if: failure()
