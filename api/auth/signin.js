@@ -1,8 +1,11 @@
 const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL || '');
+const sql = neon(process.env.DATABASE_URL);
 
-console.log('[Signin] DATABASE_URL set:', !!process.env.DATABASE_URL);
+if (!process.env.DATABASE_URL) {
+  console.error('[Signin] DATABASE_URL is NOT SET!');
+  return res.status(500).json({ error: 'DATABASE_URL not configured' });
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,7 +47,8 @@ module.exports = async function handler(req, res) {
     console.error('[Signin] Error:', error);
     return res.status(500).json({ 
       error: 'Internal server error', 
-      message: error.message 
+      message: error.message,
+      stack: error.stack 
     });
   }
 };
