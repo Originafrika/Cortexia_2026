@@ -1,13 +1,13 @@
 const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL);
-
-if (!process.env.DATABASE_URL) {
-  console.error('[Signin] DATABASE_URL is NOT SET!');
-  return res.status(500).json({ error: 'DATABASE_URL not configured' });
-}
-
 module.exports = async function handler(req, res) {
+  if (!process.env.DATABASE_URL) {
+    console.error('[Signin] DATABASE_URL is NOT SET!');
+    return res.status(500).json({ error: 'DATABASE_URL not configured' });
+  }
+
+  const sql = neon(process.env.DATABASE_URL);
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
