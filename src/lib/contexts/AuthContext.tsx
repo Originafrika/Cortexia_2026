@@ -497,8 +497,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] Signing in with email:', email);
       
-      // Use local Express server (port 3001)
-      const response = await fetch('http://localhost:3001/api/auth/signin', {
+      // Use API_URL from env or default to local
+      const API_URL = typeof import !== 'undefined' && import.meta?.env?.VITE_API_URL 
+        ? import.meta.env.VITE_API_URL 
+        : (typeof window !== 'undefined' ? window.location.origin : '');
+      
+      const response = await fetch(`${API_URL}/api/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
