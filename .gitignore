@@ -3,3 +3,14 @@
 .env.local
 .env.*.local
 node_modules
+
+# Security - secrets
+.env.local
+.env.production
+*.local
+server.js
+start-*.bat
+PAPERCLIP_SETUP.md
+credentials.json
+*.pem
+*.key
