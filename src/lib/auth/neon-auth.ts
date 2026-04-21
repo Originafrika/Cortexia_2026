@@ -53,13 +53,17 @@ function convertToNeonUser(user: BetterAuthUser): NeonAuthUser {
 }
 
 function convertSessionToAuthSession(
-  session: { session: { accessToken: string; expiresAt: Date; refreshToken?: string } | null; user: BetterAuthUser | null }
+  session: { session: { token: string; expiresAt: string | Date; refreshToken?: string } | null; user: BetterAuthUser | null }
 ): AuthSession {
+  const expiresAt = session.session?.expiresAt 
+    ? (typeof session.session.expiresAt === 'string' ? new Date(session.session.expiresAt).getTime() : session.session.expiresAt.getTime())
+    : null;
+    
   return {
     user: session.user ? convertToNeonUser(session.user) : null,
-    accessToken: session.session?.accessToken || null,
+    accessToken: session.session?.token || null,
     refreshToken: session.session?.refreshToken || null,
-    expiresAt: session.session?.expiresAt?.getTime() || null,
+    expiresAt,
   };
 }
 
@@ -199,11 +203,11 @@ export async function neonSignIn(
     const sessionResult = await authClient.getSession();
     console.log('[NeonAuth] Session result:', JSON.stringify(sessionResult, null, 2));
     
-    if (sessionResult.data?.session && sessionResult.data.session.user) {
+    if (sessionResult.data?.session && sessionResult.data.user) {
       const authSession = convertSessionToAuthSession(sessionResult.data.session);
       storeSession(authSession);
       
-      const neonUser = convertToNeonUser(sessionResult.data.session.user);
+      const neonUser = convertToNeonUser(sessionResult.data.user);
 
       console.log('[NeonAuth] Signed in successfully:', neonUser.email);
 
