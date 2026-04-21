@@ -138,6 +138,17 @@ export async function neonSignUp(
       return { success: false, error: result.error.message };
     }
 
+    // Create user in users table with credits (if API available)
+    try {
+      await fetch(`${window.location.origin}/api/auth/signup-sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name: metadata?.name || email.split('@')[0], type }),
+      });
+    } catch (e) {
+      console.warn('[NeonAuth] Failed to sync user to DB:', e);
+    }
+
     const sessionResult = await authClient.getSession();
     
     if (sessionResult.data?.session) {
