@@ -497,34 +497,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[AuthContext] Signing in with email:', email);
       
-      const API_URL = (import.meta as any).env?.VITE_API_URL || '';
+      // ✅ Sign In - Use Neon Auth
+  const signIn = async (email: string, password: string) => {
+    try {
+      console.log('[AuthContext] Signing in with Neon Auth:', email);
       
-      const response = await fetch(`${API_URL}/api/auth/signin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await neonSignIn(email, password);
 
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        console.error('[AuthContext] Sign in error:', data.error);
-        return { success: false, error: data.error || 'Email ou mot de passe incorrect' };
+      if (!result.success || result.error) {
+        console.error('[AuthContext] Sign in error:', result.error);
+        return { success: false, error: result.error || 'Email ou mot de passe incorrect' };
       }
 
       const user: User = {
-        id: data.user?.id || 'user',
-        email: data.user?.email || email,
-        name: data.user?.name || email.split('@')[0],
-        type: data.user?.type || 'individual',
+        id: result.user?.id || 'user',
+        email: result.user?.email || email,
+        name: result.user?.name || email.split('@')[0],
+        type: result.user?.type || 'individual',
         onboardingComplete: true,
-        createdAt: new Date().toISOString(),
-        provider: 'local',
+        createdAt: result.user?.createdAt || new Date().toISOString(),
+        provider: 'neon',
       };
-
-      if (data.token) {
-        localStorage.setItem('cortexia_token', data.token);
-      }
 
       sessionStorage.setItem('cortexia_user_type', user.type);
       sessionStorage.setItem('cortexia_user_id', user.id);
@@ -539,37 +532,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ Sign Up - Use custom API
+  // ✅ Sign Up - Use Neon Auth
   const signUp = async (email: string, password: string, type: UserType, name?: string) => {
     try {
-      console.log('[AuthContext] Signing up with email:', email, 'type:', type);
+      console.log('[AuthContext] Signing up with Neon Auth:', email, 'type:', type);
       
-      const API_URL = (import.meta as any).env?.VITE_API_URL || '';
+      const result = await neonSignUp(email, password, type, { name });
       
-      const response = await fetch(`${API_URL}/api/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        console.error('[AuthContext] Sign up error:', data.error);
+      if (!result.success) {
+        console.error('[AuthContext] Sign up error:', result.error);
         return { 
           success: false, 
-          error: data.error || 'Erreur lors de la création du compte' 
+          error: result.error || 'Erreur lors de la création du compte' 
+        };
+      }
+      
+      if (!result.user) {
+        return { 
+          success: false, 
+          error: 'Erreur lors de la création du compte' 
         };
       }
       
       const user: User = {
-        id: data.userId,
-        email: email,
-        name: name || email.split('@')[0],
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name || name,
         type: type,
         onboardingComplete: false,
-        createdAt: new Date().toISOString(),
-        provider: 'local',
+        createdAt: result.user.createdAt,
+        provider: 'neon',
       };
       
       sessionStorage.setItem('cortexia_user_type', type);
@@ -579,7 +571,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setIsAuthenticated(true);
       setUserType(type);
-      setIsNewUser(true); // Mark as new user for onboarding flow
+      setIsNewUser(true);
       
       console.log('[AuthContext] Sign up successful:', user.email);
       

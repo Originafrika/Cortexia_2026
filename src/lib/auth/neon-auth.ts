@@ -1,16 +1,15 @@
 /**
  * NEON AUTH INTEGRATION
  * Primary authentication client for Cortexia
- * Uses official @neondatabase/auth SDK with Better Auth adapter
+ * Uses better-auth client with Neon Auth server
  */
 
-import { createAuthClient, type NeonAuth, type BetterAuthUser } from '@neondatabase/auth';
-import { BetterAuthVanillaAdapter } from '@neondatabase/auth/vanilla/adapters';
+import { createAuthClient } from 'better-auth/client';
 
 const NEON_AUTH_URL = import.meta.env.VITE_NEON_AUTH_URL || '';
 
-const authClient = NEON_AUTH_URL ? createAuthClient(NEON_AUTH_URL, {
-  adapter: BetterAuthVanillaAdapter(),
+const authClient = NEON_AUTH_URL ? createAuthClient({
+  baseURL: NEON_AUTH_URL,
 }) : null;
 
 const SESSION_KEY = 'neon_auth_session';
@@ -129,28 +128,19 @@ export async function neonSignUp(
   }
 
   try {
-    const adapter = authClient.adapter as {
-      signUp: (options: { email: string; password: string; name?: string; metadata?: Record<string, unknown> }) => Promise<{ error?: { message: string } }>;
-      getSession: () => Promise<{ data?: { session: { session: { accessToken: string; expiresAt: Date; refreshToken?: string } | null; user: BetterAuthUser | null } } }>;
-    };
-
-    const result = await adapter.signUp.email({
+    const result = await authClient.signUp.email({
       email,
       password,
       name: metadata?.name || email.split('@')[0],
-      metadata: {
-        type,
-        companyName: metadata?.companyName,
-      },
     });
 
     if (result.error) {
       return { success: false, error: result.error.message };
     }
 
-    const sessionResult = await adapter.getSession();
+    const sessionResult = await authClient.getSession();
     
-    if (sessionResult.data?.session && sessionResult.data?.session.user) {
+    if (sessionResult.data?.session) {
       const authSession = convertSessionToAuthSession(sessionResult.data.session);
       storeSession(authSession);
       
@@ -182,12 +172,7 @@ export async function neonSignIn(
   }
 
   try {
-    const adapter = authClient.adapter as {
-      signIn: (options: { email: string; password: string }) => Promise<{ error?: { message: string } }>;
-      getSession: () => Promise<{ data?: { session: { session: { accessToken: string; expiresAt: Date; refreshToken?: string } | null; user: BetterAuthUser | null } } }>;
-    };
-
-    const result = await adapter.signIn.email({
+    const result = await authClient.signIn.email({
       email,
       password,
     });
@@ -200,9 +185,9 @@ export async function neonSignIn(
       return { success: false, error: result.error.message };
     }
 
-    const sessionResult = await adapter.getSession();
+    const sessionResult = await authClient.getSession();
     
-    if (sessionResult.data?.session && sessionResult.data?.session.user) {
+    if (sessionResult.data?.session) {
       const authSession = convertSessionToAuthSession(sessionResult.data.session);
       storeSession(authSession);
       

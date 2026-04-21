@@ -50,6 +50,7 @@
     "@xyflow/react": "^12.10.2",
     "aws-sdk": "^2.1693.0",
     "bcryptjs": "^2.4.3",
+    "better-auth": "^1.6.5",
     "canvas": "*",
     "child_process": "*",
     "class-variance-authority": "^0.7.1",
