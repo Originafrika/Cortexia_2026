@@ -518,6 +518,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem('cortexia_user_id', user.id);
       localStorage.setItem('cortexia_user', JSON.stringify(user));
 
+      // ✅ CRITICAL: Update context state (not just localStorage!)
+      setUser(user);
+      setIsAuthenticated(true);
+      setUserType(user.type);
+
       console.log('[AuthContext] Sign in successful:', user);
       
       return { success: true, user };
