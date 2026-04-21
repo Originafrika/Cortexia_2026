@@ -197,8 +197,9 @@ export async function neonSignIn(
     }
 
     const sessionResult = await authClient.getSession();
+    console.log('[NeonAuth] Session result:', JSON.stringify(sessionResult, null, 2));
     
-    if (sessionResult.data?.session) {
+    if (sessionResult.data?.session && sessionResult.data.session.user) {
       const authSession = convertSessionToAuthSession(sessionResult.data.session);
       storeSession(authSession);
       
@@ -213,7 +214,8 @@ export async function neonSignIn(
       };
     }
 
-    return { success: false, error: 'Failed to get session' };
+    console.warn('[NeonAuth] No session or user after sign in');
+    return { success: false, error: 'Session not found' };
   } catch (error) {
     console.error('[NeonAuth] Sign in error:', error);
     return {
