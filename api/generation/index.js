@@ -55,9 +55,11 @@ async function handleFreeModel(prompt, options) {
     success: true,
     jobId: `job-${Date.now()}`,
     status: 'succeeded',
+    url: pollinationsUrl,
     output: pollinationsUrl,
     model: model,
-    creditsUsed: 0
+    creditsUsed: 0,
+    seed: seed
   });
 }
 

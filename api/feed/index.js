@@ -3,18 +3,29 @@ import { neon } from '@neondatabase/serverless';
 export const runtime = 'nodejs18.x';
 
 export async function GET(req) {
-  console.log('[Feed API] DATABASE_URL exists:', !!process.env.DATABASE_URL);
-  console.log('[Feed API] DATABASE_URL prefix:', process.env.DATABASE_URL?.substring(0, 30));
+  const DATABASE_URL = process.env.DATABASE_URL;
+  console.log('[Feed API] DATABASE_URL env exists:', !!DATABASE_URL);
   
-  const sql = neon(process.env.DATABASE_URL || '');
+  if (!DATABASE_URL) {
+    console.log('[Feed API] ERROR: DATABASE_URL not set');
+    return Response.json({ error: 'DATABASE_URL not configured', success: false }, { status: 500 });
+  }
+  
+  // Log full URL but mask password
+  const maskedUrl = DATABASE_URL.replace(/:([^@]+)@/, ':****@');
+  console.log('[Feed API] DATABASE_URL:', maskedUrl);
+  
+  const sql = neon(DATABASE_URL);
 
   try {
     const result = await sql.query(
       'SELECT * FROM creations ORDER BY created_at DESC LIMIT 20'
     );
 
-    console.log('[Feed API] Query result rows:', result?.rows?.length || 0);
+    console.log('[Feed API] Query result row count:', result?.rowCount, 'rows length:', result?.rows?.length);
     const rows = result?.rows || [];
+    
+    console.log('[Feed API] Returning creations:', rows.length);
 
     return Response.json({
       success: true,
