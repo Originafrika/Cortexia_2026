@@ -967,9 +967,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Utilisateur non trouvé' };
       }
     } catch (error) {
-return { success: false, error: 'Erreur lors de la finalisation de l\'onboarding' };
+      return { success: false, error: 'Erreur lors de la finalisation de l\'onboarding' };
     }
-  };
+  }
 
   const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
     console.log('[AuthContext] isAuthenticated check:', 'user:', !!user, 'hasNeonUser:', hasNeonUser, 'user.id:', user?.id);
