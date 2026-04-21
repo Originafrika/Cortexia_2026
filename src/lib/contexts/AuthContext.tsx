@@ -492,12 +492,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 };
   }, []);
 
-  // ✅ Sign In - Use custom API (same as Express server in local)
-  const signIn = async (email: string, password: string) => {
-    try {
-      console.log('[AuthContext] Signing in with email:', email);
-      
-      // ✅ Sign In - Use Neon Auth
+  // ✅ Sign In - Use Neon Auth
   const signIn = async (email: string, password: string) => {
     try {
       console.log('[AuthContext] Signing in with Neon Auth:', email);
@@ -966,9 +961,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         return { success: false, error: 'Utilisateur non trouvé' };
       }
-  }
+    } catch (error) {
+      return { success: false, error: 'Erreur lors de la finalisation de l\'onboarding' };
+    }
+  };
 
-  const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
+  // ✅ CRITICAL: Also check localStorage for Neon users since they don't use Supabase auth
+    const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
     console.log('[AuthContext] isAuthenticated check:', 'user:', !!user, 'hasNeonUser:', hasNeonUser, 'user.id:', user?.id);
     
     const value: AuthContextType = {
