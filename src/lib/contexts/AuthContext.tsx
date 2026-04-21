@@ -966,9 +966,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         return { success: false, error: 'Utilisateur non trouvé' };
       }
-    } catch (error) {
-      return { success: false, error: 'Erreur lors de la finalisation de l\'onboarding' };
-    }
   }
 
   const hasNeonUser = typeof window !== 'undefined' && !!localStorage.getItem('cortexia_user');
