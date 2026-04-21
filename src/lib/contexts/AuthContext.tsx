@@ -539,41 +539,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ Sign Up
+  // ✅ Sign Up - Use custom API
   const signUp = async (email: string, password: string, type: UserType, name?: string) => {
     try {
       console.log('[AuthContext] Signing up with email:', email, 'type:', type);
       
-      // ✅ Use Neon Auth instead of Supabase Edge Functions
-      const result = await neonSignUp(email, password, type, { name });
+      const API_URL = (import.meta as any).env?.VITE_API_URL || '';
       
-      if (!result.success) {
-        console.error('[AuthContext] Sign up error:', result.error);
+      const response = await fetch(`${API_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        console.error('[AuthContext] Sign up error:', data.error);
         return { 
           success: false, 
-          error: result.error || 'Erreur lors de la création du compte' 
+          error: data.error || 'Erreur lors de la création du compte' 
         };
       }
       
-      if (!result.user) {
-        return { 
-          success: false, 
-          error: 'Erreur lors de la création du compte' 
-        };
-      }
-      
-      // Convert Neon user to app User format
       const user: User = {
-        id: result.user.id,
-        email: result.user.email,
-        name: result.user.name || name,
-        type: type, // Use the type passed to the function
-        onboardingComplete: false, // New users need onboarding
-        createdAt: result.user.createdAt,
-        provider: 'supabase',
+        id: data.userId,
+        email: email,
+        name: name || email.split('@')[0],
+        type: type,
+        onboardingComplete: false,
+        createdAt: new Date().toISOString(),
+        provider: 'local',
       };
       
-      // Save user type to sessionStorage for AuthFlow redirect
       sessionStorage.setItem('cortexia_user_type', type);
       sessionStorage.setItem('cortexia_user_id', user.id);
       
@@ -583,7 +581,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserType(type);
       setIsNewUser(true); // Mark as new user for onboarding flow
       
-      console.log('[AuthContext] ✅ Neon Auth sign up successful:', user.email);
+      console.log('[AuthContext] Sign up successful:', user.email);
       
       return { success: true, user };
     } catch (error) {

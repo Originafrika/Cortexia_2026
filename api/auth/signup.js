@@ -28,7 +28,7 @@ export async function POST(req) {
 
     const userId = crypto.randomUUID();
     await sql.query(
-      'INSERT INTO users (id, email, password_hash, name, type, free_balance, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+      'INSERT INTO users (id, email, password, name, type, free_balance, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
       [userId, email, password, name || email.split('@')[0], 'individual', 20]
     );
 

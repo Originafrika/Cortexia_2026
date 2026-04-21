@@ -31,7 +31,7 @@ export async function POST(req) {
     const user = rows[0];
     
     // Simple password match (same as Express server)
-    if (user.password !== password && user.password_hash !== password) {
+    if (user.password !== password && user.password !== password) {
       return Response.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
