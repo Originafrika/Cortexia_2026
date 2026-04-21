@@ -3,6 +3,9 @@ import { neon } from '@neondatabase/serverless';
 export const runtime = 'nodejs18.x';
 
 export async function GET(req) {
+  console.log('[Feed API] DATABASE_URL exists:', !!process.env.DATABASE_URL);
+  console.log('[Feed API] DATABASE_URL prefix:', process.env.DATABASE_URL?.substring(0, 30));
+  
   const sql = neon(process.env.DATABASE_URL || '');
 
   try {
@@ -10,6 +13,7 @@ export async function GET(req) {
       'SELECT * FROM creations ORDER BY created_at DESC LIMIT 20'
     );
 
+    console.log('[Feed API] Query result rows:', result?.rows?.length || 0);
     const rows = result?.rows || [];
 
     return Response.json({
