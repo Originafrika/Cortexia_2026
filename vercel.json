@@ -1,5 +1,13 @@
 {
   "buildCommand": "npm install --legacy-peer-deps --force && npm run build",
   "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/feed/publish", "destination": "/api/feed/index.js" },
+    { "source": "/api/feed/:path*", "destination": "/api/feed/index.js" },
+    { "source": "/api/auth/profile/:path*", "destination": "/api/auth/index.js" },
+    { "source": "/api/credits", "destination": "/api/credits.js" },
+    { "source": "/api/generation/:path*", "destination": "/api/generation/index.js" },
+    { "source": "/api/generation", "destination": "/api/generation/index.js" }
+  ]
 }
