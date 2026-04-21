@@ -492,27 +492,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 };
   }, []);
 
-  // ✅ Sign In - Use Neon Auth
+  // ✅ Sign In - Use custom API (same as Express server in local)
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('[AuthContext] Signing in with Neon Auth:', email);
+      console.log('[AuthContext] Signing in with email:', email);
       
-      const result = await neonSignIn(email, password);
+      const API_URL = (import.meta as any).env?.VITE_API_URL || '';
+      
+      const response = await fetch(`${API_URL}/api/auth/signin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (!result.success || result.error) {
-        console.error('[AuthContext] Sign in error:', result.error);
-        return { success: false, error: result.error || 'Email ou mot de passe incorrect' };
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        console.error('[AuthContext] Sign in error:', data.error);
+        return { success: false, error: data.error || 'Email ou mot de passe incorrect' };
       }
 
       const user: User = {
-        id: result.user?.id || 'user',
-        email: result.user?.email || email,
-        name: result.user?.name || email.split('@')[0],
-        type: result.user?.type || 'individual',
+        id: data.user?.id || 'user',
+        email: data.user?.email || email,
+        name: data.user?.name || email.split('@')[0],
+        type: data.user?.type || 'individual',
         onboardingComplete: true,
-        createdAt: result.user?.createdAt || new Date().toISOString(),
-        provider: 'neon',
+        createdAt: new Date().toISOString(),
+        provider: 'local',
       };
+
+      if (data.token) {
+        localStorage.setItem('cortexia_token', data.token);
+      }
 
       sessionStorage.setItem('cortexia_user_type', user.type);
       sessionStorage.setItem('cortexia_user_id', user.id);
