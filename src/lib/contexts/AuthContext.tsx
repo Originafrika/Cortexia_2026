@@ -492,41 +492,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 };
   }, []);
 
-  // ✅ Sign In - Use local API instead of Neon Auth (which returns 404)
+  // ✅ Sign In - Use Neon Auth
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('[AuthContext] Signing in with email:', email);
+      console.log('[AuthContext] Signing in with Neon Auth:', email);
       
-      // Use API_URL from env or default to local
-      const API_URL = (import.meta as any).env?.VITE_API_URL || '';
-      
-      const response = await fetch(`${API_URL}/api/auth/signin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await neonSignIn(email, password);
 
-      const data = await response.json();
-
-      if (!response.ok || data.error) {
-        console.error('[AuthContext] Sign in error:', data.error);
-        return { success: false, error: data.error || 'Email ou mot de passe incorrect' };
+      if (!result.success || result.error) {
+        console.error('[AuthContext] Sign in error:', result.error);
+        return { success: false, error: result.error || 'Email ou mot de passe incorrect' };
       }
 
       const user: User = {
-        id: data.user?.id || 'user',
-        email: data.user?.email || email,
-        name: data.user?.name || email.split('@')[0],
-        type: data.user?.type || 'individual',
+        id: result.user?.id || 'user',
+        email: result.user?.email || email,
+        name: result.user?.name || email.split('@')[0],
+        type: result.user?.type || 'individual',
         onboardingComplete: true,
-        createdAt: new Date().toISOString(),
-        provider: 'local',
+        createdAt: result.user?.createdAt || new Date().toISOString(),
+        provider: 'neon',
       };
-
-      // Save token
-      if (data.token) {
-        localStorage.setItem('cortexia_token', data.token);
-      }
 
       sessionStorage.setItem('cortexia_user_type', user.type);
       sessionStorage.setItem('cortexia_user_id', user.id);
@@ -535,7 +521,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Sign in successful:', user);
       
       return { success: true, user };
-} catch (error) {
+    } catch (error) {
       console.error('[AuthContext] Sign in error:', error);
       return { success: false, error: 'Erreur lors de la connexion' };
     }
