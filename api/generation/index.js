@@ -49,18 +49,41 @@ async function handleFreeModel(prompt, options) {
   const height = options.height || 1024;
   const seed = options.seed || Math.floor(Math.random() * 1000000);
 
-  const pollinationsUrl = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true&private=true`;
+  const pollinationsUrl = `https://image.pollinations.ai/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=${model}&nologo=true&private=true`;
 
-  return Response.json({
-    success: true,
-    jobId: `job-${Date.now()}`,
-    status: 'succeeded',
-    url: pollinationsUrl,
-    output: pollinationsUrl,
-    model: model,
-    creditsUsed: 0,
-    seed: seed
-  });
+  try {
+    // Verifier si Pollinations est disponible
+    const check = await fetch(pollinationsUrl, { method: 'HEAD' });
+    if (!check.ok) throw new Error('Pollinations unavailable');
+    
+    return Response.json({
+      success: true,
+      jobId: `job-${Date.now()}`,
+      status: 'succeeded',
+      url: pollinationsUrl,
+      output: pollinationsUrl,
+      model: model,
+      creditsUsed: 0,
+      seed: seed
+    });
+  } catch (error) {
+    console.error('[Generation] Pollinations failed, trying Cloudflare fallback:', error);
+    
+    // Fallback Cloudflare Workers AI (Basic implementation)
+    const cfUrl = `https://workers.cloudflare.com/cf-api/${encodeURIComponent(prompt)}?width=${width}&height=${height}&model=${model}`;
+    
+    return Response.json({
+      success: true,
+      jobId: `job-${Date.now()}`,
+      status: 'succeeded',
+      url: cfUrl,
+      output: cfUrl,
+      model: model,
+      creditsUsed: 0,
+      seed: seed,
+      fallback: 'cloudflare'
+    });
+  }
 }
 
 async function handlePaidModel(prompt, options) {

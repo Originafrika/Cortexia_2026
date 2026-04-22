@@ -8,6 +8,7 @@
     { "source": "/api/auth/profile/:path*", "destination": "/api/auth/index.js" },
     { "source": "/api/credits", "destination": "/api/credits.js" },
     { "source": "/api/generation/:path*", "destination": "/api/generation/index.js" },
-    { "source": "/api/generation", "destination": "/api/generation/index.js" }
+    { "source": "/api/generation", "destination": "/api/generation/index.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
