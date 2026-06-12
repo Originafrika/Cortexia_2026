@@ -56,6 +56,7 @@ import { usePurchaseCredits } from '../../lib/hooks/usePurchaseCredits'; // ✅ 
 import { PremiumAccessBadge, FreeCreditsWarning } from '../credits/PremiumAccessBadge'; // ✅ NEW: Premium badge
 import { GenerationQueue } from '../GenerationQueue';
 import { VoiceInput } from './VoiceInput';
+import { PromptEnhancer } from './PromptEnhancer';
 import { VideoSettingsControls } from './VideoSettingsControls';
 import { AvatarSettingsControls } from './AvatarSettingsControls';
 import { playSuccessSound, playErrorSound } from '../../lib/sounds';
@@ -1785,6 +1786,19 @@ export function CreateHubGlass({
               )}
             </div>
           </motion.div>
+
+          {/* ✅ NEW: Prompt Enhancer UI */}
+          {mode === 'image' && (
+            <PromptEnhancer
+              prompt={prompt}
+              isEnabled={enhancePrompt}
+              onToggle={setEnhancePrompt}
+              onEnhance={(enhanced) => {
+                setPrompt(enhanced);
+                toast.success('Prompt optimized by Cortexia AI');
+              }}
+            />
+          )}
 
           {/* Templates - Carousel horizontal partout */}
           <div className="space-y-2 md:space-y-1.5">

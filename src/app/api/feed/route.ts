@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { db } from '../../lib/db';
+import { creations } from '../../lib/db/schema';
+import { desc, eq, sql as drizzleSql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,37 +9,38 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    const sql = neon(process.env.DATABASE_URL!);
-    
     console.log('[Feed API] Querying creations, offset:', offset, 'limit:', limit);
     
-    const rawResult = await sql.query(`
-      SELECT * FROM creations ORDER BY created_at DESC LIMIT $1 OFFSET $2
-    `, [limit, offset]);
-    
-    const result = Array.isArray(rawResult) ? rawResult : (rawResult?.rows || []);
-    
-    if (!result || result.length === 0) {
-      return NextResponse.json({
-        success: true,
-        creations: [],
-        pagination: { offset, limit, hasMore: false }
-      });
-    }
+    const results = await db.select()
+      .from(creations)
+      .where(eq(creations.isPublic, true))
+      .orderBy(desc(creations.createdAt))
+      .limit(limit)
+      .offset(offset);
     
     return NextResponse.json({
       success: true,
-      creations: result.map((c: any) => ({
+      creations: results.map((c) => ({
         id: c.id,
-        userId: c.user_id,
+        userId: c.userId,
         username: c.username,
+        userAvatar: c.userAvatar,
+        type: c.type,
+        assetUrl: c.assetUrl,
+        thumbnailUrl: c.thumbnailUrl,
         caption: c.caption,
-        assetUrl: c.asset_url,
-        likes: c.likes || 0,
-        comments: c.comments || 0,
-        remixes: c.remixes || 0
+        prompt: c.prompt,
+        model: c.model,
+        likes: c.likes,
+        comments: c.comments,
+        remixes: c.remixes,
+        createdAt: c.createdAt
       })),
-      pagination: { offset, limit, hasMore: result.length === limit }
+      pagination: {
+        offset,
+        limit,
+        hasMore: results.length === limit
+      }
     });
   } catch (error) {
     console.error('[Feed API] Error:', error);

@@ -3,12 +3,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContextFromHeaders } from '../../../middleware';
-import { llmCascadeService } from '../../../lib/ai/llmCascade';
-import { CoconutMode, createJobResponseSchema, blueprintSchema } from '../../../lib/coconut/schemas';
+import { llmCascade } from '../../../lib/ai/llmCascade';
 import { db } from '../../../lib/db';
-import { cocoboardJobs } from '../../../lib/db/schema';
+import { cocoboardJobs, creditTransactions, users } from '../../../lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { generationRateLimit } from '../../../lib/middleware/rateLimit';
+import { coconutOrchestrator } from '../../../lib/coconut/orchestrator';
+
+const BLUEPRINT_COST = 100;
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,13 +49,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate mode
-    if (!['image', 'video', 'campaign'].includes(mode)) {
-      return NextResponse.json(
-        { error: 'Invalid mode. Must be image, video, or campaign' },
-        { status: 400 }
-      );
+    // Check user credits
+    const user = await db.select().from(users).where(eq(users.id, authContext.userId)).limit(1);
+    if (user.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    const totalBalance = user[0].premiumBalance + user[0].freeBalance;
+    if (totalBalance < BLUEPRINT_COST) {
+      return NextResponse.json({ error: 'Crédits insuffisants pour générer un CocoBoard (100 cr. requis)' }, { status: 402 });
     }
+
+    // Atomic credit debit for blueprint
+    let remainingToDebit = BLUEPRINT_COST;
+    let freeDebit = 0;
+    let premiumDebit = 0;
+
+    if (user[0].freeBalance >= remainingToDebit) {
+      freeDebit = remainingToDebit;
+      remainingToDebit = 0;
+    } else {
+      freeDebit = user[0].freeBalance;
+      remainingToDebit -= freeDebit;
+      premiumDebit = remainingToDebit;
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.update(users)
+        .set({
+          freeBalance: sql`${users.freeBalance} - ${freeDebit}`,
+          premiumBalance: sql`${users.premiumBalance} - ${premiumDebit}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, authContext.userId));
+
+      await tx.insert(creditTransactions).values({
+        id: uuidv4(),
+        ownerType: 'user',
+        ownerId: authContext.userId,
+        amount: -BLUEPRINT_COST,
+        type: 'cocoboard',
+        source: premiumDebit > 0 ? 'premium' : 'free',
+        reason: `Génération CocoBoard: ${intent.slice(0, 50)}...`,
+        createdAt: new Date(),
+      });
+    });
 
     // Create job in database
     const jobId = uuidv4();
@@ -60,59 +99,61 @@ export async function POST(request: NextRequest) {
 
     await db.insert(cocoboardJobs).values({
       id: jobId,
-      userId: auth.userId,
-      organizationId: auth.organizationId || null,
-      mode: mode as CoconutMode,
+      ownerType: 'user',
+      ownerId: authContext.userId,
+      mode: mode,
       intent,
       assets,
       status: 'analyzing',
       cocoboard: null,
-      creditsConsumedCocoboard: 0,
-      creditsConsumedGeneration: 0,
-      estimatedCreditsCocoboard: 100, // Fixed cost for blueprint generation
-      estimatedCreditsGeneration: 0, // Will be calculated after blueprint
+      creditsCocoboard: BLUEPRINT_COST,
+      creditsGenerationEstimated: 0,
       createdAt: now,
       updatedAt: now,
-      completedAt: null,
-      errorMessage: null,
     });
 
-    // Trigger async blueprint generation via QStash
-    const qstashResponse = await fetch(
-      `${process.env.QSTASH_URL}/v2/publish`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/qstash/cocoboard-analyze`,
-          body: { jobId, mode, intent, assets },
-          retries: 3,
-        }),
-      }
-    );
+    // Generate blueprint (Agent logic)
+    // We do it synchronously here for simplicity, but in prod it should be via QStash
+    const result = await coconutOrchestrator.generateBlueprint({
+      mode,
+      intent,
+      assets,
+      userId: authContext.userId,
+    });
 
-    if (!qstashResponse.ok) {
-      // Update job status to failed
-      await db.update(cocoboardJobs)
-        .set({ status: 'failed', errorMessage: 'Failed to queue analysis' })
-        .where(eq(cocoboardJobs.id, jobId));
+    if (!result.success || !result.blueprint) {
+      // Refund credits on failure
+      await db.transaction(async (tx) => {
+         await tx.update(users)
+          .set({
+            freeBalance: sql`${users.freeBalance} + ${freeDebit}`,
+            premiumBalance: sql`${users.premiumBalance} + ${premiumDebit}`,
+          })
+          .where(eq(users.id, authContext.userId));
 
-      return NextResponse.json(
-        { error: 'Failed to queue analysis job' },
-        { status: 500 }
-      );
+         await tx.update(cocoboardJobs)
+          .set({ status: 'failed', errorMessage: result.error || 'Blueprint generation failed' })
+          .where(eq(cocoboardJobs.id, jobId));
+      });
+
+      return NextResponse.json({ error: result.error || 'Failed to generate blueprint' }, { status: 500 });
     }
 
-    // Return job info
+    // Update job with generated blueprint
+    await db.update(cocoboardJobs)
+      .set({
+        status: 'awaiting_validation',
+        cocoboard: result.blueprint,
+        creditsGenerationEstimated: result.blueprint.estimatedCredits || 0,
+        updatedAt: new Date()
+      })
+      .where(eq(cocoboardJobs.id, jobId));
+
     return NextResponse.json({
       success: true,
       jobId,
-      status: 'analyzing',
-      estimatedCreditsCocoboard: 100,
-      estimatedCreditsGeneration: 0,
+      status: 'awaiting_validation',
+      blueprint: result.blueprint,
     });
 
   } catch (error) {

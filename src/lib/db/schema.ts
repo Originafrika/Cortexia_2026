@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, varchar, index, date, real } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, boolean, timestamp, jsonb, varchar, index, date, real, primaryKey, foreignKey } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // ============================================
@@ -23,17 +23,17 @@ export const users = pgTable("users", {
   // ═══════════════════════════════════════════════════════════
   // RULE OF 25: Credit balances
   // ═══════════════════════════════════════════════════════════
-  premiumBalance: integer("premium_balance").default(0),     // Purchased credits (Fedapay)
-  freeBalance: integer("free_balance").default(25),         // 25/month reset
+  premiumBalance: integer("premium_balance").default(0).notNull(),     // Purchased credits (Fedapay)
+  freeBalance: integer("free_balance").default(25).notNull(),         // 25/month reset
   freeBalanceResetAt: timestamp("free_balance_reset_at"),   // Last reset date (1st of month)
   
   // Creator metadata
-  isCreator: boolean("is_creator").default(false),
+  isCreator: boolean("is_creator").default(false).notNull(),
   creatorSince: timestamp("creator_since"),
   
   // Stats for eligibility (Rule of 3)
-  currentMonthGenerations: integer("current_month_generations").default(0),
-  currentMonthPublications: integer("current_month_publications").default(0),
+  currentMonthGenerations: integer("current_month_generations").default(0).notNull(),
+  currentMonthPublications: integer("current_month_publications").default(0).notNull(),
   statsMonth: text("stats_month"), // '2024-01' format
   
   // Fedapay Creator
@@ -42,15 +42,15 @@ export const users = pgTable("users", {
   fedapayCountry: text("fedapay_country").default("CI"),
   
   // Free tier daily limit tracking
-  freeGenerationsToday: integer("free_generations_today").default(0),
+  freeGenerationsToday: integer("free_generations_today").default(0).notNull(),
   freeGenerationsDate: date("free_generations_date"),
   
   // Referral system (Rule of 25/35)
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
   
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index("users_email_idx").on(table.email),
   orgIdx: index("users_org_idx").on(table.organizationId),
@@ -69,15 +69,15 @@ export const organizations = pgTable("organizations", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   
   // Plan
-  plan: text("plan").default("free"), 
+  plan: text("plan").default("free").notNull(),
   // 'free' | 'starter' | 'pro' | 'enterprise'
   
   // Credits (shared pool)
-  creditsBalance: integer("credits_balance").default(0),
+  creditsBalance: integer("credits_balance").default(0).notNull(),
   
   // Limits
-  maxUsers: integer("max_users").default(3),
-  currentUserCount: integer("current_user_count").default(0),
+  maxUsers: integer("max_users").default(3).notNull(),
+  currentUserCount: integer("current_user_count").default(0).notNull(),
   
   // Features
   features: jsonb("features").default({
@@ -85,15 +85,44 @@ export const organizations = pgTable("organizations", {
     customModel: false,
     prioritySupport: false,
     dedicatedInfra: false,
-  }),
+  }).notNull(),
   
-  status: text("status").default("active"), // active | suspended | canceled
+  status: text("status").default("active").notNull(), // active | suspended | canceled
   
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   stripeCustomerIdx: index("org_stripe_customer_idx").on(table.stripeCustomerId),
 }));
+
+// ============================================
+// AI MODELS (Model Aware Logic)
+// ============================================
+export const aiModels = pgTable("ai_models", {
+  id: text("id").primaryKey(), // e.g., 'flux-2-pro', 'kling-3-std'
+  name: text("name").notNull(),
+  provider: text("provider").notNull(), // 'kie', 'replicate', 'openai', etc.
+  type: text("type").notNull(), // 'image', 'video', 'text'
+
+  // Capabilities & Constraints
+  capabilities: jsonb("capabilities").notNull().default([]), // ['t2i', 'i2i', 'inpainting']
+  constraints: jsonb("constraints").notNull().default({}), // { max_resolution: '4K', max_duration: 15 }
+
+  // Prompting Guide
+  promptGuide: text("prompt_guide"),
+  negativePromptSupport: boolean("negative_prompt_support").default(true).notNull(),
+
+  // Costing
+  baseCost: integer("base_cost").notNull(), // in credits
+  costPerSecond: integer("cost_per_second"), // for video
+  costPerPixel: real("cost_per_pixel"), // for custom resolutions
+
+  isActive: boolean("is_active").default(true).notNull(),
+  isPremium: boolean("is_premium").default(false).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 // ============================================
 // COCOBOARD JOBS (Unified for all users)
@@ -108,7 +137,7 @@ export const cocoboardJobs = pgTable("cocoboard_jobs", {
   // Input
   mode: text("mode").notNull(), // 'image' | 'video' | 'campaign'
   intent: text("intent").notNull(),
-  assets: jsonb("assets").default([]),
+  assets: jsonb("assets").default([]).notNull(),
   
   // Generated cocoboard (with steps[] and referenceIds[])
   cocoboard: jsonb("cocoboard"),
@@ -116,39 +145,39 @@ export const cocoboardJobs = pgTable("cocoboard_jobs", {
   // ═══════════════════════════════════════════════════════════
   // NODE CANVAS: Atomic execution tracking
   // ═══════════════════════════════════════════════════════════
-  nodes: jsonb("nodes").default([]), // BlendNode[] with status
+  nodes: jsonb("nodes").default([]).notNull(), // BlendNode[] with status
   nodeExecutionOrder: text("node_execution_order").array(),
   
   // Status per node (for Infinite Space UI)
-  nodeStatuses: jsonb("node_statuses").default({}),
-  nodeOutputs: jsonb("node_outputs").default({}),
-  nodeCreditsConsumed: jsonb("node_credits_consumed").default({}),
+  nodeStatuses: jsonb("node_statuses").default({}).notNull(),
+  nodeOutputs: jsonb("node_outputs").default({}).notNull(),
+  nodeCreditsConsumed: jsonb("node_credits_consumed").default({}).notNull(),
   
   // Safeguard: Iteration limits
-  maxIterations: integer("max_iterations").default(4),
-  actualIterations: integer("actual_iterations").default(0),
+  maxIterations: integer("max_iterations").default(4).notNull(),
+  actualIterations: integer("actual_iterations").default(0).notNull(),
   
   // Final outputs
-  blendOutputs: jsonb("blend_outputs").default({}),
+  blendOutputs: jsonb("blend_outputs").default({}).notNull(),
   finalOutputUrl: text("final_output_url"),
   
   // Global status
-  status: text("status").default("pending"),
+  status: text("status").default("pending").notNull(),
   // 'pending' | 'analyzing' | 'awaiting_validation' | 'blending' | 'node_processing' | 'done' | 'failed'
   
   errorMessage: text("error_message"),
   
   // Credits
-  creditsCocoboard: integer("credits_cocoboard").default(100),
-  creditsGenerationEstimated: integer("credits_generation_estimated").default(0),
-  creditsGenerationActual: integer("credits_generation_actual").default(0),
+  creditsCocoboard: integer("credits_cocoboard").default(100).notNull(),
+  creditsGenerationEstimated: integer("credits_generation_estimated").default(0).notNull(),
+  creditsGenerationActual: integer("credits_generation_actual").default(0).notNull(),
   
   // Infinite Space
-  infiniteSpaceEnabled: boolean("infinite_space_enabled").default(true),
-  canvasViewport: jsonb("canvas_viewport").default({ x: 0, y: 0, zoom: 1 }),
+  infiniteSpaceEnabled: boolean("infinite_space_enabled").default(true).notNull(),
+  canvasViewport: jsonb("canvas_viewport").default({ x: 0, y: 0, zoom: 1 }).notNull(),
   
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   ownerIdx: index("jobs_owner_idx").on(table.ownerType, table.ownerId),
   statusIdx: index("jobs_status_idx").on(table.status),
@@ -169,10 +198,10 @@ export const qstashJobs = pgTable("qstash_jobs", {
   // Specific node (for atomicity)
   targetNodeId: text("target_node_id"),
   
-  status: text("status").default("pending"),
+  status: text("status").default("pending").notNull(),
   // 'pending' | 'processing' | 'done' | 'failed'
   
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   jobIdx: index("qstash_job_idx").on(table.cocoboardJobId),
   typeIdx: index("qstash_type_idx").on(table.type),
@@ -209,7 +238,7 @@ export const creditTransactions = pgTable("credit_transactions", {
   // Payment reference
   paymentId: text("payment_id"), // Fedapay transaction ID or Stripe payment intent
   
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   ownerIdx: index("transactions_owner_idx").on(table.ownerType, table.ownerId),
   jobIdx: index("transactions_job_idx").on(table.jobId),
@@ -243,7 +272,7 @@ export const creatorCommissions = pgTable("creator_commissions", {
   withdrawnAt: timestamp("withdrawn_at"),
   withdrawalTransactionId: text("withdrawal_transaction_id"),
   
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   userIdx: index("commissions_user_idx").on(table.userId),
   monthIdx: index("commissions_month_idx").on(table.month),
@@ -264,7 +293,7 @@ export const fedapayTransactions = pgTable("fedapay_transactions", {
   priceXOF: integer("price_xof").notNull(), // Price in FCFA
   
   // Status
-  status: text("status").default("pending"),
+  status: text("status").default("pending").notNull(),
   // 'pending' | 'processing' | 'completed' | 'failed'
   
   // Payment
@@ -277,7 +306,7 @@ export const fedapayTransactions = pgTable("fedapay_transactions", {
   // Links
   creditTransactionId: uuid("credit_transaction_id"),
   
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 }, (table) => ({
   userIdx: index("fedapay_user_idx").on(table.userId),
@@ -301,15 +330,15 @@ export const creatorCoconutUsage = pgTable("creator_coconut_usage", {
   monthYear: text("month_year").notNull(), // '2024-01'
   
   // Coconut V14 access count
-  cocoBoardCount: integer("cocoboard_count").default(0),
-  maxAllowed: integer("max_allowed").default(3), // 3 per month for creators
+  cocoBoardCount: integer("cocoboard_count").default(0).notNull(),
+  maxAllowed: integer("max_allowed").default(3).notNull(), // 3 per month for creators
   
   // How they became creator
-  creatorOrigin: text("creator_origin").default("rule_of_60"), 
+  creatorOrigin: text("creator_origin").default("rule_of_60").notNull(),
   // 'rule_of_60' | 'purchased_1000' | 'admin_granted'
   
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   userMonthIdx: index("creator_usage_user_month_idx").on(table.userId, table.monthYear),
 }));
@@ -320,13 +349,13 @@ export const creatorStats = pgTable("creator_stats", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull(),
   month: text("month").notNull(),
-  generationsCount: integer("generations_count").default(0),
-  postsPublished: integer("posts_published").default(0),
-  creditsPurchased: integer("credits_purchased").default(0),
-  creditsSpent: integer("credits_spent").default(0),
-  earningsXOF: integer("earnings_xof").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  generationsCount: integer("generations_count").default(0).notNull(),
+  postsPublished: integer("posts_published").default(0).notNull(),
+  creditsPurchased: integer("credits_purchased").default(0).notNull(),
+  creditsSpent: integer("credits_spent").default(0).notNull(),
+  earningsXOF: integer("earnings_xof").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   userMonthIdx: index("creator_stats_user_month_idx").on(table.userId, table.month),
 }));
@@ -339,12 +368,12 @@ export const generationJobs = pgTable("generation_jobs", {
   type: text("type").notNull(),
   model: text("model"),
   prompt: text("prompt"),
-  status: text("status").default("pending"),
-  cost: integer("cost").default(0),
-  creditsUsed: integer("credits_used").default(0),
+  status: text("status").default("pending").notNull(),
+  cost: integer("cost").default(0).notNull(),
+  creditsUsed: integer("credits_used").default(0).notNull(),
   resultUrl: text("result_url"),
   error: text("error"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 }, (table) => ({
   userIdx: index("generation_jobs_user_idx").on(table.userId),
@@ -359,18 +388,18 @@ export const enterpriseWallets = pgTable("enterprise_wallets", {
   organizationId: uuid("organization_id").notNull().unique(),
   
   // Monthly credits (from subscription)
-  monthlyCredits: integer("monthly_credits").default(10000),
-  monthlyCreditsConsumed: integer("monthly_credits_consumed").default(0),
+  monthlyCredits: integer("monthly_credits").default(10000).notNull(),
+  monthlyCreditsConsumed: integer("monthly_credits_consumed").default(0).notNull(),
   monthlyResetAt: timestamp("monthly_reset_at"),
   
   // Pack credits (purchased add-ons)
-  packCredits: integer("pack_credits").default(0),
-  packCreditsConsumed: integer("pack_credits_consumed").default(0),
+  packCredits: integer("pack_credits").default(0).notNull(),
+  packCreditsConsumed: integer("pack_credits_consumed").default(0).notNull(),
   
   // Total consumed (for analytics)
-  totalConsumed: integer("total_consumed").default(0),
+  totalConsumed: integer("total_consumed").default(0).notNull(),
   
-  updatedAt: timestamp("updated_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index("enterprise_wallet_org_idx").on(table.organizationId),
 }));
@@ -392,13 +421,13 @@ export const enterpriseCreditPackPurchases = pgTable("enterprise_credit_pack_pur
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeInvoiceId: text("stripe_invoice_id"),
   
-  status: text("status").default("completed"),
+  status: text("status").default("completed").notNull(),
   
   // Expiration (12 months)
-  purchasedAt: timestamp("purchased_at").defaultNow(),
+  purchasedAt: timestamp("purchased_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at"),
   
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index("pack_purchase_org_idx").on(table.organizationId),
 }));
@@ -419,13 +448,13 @@ export const stripeSubscriptions = pgTable("stripe_subscriptions", {
   // Period
   currentPeriodStart: timestamp("current_period_start"),
   currentPeriodEnd: timestamp("current_period_end"),
-  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
   
   // Usage
-  creditsConsumedThisPeriod: integer("credits_consumed_this_period").default(0),
+  creditsConsumedThisPeriod: integer("credits_consumed_this_period").default(0).notNull(),
   
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   orgIdx: index("stripe_sub_org_idx").on(table.organizationId),
   statusIdx: index("stripe_sub_status_idx").on(table.status),
@@ -479,18 +508,18 @@ export const usageStats = pgTable("usage_stats", {
   period: text("period").notNull(), // '2024-01'
   
   // Stats
-  cocoboardsCreated: integer("cocoboards_created").default(0),
-  generationsCompleted: integer("generations_completed").default(0),
-  creditsConsumed: integer("credits_consumed").default(0),
+  cocoboardsCreated: integer("cocoboards_created").default(0).notNull(),
+  generationsCompleted: integer("generations_completed").default(0).notNull(),
+  creditsConsumed: integer("credits_consumed").default(0).notNull(),
   
   // Detail by type
   byType: jsonb("by_type").default({
     image: 0,
     video: 0,
     campaign: 0,
-  }),
+  }).notNull(),
   
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   ownerPeriodIdx: index("stats_owner_period_idx").on(table.ownerType, table.ownerId, table.period),
 }));
@@ -503,6 +532,9 @@ export type NewUser = typeof users.$inferInsert;
 
 export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
+
+export type AiModel = typeof aiModels.$inferSelect;
+export type NewAiModel = typeof aiModels.$inferInsert;
 
 export type CocoboardJob = typeof cocoboardJobs.$inferSelect;
 export type NewCocoboardJob = typeof cocoboardJobs.$inferInsert;
@@ -575,7 +607,7 @@ export const userSessions = pgTable("user_sessions", {
   userAgent: text("user_agent"),
   ipAddress: text("ip_address"),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   revokedAt: timestamp("revoked_at"),
 }, (table) => ({
   userIdx: index("sessions_user_idx").on(table.userId),
@@ -589,9 +621,9 @@ export const passwordResets = pgTable("password_resets", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull(),
   token: text("token").notNull().unique(),
-  used: boolean("used").default(false),
+  used: boolean("used").default(false).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   usedAt: timestamp("used_at"),
 }, (table) => ({
   userIdx: index("pwd_reset_user_idx").on(table.userId),
@@ -605,9 +637,9 @@ export const emailVerifications = pgTable("email_verifications", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull(),
   token: text("token").notNull().unique(),
-  verified: boolean("verified").default(false),
+  verified: boolean("verified").default(false).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   verifiedAt: timestamp("verified_at"),
 }, (table) => ({
   userIdx: index("email_verif_user_idx").on(table.userId),
@@ -624,11 +656,11 @@ export const apiKeys = pgTable("api_keys", {
   name: text("name").notNull(),
   keyPrefix: text("key_prefix").notNull(),
   keyHash: text("key_hash").notNull().unique(),
-  permissions: jsonb("permissions").default({ read: true, write: true }),
-  rateLimitPerHour: integer("rate_limit_per_hour").default(1000),
-  active: boolean("active").default(true),
+  permissions: jsonb("permissions").default({ read: true, write: true }).notNull(),
+  rateLimitPerHour: integer("rate_limit_per_hour").default(1000).notNull(),
+  active: boolean("active").default(true).notNull(),
   lastUsedAt: timestamp("last_used_at"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at"),
   revokedAt: timestamp("revoked_at"),
 }, (table) => ({
@@ -643,11 +675,11 @@ export const organizationInvitations = pgTable("organization_invitations", {
   organizationId: uuid("organization_id").notNull(),
   inviterId: uuid("inviter_id").notNull(),
   email: text("email").notNull(),
-  role: text("role").default("member"),
+  role: text("role").default("member").notNull(),
   token: text("token").notNull().unique(),
-  status: text("status").default("pending"),
+  status: text("status").default("pending").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   acceptedAt: timestamp("accepted_at"),
 }, (table) => ({
   orgIdx: index("invites_org_idx").on(table.organizationId),
@@ -663,9 +695,9 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(),
   title: text("title").notNull(),
   message: text("message").notNull(),
-  data: jsonb("data").default({}),
-  read: boolean("read").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  data: jsonb("data").default({}).notNull(),
+  read: boolean("read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   readAt: timestamp("read_at"),
 }, (table) => ({
   userIdx: index("notifications_user_idx").on(table.userId),
@@ -682,10 +714,10 @@ export const contentReports = pgTable("content_reports", {
   reporterId: uuid("reporter_id").notNull(),
   reason: text("reason").notNull(),
   description: text("description"),
-  status: text("status").default("pending"),
+  status: text("status").default("pending").notNull(),
   reviewedBy: uuid("reviewed_by"),
   resolution: text("resolution"),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   reviewedAt: timestamp("reviewed_at"),
 }, (table) => ({
   contentIdx: index("reports_content_idx").on(table.contentType, table.contentId),
@@ -702,13 +734,40 @@ export const supportTickets = pgTable("support_tickets", {
   subject: text("subject").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
-  priority: text("priority").default("normal"),
-  status: text("status").default("open"),
+  priority: text("priority").default("normal").notNull(),
+  status: text("status").default("open").notNull(),
   resolution: text("resolution"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at"),
 }, (table) => ({
   userIdx: index("tickets_user_idx").on(table.userId),
   statusIdx: index("tickets_status_idx").on(table.status),
+}));
+
+// ============================================
+// CREATIONS (Community Feed)
+// ============================================
+export const creations = pgTable("creations", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("user_id").notNull(),
+  username: text("username"),
+  userAvatar: text("user_avatar"),
+  type: text("type").default("image"), // image | video
+  assetUrl: text("asset_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  prompt: text("prompt"),
+  caption: text("caption"),
+  model: text("model"),
+  likes: integer("likes").default(0).notNull(),
+  comments: integer("comments").default(0).notNull(),
+  remixes: integer("remixes").default(0).notNull(),
+  isPublic: boolean("is_public").default(true).notNull(),
+  parentCreationId: uuid("parent_creation_id"),
+  metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("creations_user_idx").on(table.userId),
+  typeIdx: index("creations_type_idx").on(table.type),
+  createdAtIdx: index("creations_created_at_idx").on(table.createdAt),
 }));

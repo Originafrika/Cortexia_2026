@@ -4,11 +4,19 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const R2_ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID;
-const R2_ACCESS_KEY_ID = import.meta.env.VITE_R2_ACCESS_KEY_ID;
-const R2_SECRET_ACCESS_KEY = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
-const R2_BUCKET_NAME = import.meta.env.VITE_R2_BUCKET_NAME || 'cortexia-outputs';
-const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL;
+const getEnv = (key: string): string | undefined => {
+  if (typeof process !== 'undefined' && process.env) {
+    const nodeKey = key.replace(/^VITE_/, '');
+    return process.env[key] || process.env[nodeKey];
+  }
+  return undefined;
+};
+
+const R2_ACCOUNT_ID = getEnv('VITE_R2_ACCOUNT_ID');
+const R2_ACCESS_KEY_ID = getEnv('VITE_R2_ACCESS_KEY_ID');
+const R2_SECRET_ACCESS_KEY = getEnv('VITE_R2_SECRET_ACCESS_KEY');
+const R2_BUCKET_NAME = getEnv('VITE_R2_BUCKET_NAME') || 'cortexia-outputs';
+const R2_PUBLIC_URL = getEnv('VITE_R2_PUBLIC_URL');
 
 // R2 S3-compatible client
 const r2Client = new S3Client({
@@ -133,12 +141,19 @@ class R2StorageService {
     contentType: string
   ): Promise<R2UploadResult> {
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      let buffer: Buffer;
+      if (typeof file.arrayBuffer === 'function') {
+        const arrayBuffer = await file.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
+      } else {
+        // Fallback for Node environment if necessary
+        buffer = file as unknown as Buffer;
+      }
 
       const command = new PutObjectCommand({
         Bucket: R2_BUCKET_NAME,
         Key: key,
-        Body: new Uint8Array(arrayBuffer),
+        Body: buffer,
         ContentType: contentType,
       });
 

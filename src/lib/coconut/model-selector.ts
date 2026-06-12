@@ -4,41 +4,118 @@
 export type CocoboardMode = 'image' | 'video' | 'campaign';
 
 /**
+ * AI MODELS DATABASE
+ * Centralized knowledge about available models, their capabilities, and prompting styles.
+ */
+export const AI_MODELS = {
+  // --- IMAGE MODELS ---
+  'flux-2-pro': {
+    id: 'flux-2-pro',
+    name: 'FLUX.2 Pro',
+    provider: 'kie',
+    type: 'image',
+    capabilities: ['text-rendering', 'photorealism', 'multi-reference'],
+    bestFor: 'Final high-fidelity commercial posters and hero images.',
+    promptingStyle: 'Descriptive, technical camera settings, structural details. Responds well to explicit layout instructions.',
+  },
+  'nano-banana-pro': {
+    id: 'nano-banana-pro',
+    name: 'Nano Banana Pro',
+    provider: 'kie',
+    type: 'image',
+    capabilities: ['character-consistency', 'skin-tones', 'luxury-aesthetic'],
+    bestFor: 'African subjects, high-end fashion, and consistent brand personas.',
+    promptingStyle: 'Atmospheric, focus on textures (skin, fabric), cinematic lighting descriptions.',
+  },
+  'nano-banana-2': {
+    id: 'nano-banana-2',
+    name: 'Nano Banana 2',
+    provider: 'kie',
+    type: 'image',
+    capabilities: ['fast-iteration', 'i2i', 'compositing'],
+    bestFor: 'Rapid prototyping and complex image-to-image editing.',
+    promptingStyle: 'Direct instructions, focus on changes from reference, composition-heavy.',
+  },
+  'qwen2-image': {
+    id: 'qwen2-image',
+    name: 'Qwen2 Image',
+    provider: 'kie',
+    type: 'image',
+    capabilities: ['structured-text', 'graphic-design'],
+    bestFor: 'Text-heavy layouts, infographics, and clean minimalist design.',
+    promptingStyle: 'Clear hierarchy, font style descriptions, color-centric.',
+  },
+
+  // --- VIDEO MODELS ---
+  'kling-3-std': {
+    id: 'kling-3-std',
+    name: 'Kling 3.0 Standard',
+    provider: 'kie',
+    type: 'video',
+    capabilities: ['long-duration', 'natural-motion'],
+    bestFor: 'Storytelling, character actions, and environmental scenes.',
+    promptingStyle: 'Chronological action description, focus on fluid movement.',
+  },
+  'kling-3-pro': {
+    id: 'kling-3-pro',
+    name: 'Kling 3.0 Pro',
+    provider: 'kie',
+    type: 'video',
+    capabilities: ['physics-accuracy', 'high-fidelity', 'close-ups'],
+    bestFor: 'Product reveals, hero shots, and complex physical interactions.',
+    promptingStyle: 'High detail on material properties, light refractions, and micro-movements.',
+  },
+  'wan-2.6': {
+    id: 'wan-2.6',
+    name: 'Wan 2.6',
+    provider: 'kie',
+    type: 'video',
+    capabilities: ['temporal-stability', '1080p'],
+    bestFor: 'Cinematic sequences requiring high stability across frames.',
+    promptingStyle: 'Director-style instructions, specific camera gear mentions.',
+  },
+  'seedance-1.5': {
+    id: 'seedance-1.5',
+    name: 'Seedance 1.5',
+    provider: 'kie',
+    type: 'video',
+    capabilities: ['audio-sync', 'camera-control'],
+    bestFor: 'Ads with integrated sound design and precise camera paths.',
+    promptingStyle: 'Sync-focused, rhythm-based action descriptions.',
+  },
+  'veo-3': {
+    id: 'veo-3',
+    name: 'Veo 3',
+    provider: 'kie',
+    type: 'video',
+    capabilities: ['dialogue', 'rich-audio', 'premium-cinema'],
+    bestFor: 'High-end commercials with talking characters and rich soundscapes.',
+    promptingStyle: 'Script-like, includes dialogue and ambient sound cues.',
+  },
+} as const;
+
+/**
  * Select the optimal LLM preference for CocoBoard generation based on mode, asset count, and intent length.
  * 
  * Returns 'fast' or 'smart' — the LLM cascade will try free providers first
  * (Cloudflare → Groq → Nvidia) before falling back to paid Kie AI.
- * 
- * Strategy:
- * - 'fast' → Cloudflare Llama 3 8B → Groq Llama 3.1 8B → Nvidia → Kie Gemini 2.5 Flash
- * - 'smart' → Cloudflare Llama 3 8B → Groq Llama 3.3 70B → Nvidia Llama 4 Scout → Kie Gemini 3 Flash
- * 
- * Kie AI is ALWAYS the last resort — the company only pays if all free providers fail.
  */
 export function selectCoconutLLM(
   mode: CocoboardMode,
   assetCount: number,
   intentLength: number,
 ): 'fast' | 'smart' {
-  // Campaign → smart (complex multi-post planning, strategic narrative)
   if (mode === 'campaign') return 'smart';
-
-  // Video complex → smart (multi-shot interdependent planning)
   if (mode === 'video' && assetCount > 3) return 'smart';
   if (mode === 'video' && intentLength > 200) return 'smart';
   if (mode === 'video') return 'fast';
-
-  // Image simple → fast (single prompt, short intent)
   if (mode === 'image' && assetCount <= 1 && intentLength < 100) return 'fast';
-  // Image medium → fast (2-3 step composition)
   if (mode === 'image' && assetCount <= 3) return 'fast';
-  // Image complex (many assets or long brief) → smart
   return 'smart';
 }
 
 /**
- * Kie AI image generation model IDs.
- * Used by the orchestrator when executing image generation steps.
+ * Kie AI image generation model IDs mapping.
  */
 export const KIE_IMAGE_IDS: Record<string, string> = {
   'flux-2-pro':       'flux-2/pro-text-to-image',
@@ -50,8 +127,7 @@ export const KIE_IMAGE_IDS: Record<string, string> = {
 };
 
 /**
- * Kie AI video generation model IDs.
- * Used by the orchestrator when executing video generation steps.
+ * Kie AI video generation model IDs mapping.
  */
 export const KIE_VIDEO_IDS: Record<string, string> = {
   'kling-3-std':      'kling-3.0/video',
@@ -63,8 +139,7 @@ export const KIE_VIDEO_IDS: Record<string, string> = {
 };
 
 /**
- * Image generation credit costs per model + resolution.
- * Used for estimating generation costs in CocoBoard blueprints.
+ * Image generation credit costs.
  */
 export const IMAGE_CREDIT_COSTS: Record<string, number> = {
   'flux-2-pro-1K':       2,
@@ -82,8 +157,7 @@ export const IMAGE_CREDIT_COSTS: Record<string, number> = {
 };
 
 /**
- * Video generation credit costs per model per second.
- * Used for estimating generation costs in CocoBoard blueprints.
+ * Video generation credit costs per second.
  */
 export const VIDEO_CREDIT_COSTS_PER_SECOND: Record<string, number> = {
   'kling-3-std':  2,

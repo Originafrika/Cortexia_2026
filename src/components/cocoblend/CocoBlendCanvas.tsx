@@ -13,10 +13,13 @@ import {
   Node,
   useReactFlow,
   ReactFlowProvider,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sparkles, Loader2, CheckCircle2, AlertCircle, Clock, Zap, Maximize2 } from 'lucide-react';
 
-import { BlendNode, BlendEdge, Step, StepStatus } from '../../lib/coconut/schemas';
+import { Step, StepStatus } from '../../lib/coconut/schemas';
 import { sseService, StepUpdateData } from '../../lib/services/sseService';
 import { CocoblendStepNode } from './nodes/CocoblendStepNode';
 import { GenerateControls } from './controls/GenerateControls';
@@ -30,8 +33,8 @@ interface CocoBlendCanvasProps {
   jobId: string;
   steps: Step[];
   executionOrder: string[];
-  initialNodes?: BlendNode[];
-  initialEdges?: BlendEdge[];
+  initialNodes?: any[];
+  initialEdges?: any[];
   onGenerateStart?: () => void;
   onGenerateComplete?: (results: { completed: number; failed: number; skipped: number; totalCredits: number }) => void;
   readOnly?: boolean;
@@ -56,7 +59,7 @@ function CocoBlendCanvasInner({
   const [elapsedTime, setElapsedTime] = useState(0);
   const { fitView } = useReactFlow();
 
-  // Timer for elapsed time during generation
+  // Timer for elapsed time
   useEffect(() => {
     if (!isGenerating || !generationStartTime) return;
     const interval = setInterval(() => {
@@ -65,32 +68,15 @@ function CocoBlendCanvasInner({
     return () => clearInterval(interval);
   }, [isGenerating, generationStartTime]);
 
-  // Initialize nodes from steps
+  // Initialize nodes and edges
   useEffect(() => {
-    if (initialNodes) {
-      setNodes(initialNodes.map(n => ({
-        id: n.id,
-        type: 'cocoblendStep',
-        position: n.position,
-        data: n.data,
-      })));
-    } else {
-      const layoutedNodes = autoLayoutNodes(steps, executionOrder);
-      setNodes(layoutedNodes);
-    }
+    const layoutedNodes = autoLayoutNodes(steps, executionOrder);
+    setNodes(layoutedNodes);
+    setEdges(generateEdgesFromSteps(steps));
 
-    if (initialEdges) {
-      setEdges(initialEdges.map(e => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        animated: e.animated,
-      })));
-    } else {
-      const generatedEdges = generateEdgesFromSteps(steps);
-      setEdges(generatedEdges);
-    }
-  }, [steps, executionOrder, initialNodes, initialEdges, setNodes, setEdges]);
+    // Fit view after a short delay
+    setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 100);
+  }, [steps, executionOrder, fitView]);
 
   // Subscribe to SSE updates
   useEffect(() => {
@@ -101,32 +87,23 @@ function CocoBlendCanvasInner({
           const stepData = message.data as unknown as StepUpdateData;
           updateNodeStatus(stepData.stepId, stepData.status, stepData.outputUrl, stepData.progress);
           
-          // Track current step index
           const stepIdx = executionOrder.indexOf(stepData.stepId);
           if (stepIdx >= 0) setCurrentStepIndex(stepIdx);
-        } else if (message.type === 'step_failed') {
-          updateNodeStatus(message.stepId || '', 'failed');
-        } else if (message.type === 'step_skipped') {
-          updateNodeStatus(message.stepId || '', 'pending');
         } else if (message.type === 'blend_done') {
           setIsGenerating(false);
           onGenerateComplete?.({
             completed: Object.values(generationStatus).filter(s => s === 'completed').length,
             failed: Object.values(generationStatus).filter(s => s === 'failed').length,
-            skipped: Object.values(generationStatus).filter(s => s === 'pending' && executionOrder.includes(message.stepId || '')).length,
+            skipped: 0,
             totalCredits: 0,
           });
         }
       },
-      (error) => {
-        console.error('SSE error:', error);
-      }
+      (error) => console.error('SSE error:', error)
     );
-
     return () => unsubscribe();
   }, [jobId, executionOrder, generationStatus, onGenerateComplete]);
 
-  // Update node status
   const updateNodeStatus = useCallback((stepId: string, status: StepStatus, outputUrl?: string, progress?: number) => {
     setGenerationStatus(prev => ({ ...prev, [stepId]: status }));
     
@@ -145,35 +122,16 @@ function CocoBlendCanvasInner({
       return node;
     }));
 
-    // Animate edges leading from completed nodes
     if (status === 'completed') {
       setEdges(prev => prev.map(edge => {
         if (edge.source === stepId) {
-          return { ...edge, animated: true, style: { ...edge.style, stroke: '#22c55e' } };
-        }
-        return edge;
-      }));
-    } else if (status === 'failed') {
-      setEdges(prev => prev.map(edge => {
-        if (edge.target === stepId) {
-          return { ...edge, animated: false, style: { ...edge.style, stroke: '#ef4444', strokeDasharray: '5,5' } };
+          return { ...edge, animated: true, style: { ...edge.style, stroke: '#10b981' } };
         }
         return edge;
       }));
     }
   }, [setNodes, setEdges]);
 
-  // Handle connection
-  const onConnect = useCallback(
-    (params: Connection) => {
-      if (!readOnly) {
-        setEdges((eds) => addEdge({ ...params, animated: false }, eds));
-      }
-    },
-    [setEdges, readOnly]
-  );
-
-  // Start generation
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGenerationStartTime(Date.now());
@@ -186,171 +144,164 @@ function CocoBlendCanvasInner({
       const response = await fetch(`/api/coconut/cocoboard/${jobId}/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to start generation');
-      }
-
       const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Generation failed');
-      }
+      if (!result.success) throw new Error(result.error);
     } catch (error) {
       console.error('Generate error:', error);
       setIsGenerating(false);
     }
   };
 
-  // Computed progress stats
   const progressStats = useMemo(() => {
     const statuses = Object.values(generationStatus);
     const completed = statuses.filter(s => s === 'completed').length;
     const failed = statuses.filter(s => s === 'failed').length;
     const processing = statuses.filter(s => s === 'processing').length;
-    const pending = steps.length - completed - failed - processing;
     const percentage = steps.length > 0 ? Math.round((completed / steps.length) * 100) : 0;
-    return { completed, failed, processing, pending, percentage };
+    return { completed, failed, processing, percentage };
   }, [generationStatus, steps.length]);
 
-  // Format elapsed time
-  const formatTime = (seconds: number): string => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // Fit view on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fitView({ padding: 0.2, duration: 800 });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [fitView]);
-
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative bg-[#020617] overflow-hidden">
+      {/* Cinematic Overlays */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 to-transparent z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/60 to-transparent z-10" />
+      </div>
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={readOnly ? undefined : onNodesChange}
         onEdgesChange={readOnly ? undefined : onEdgesChange}
-        onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
-        attributionPosition="bottom-right"
-        minZoom={0.1}
-        maxZoom={2}
+        minZoom={0.05}
+        maxZoom={1.5}
         defaultEdgeOptions={{
-          style: { strokeWidth: 2, stroke: '#6366f1' },
+          style: { strokeWidth: 2, stroke: '#334155' },
           type: 'smoothstep',
         }}
       >
-        <Background color="#6366f1" gap={20} size={1} />
-        <Controls />
+        <Background
+          variant={BackgroundVariant.Dots}
+          color="#1e293b"
+          gap={32}
+          size={1}
+        />
+        <Controls className="!bg-slate-900 !border-slate-800 !fill-slate-400" />
         <MiniMap 
-          nodeStrokeWidth={3} 
-          zoomable 
-          pannable
-          className="bg-slate-900/80 rounded-lg border border-slate-700"
+          className="!bg-slate-950 !border-slate-800 rounded-2xl"
+          nodeColor={(n: any) => {
+            const s = n.data.status;
+            if (s === 'completed') return '#10b981';
+            if (s === 'processing') return '#6366f1';
+            if (s === 'failed') return '#f43f5e';
+            return '#334155';
+          }}
+          maskColor="rgba(0, 0, 0, 0.7)"
         />
       </ReactFlow>
 
-      {/* Generate Controls */}
-      {!readOnly && (
-        <GenerateControls
-          isGenerating={isGenerating}
-          totalSteps={steps.length}
-          completedSteps={progressStats.completed}
-          onGenerate={handleGenerate}
-        />
-      )}
-
-      {/* Enhanced Progress Panel */}
-      {isGenerating && (
-        <div className="absolute bottom-4 left-4 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-3 rounded-xl border border-indigo-500/50 shadow-2xl min-w-[280px]">
-          {/* Progress Bar */}
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-medium text-indigo-300">Progress</span>
-              <span className="text-xs font-mono text-indigo-400">{progressStats.percentage}%</span>
-            </div>
-            <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out rounded-full"
-                style={{ width: `${progressStats.percentage}%` }}
-              />
-            </div>
+      {/* Top Bar - Ultra Premium */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-6 px-6 py-3 rounded-2xl bg-slate-950/80 backdrop-blur-xl border border-white/10 shadow-2xl">
+        <div className="flex items-center gap-3 pr-6 border-r border-white/10">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+            <Sparkles className="text-indigo-400" size={20} />
           </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-4 gap-2 mb-2">
-            <div className="text-center">
-              <div className="text-lg font-bold text-green-400">{progressStats.completed}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Done</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-indigo-400 animate-pulse">{progressStats.processing}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-red-400">{progressStats.failed}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Failed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-slate-400">{progressStats.pending}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wide">Pending</div>
-            </div>
+          <div>
+            <h1 className="text-sm font-bold text-white tracking-tight">Cocoblend Studio</h1>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">Infinite Space v14</p>
           </div>
+        </div>
 
-          {/* Current Step + Timer */}
-          <div className="flex justify-between items-center pt-2 border-t border-slate-700/50">
+        <div className="flex items-center gap-8">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Status</span>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-              <span className="text-xs text-slate-300">
-                Step {currentStepIndex + 1}/{steps.length}
-              </span>
+              <div className={`w-2 h-2 rounded-full ${isGenerating ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`} />
+              <span className="text-xs font-semibold text-slate-200">{isGenerating ? 'Blending Agent...' : 'Ready'}</span>
             </div>
-            <span className="text-xs font-mono text-slate-400">
-              ⏱ {formatTime(elapsedTime)}
-            </span>
           </div>
-        </div>
-      )}
 
-      {/* Completion Panel */}
-      {!isGenerating && generationStartTime && progressStats.completed > 0 && (
-        <div className="absolute bottom-4 left-4 bg-slate-900/95 backdrop-blur-sm text-white px-5 py-3 rounded-xl border border-green-500/50 shadow-2xl">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-green-400 text-lg">✓</span>
-            <span className="text-sm font-medium">Generation Complete</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Steps</span>
+            <span className="text-xs font-semibold text-slate-200">{progressStats.completed} / {steps.length}</span>
           </div>
-          <div className="text-xs text-slate-400">
-            {progressStats.completed} succeeded · {progressStats.failed} failed · {formatTime(elapsedTime)}
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Time</span>
+            <span className="text-xs font-mono text-slate-200">{Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}</span>
           </div>
         </div>
-      )}
+
+        {!readOnly && !isGenerating && progressStats.completed === 0 && (
+          <button
+            onClick={handleGenerate}
+            className="ml-4 px-6 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] flex items-center gap-2"
+          >
+            <Zap size={14} fill="currentColor" />
+            Launch Cocoblend
+          </button>
+        )}
+      </div>
+
+      {/* Floating Progress HUD */}
+      <AnimatePresence>
+        {isGenerating && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            className="absolute bottom-8 right-8 z-20 w-80 p-5 rounded-3xl bg-slate-950/90 backdrop-blur-2xl border border-white/10 shadow-2xl"
+          >
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-white tracking-tight">Production in progress</span>
+                <span className="text-xs font-mono text-indigo-400">{progressStats.percentage}%</span>
+              </div>
+
+              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                  animate={{ width: `${progressStats.percentage}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 pt-2">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase">Success</p>
+                  <p className="text-lg font-bold text-emerald-400">{progressStats.completed}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase">Active</p>
+                  <p className="text-lg font-bold text-indigo-400">{progressStats.processing}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-slate-500 font-bold uppercase">Failed</p>
+                  <p className="text-lg font-bold text-rose-400">{progressStats.failed}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Auto-layout nodes in columns based on dependencies
 function autoLayoutNodes(steps: Step[], executionOrder: string[]): Node[] {
-  const nodeWidth = 320;
-  const nodeHeight = 200;
-  const columnGap = 100;
-  const rowGap = 50;
+  const nodeWidth = 360;
+  const nodeHeight = 400;
+  const columnGap = 120;
+  const rowGap = 40;
 
-  // Group by depth (dependency level)
   const depthMap = new Map<string, number>();
-  
   for (const stepId of executionOrder) {
     const step = steps.find(s => s.id === stepId);
     if (!step) continue;
-
     if (!step.dependsOn || step.dependsOn.length === 0) {
       depthMap.set(stepId, 0);
     } else {
@@ -359,24 +310,21 @@ function autoLayoutNodes(steps: Step[], executionOrder: string[]): Node[] {
     }
   }
 
-  // Group by column
   const columns: string[][] = [];
-  for (const [stepId, depth] of depthMap) {
+  depthMap.forEach((depth, id) => {
     if (!columns[depth]) columns[depth] = [];
-    columns[depth].push(stepId);
-  }
+    columns[depth].push(id);
+  });
 
-  // Create nodes with positions
-  return steps.map((step, index) => {
+  return steps.map((step) => {
     const depth = depthMap.get(step.id) || 0;
-    const columnIndex = columns[depth].indexOf(step.id);
-    
+    const rowIndex = columns[depth].indexOf(step.id);
     return {
       id: step.id,
       type: 'cocoblendStep',
       position: {
         x: depth * (nodeWidth + columnGap),
-        y: columnIndex * (nodeHeight + rowGap),
+        y: rowIndex * (nodeHeight + rowGap),
       },
       data: {
         step,
@@ -387,10 +335,8 @@ function autoLayoutNodes(steps: Step[], executionOrder: string[]): Node[] {
   });
 }
 
-// Generate edges from step dependencies
 function generateEdgesFromSteps(steps: Step[]): Edge[] {
   const edges: Edge[] = [];
-  
   for (const step of steps) {
     if (step.dependsOn) {
       for (const depId of step.dependsOn) {
@@ -398,18 +344,15 @@ function generateEdgesFromSteps(steps: Step[]): Edge[] {
           id: `e-${depId}-${step.id}`,
           source: depId,
           target: step.id,
-          animated: false,
           type: 'smoothstep',
-          style: { stroke: '#6366f1', strokeWidth: 2 },
+          style: { stroke: '#334155', strokeWidth: 2 },
         });
       }
     }
   }
-  
   return edges;
 }
 
-// Export wrapped with provider
 export function CocoBlendCanvas(props: CocoBlendCanvasProps) {
   return (
     <ReactFlowProvider>

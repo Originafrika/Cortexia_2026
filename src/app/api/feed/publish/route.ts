@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { db } from '../../../lib/db';
+import { creations } from '../../../lib/db/schema';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, username, userAvatar, type, assetUrl, caption, model } = body;
+    const { userId, username, userAvatar, type, assetUrl, thumbnailUrl, prompt, caption, model, isPublic, parentCreationId, metadata } = body;
 
     if (!userId || !assetUrl) {
       return NextResponse.json(
@@ -13,24 +14,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sql = neon(process.env.DATABASE_URL!);
-    
     const creationId = crypto.randomUUID();
-    const now = new Date();
 
-    console.log('[FeedPublish] Inserting creation:', {
-      creationId,
+    await db.insert(creations).values({
+      id: creationId,
       userId,
       username,
+      userAvatar,
+      type: type || 'image',
       assetUrl,
+      thumbnailUrl,
+      prompt,
       caption,
-      model
+      model,
+      isPublic: isPublic !== undefined ? isPublic : true,
+      parentCreationId,
+      metadata: metadata || {},
+      createdAt: new Date(),
     });
 
-    await sql.query(`
-      INSERT INTO creations (id, user_id, username, user_avatar, asset_url, caption, model, likes, comments, remixes, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, $8)
-    `, [creationId, userId, username, userAvatar, assetUrl, caption, model, now]);
+    console.log('[FeedPublish] ✅ Published to feed:', creationId);
 
     return NextResponse.json({
       success: true,

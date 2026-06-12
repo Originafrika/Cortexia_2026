@@ -4,20 +4,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContextFromHeaders } from '../../../../middleware';
 import { db } from '../../../../lib/db';
-import { cocoboardJobs, enterpriseWallets } from '../../../../lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { cocoboardJobs, users, creditTransactions } from '../../../../lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
+import { coconutOrchestrator } from '../../../../lib/coconut/orchestrator';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = getAuthContextFromHeaders(request.headers);
-    if (!auth) {
+    const authContext = getAuthContextFromHeaders(request.headers);
+    if (!authContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Get job
     const job = await db.select()
@@ -32,7 +34,7 @@ export async function POST(
     const jobData = job[0];
 
     // Verify ownership
-    if (jobData.userId !== auth.userId && jobData.organizationId !== auth.organizationId) {
+    if (jobData.ownerId !== authContext.userId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -44,32 +46,8 @@ export async function POST(
       );
     }
 
-    // Check credits available
-    const wallet = await db.select()
-      .from(enterpriseWallets)
-      .where(
-        and(
-          eq(enterpriseWallets.userId, auth.userId),
-          eq(enterpriseWallets.organizationId, auth.organizationId || '')
-        )
-      )
-      .limit(1);
-
-    const availableCredits = wallet.length > 0 ? wallet[0].creditsBalance : 0;
-    const estimatedCredits = jobData.estimatedCreditsGeneration || 0;
-
-    if (availableCredits < estimatedCredits) {
-      return NextResponse.json(
-        { 
-          error: 'Insufficient credits',
-          available: availableCredits,
-          required: estimatedCredits,
-        },
-        { status: 402 }
-      );
-    }
-
-    // Update job status to blending
+    // We execute blending (in production, use QStash for background execution)
+    // Here we update status and start
     await db.update(cocoboardJobs)
       .set({ 
         status: 'blending',
@@ -77,40 +55,45 @@ export async function POST(
       })
       .where(eq(cocoboardJobs.id, id));
 
-    // Trigger blending via QStash
-    const qstashResponse = await fetch(
-      `${process.env.QSTASH_URL}/v2/publish`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: `${process.env.NEXT_PUBLIC_APP_URL}/api/qstash/cocoblend`,
-          body: { jobId: id },
-          retries: 3,
-        }),
+    // Blending logic - run steps and debit credits
+    // This is a simplified version of the background orchestrator
+    const result = await coconutOrchestrator.executeBlendBatch(
+      id,
+      (jobData.cocoboard as any).steps || [],
+      authContext.userId,
+      process.env.KIE_API_KEY || '',
+      async (stepId, status, outputUrl) => {
+        // Update node status in DB
+        const currentStatuses = (jobData.nodeStatuses as any) || {};
+        const currentOutputs = (jobData.nodeOutputs as any) || {};
+
+        currentStatuses[stepId] = status;
+        if (outputUrl) currentOutputs[stepId] = outputUrl;
+
+        await db.update(cocoboardJobs)
+          .set({
+            nodeStatuses: currentStatuses,
+            nodeOutputs: currentOutputs,
+            updatedAt: new Date()
+          })
+          .where(eq(cocoboardJobs.id, id));
       }
     );
 
-    if (!qstashResponse.ok) {
-      // Revert job status
-      await db.update(cocoboardJobs)
-        .set({ status: 'awaiting_validation' })
-        .where(eq(cocoboardJobs.id, id));
-
-      return NextResponse.json(
-        { error: 'Failed to queue blending job' },
-        { status: 500 }
-      );
-    }
+    // Final job update
+    await db.update(cocoboardJobs)
+      .set({
+        status: result.success ? 'done' : 'failed',
+        creditsGenerationActual: result.totalCredits,
+        updatedAt: new Date()
+      })
+      .where(eq(cocoboardJobs.id, id));
 
     return NextResponse.json({
       success: true,
       jobId: id,
-      status: 'blending',
-      message: 'Blueprint validated and blending started',
+      status: result.success ? 'done' : 'failed',
+      totalCredits: result.totalCredits
     });
 
   } catch (error) {
