@@ -16,8 +16,6 @@ import { LandingPage } from './components/landing/LandingPage';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { LoginPage } from './components/auth/LoginPage';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
-import { Auth0CallbackPage } from './components/auth/Auth0CallbackPage';
-import { Auth0SetupHelper } from './components/auth/Auth0SetupHelper';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy'; // ✅ RGPD
 import { TermsOfService } from './components/legal/TermsOfService'; // ✅ RGPD
 import { ForYouFeed } from './components/ForYouFeed';
@@ -60,7 +58,7 @@ export type Screen =
   | 'login-enterprise'
   | 'login-developer'
   | 'onboarding'
-  | 'auth-callback' // ✅ NEW: Auth0 callback
+  | 'auth-callback'
   | 'privacy-policy' // ✅ RGPD: Privacy Policy page
   | 'terms-of-service' // ✅ RGPD: Terms of Service page
   | 'feed' 
@@ -158,23 +156,8 @@ function CreditsProviderWrapper({ children }: { children: React.ReactNode }) {
       }
     }
     
-    // Priority 3: Auth0 user from localStorage
-    const auth0UserStr = localStorage.getItem('cortexia_auth0_user');
-    if (auth0UserStr) {
-      try {
-        const auth0User = JSON.parse(auth0UserStr);
-        if (auth0User?.id && auth0User.id !== stableUserId) {
-          console.log('🔐 [CreditsProviderWrapper] Setting stable userId from auth0 localStorage:', auth0User.id);
-          setStableUserId(auth0User.id);
-          return;
-        }
-      } catch (e) {
-        // ignore parse error
-      }
-    }
-    
     // Priority 4: demo-user only when loading is complete AND no stored user
-    if (!loading && !storedUserStr && !auth0UserStr && !user?.id && !stableUserId) {
+    if (!loading && !storedUserStr && !user?.id && !stableUserId) {
       console.log('🔐 [CreditsProviderWrapper] No user found, using demo-user');
       setStableUserId('demo-user');
     }
@@ -216,8 +199,8 @@ function AppContent() {
     if (path === '/create') return 'create';
     if (path === '/onboarding') return 'onboarding'; // ✅ ADD: Detect onboarding route
     
-    // ✅ NEW: Auth0 callback detection (supports both /callback and /auth/callback)
-    if (path === '/callback' || path === '/auth/callback' || window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+    // ✅ Neon Auth callback detection
+    if (path === '/callback' || path === '/auth/callback' || window.location.search.includes('code=')) {
       return 'auth-callback';
     }
     
@@ -357,8 +340,7 @@ function AppContent() {
     }
     
     // ✅ CRITICAL: Also check localStorage directly to fix race conditions with Neon Auth
-    const hasAuth0User = !!localStorage.getItem('cortexia_auth0_user');
-    const hasAnyUser = hasAuth0User || hasNeonUser;
+    const hasAnyUser = hasNeonUser;
     
     // ✅ SKIP route protection for onboarding and callback
     if (currentScreen === 'onboarding' || currentScreen === 'auth-callback') {
@@ -445,13 +427,11 @@ function AppContent() {
   // Handle opening create screen with prefilled prompt
   const handleOpenCreate = (prefillPrompt?: string) => {
     // ✅ CRITICAL FIX: Check localStorage directly to avoid race conditions
-    const auth0User = localStorage.getItem('cortexia_auth0_user');
     const neonUser = localStorage.getItem('cortexia_user');
-    const hasAuth0User = !!auth0User;
-    const hasNeonUser = !!neonUser;
+    const hasAnyUser = !!neonUser;
     
     // ✅ DEBUG: Log auth state
-    console.log('🎨 [handleOpenCreate] isAuthenticated:', isAuthenticated, 'user:', user?.id, 'loading:', loading, 'hasAuth0User:', hasAuth0User, 'hasNeonUser:', hasNeonUser);
+    console.log('🎨 [handleOpenCreate] isAuthenticated:', isAuthenticated, 'user:', user?.id, 'loading:', loading, 'hasAnyUser:', hasAnyUser);
     
     // ✅ IMPORTANT: Also check loading state
     if (loading) {
@@ -459,10 +439,10 @@ function AppContent() {
       return;
     }
     
-    // ✅ NEW: Check auth (either from context OR localStorage for Neon/Auth0)
+    // ✅ NEW: Check auth (either from context OR localStorage)
     
     // ✅ Allow access if user in context OR localStorage
-    if (!isAuthenticated && !hasAuth0User && !hasNeonUser) {
+    if (!isAuthenticated && !hasAnyUser) {
       console.log('🔒 Create requires auth, redirecting to login');
       handleNavigate('login');
       return;
@@ -484,17 +464,15 @@ function AppContent() {
   // ✅ NEW: Handle opening remix screen with image
   const handleOpenRemix = (imageUrl: string, prefillPrompt?: string, parentCreationId?: string) => {
     // ✅ Check auth
-    const auth0User = localStorage.getItem('cortexia_auth0_user');
     const neonUser = localStorage.getItem('cortexia_user');
-    const hasAuth0User = !!auth0User;
-    const hasNeonUser = !!neonUser;
+    const hasAnyUser = !!neonUser;
     
     if (loading) {
       console.log('⏳ Auth still loading, please wait...');
       return;
     }
     
-    if (!isAuthenticated && !hasAuth0User && !hasNeonUser) {
+    if (!isAuthenticated && !hasAnyUser) {
       console.log('🔒 Remix requires auth, redirecting to login');
       handleNavigate('login');
       return;
@@ -665,9 +643,13 @@ function AppContent() {
       );
     }
     
-    // ✅ NEW: Auth0 Callback Handler
+    // ✅ Neon Auth Callback Handler
     if (currentScreen === 'auth-callback') {
-      return <Auth0CallbackPage />;
+      return (
+        <div className="flex items-center justify-center h-screen bg-black">
+          <div className="animate-pulse text-white/40 text-sm">Synchronisation de la session...</div>
+        </div>
+      );
     }
     
     // ✅ RGPD: Privacy Policy & Terms of Service
@@ -798,12 +780,6 @@ function AppContent() {
           />
         )}
         
-        {/* ✅ Auth0 Setup Helper - Shows if Auth0 is not configured */}
-        {(currentScreen === 'login' || currentScreen === 'landing') && (
-          <div data-auth0-helper>
-            <Auth0SetupHelper />
-          </div>
-        )}
         
         {/* ✅ Debug Credits Panel - Shows in dev mode only */}
         {user?.id && (
