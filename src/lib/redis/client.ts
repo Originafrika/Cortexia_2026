@@ -23,13 +23,11 @@ const CLIENT_UPSTASH_REDIS_TOKEN = typeof window !== 'undefined'
 
 const getRedisUrl = () => {
   const url = UPSTASH_REDIS_URL || CLIENT_UPSTASH_REDIS_URL;
-  console.log('[Redis] getRedisUrl:', { UPSTASH_REDIS_URL, CLIENT_UPSTASH_REDIS_URL, result: url });
   return url;
 };
 
 const getRedisToken = () => {
   const token = UPSTASH_REDIS_TOKEN || CLIENT_UPSTASH_REDIS_TOKEN;
-  console.log('[Redis] getRedisToken:', { hasToken: !!token });
   return token;
 };
 

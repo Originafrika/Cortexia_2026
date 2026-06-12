@@ -9,7 +9,7 @@ import { createAuthClient } from '@neondatabase/auth';
 const NEON_AUTH_URL =
   import.meta.env.VITE_NEON_AUTH_URL ||
   import.meta.env.NEXT_PUBLIC_NEON_AUTH_URL ||
-  'https://ep-cool-meadow-an2f2vge.neonauth.c-6.us-east-1.aws.neon.tech/neondb/auth';
+  'https://ep-summer-mode-adjqozi1.neonauth.c-2.us-east-1.aws.neon.tech/neondb/auth';
 
 export const auth = createAuthClient(NEON_AUTH_URL);
 

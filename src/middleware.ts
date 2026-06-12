@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 
 const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL || 
-  'https://ep-cool-meadow-an2f2vge.neonauth.c-6.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
+  'https://ep-summer-mode-adjqozi1.neonauth.c-2.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
 
 const JWKS = createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL));
 
