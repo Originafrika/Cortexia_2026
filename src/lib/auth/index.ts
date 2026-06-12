@@ -6,7 +6,10 @@
 
 import { createAuthClient } from '@neondatabase/auth';
 
-const NEON_AUTH_URL = 'https://ep-cool-meadow-an2f2vge.neonauth.c-6.us-east-1.aws.neon.tech/neondb/auth';
+const NEON_AUTH_URL =
+  import.meta.env.VITE_NEON_AUTH_URL ||
+  import.meta.env.NEXT_PUBLIC_NEON_AUTH_URL ||
+  'https://ep-cool-meadow-an2f2vge.neonauth.c-6.us-east-1.aws.neon.tech/neondb/auth';
 
 export const auth = createAuthClient(NEON_AUTH_URL);
 
@@ -189,15 +192,18 @@ export const neonSignOut = async () => {
  */
 export const signInWithGoogle = () => auth.signIn.social({
   provider: 'google',
-  callbackURL: `${API_BASE}/api/auth/callback`
+  callbackURL: `${API_BASE}/api/auth/callback`,
+  newUserCallbackURL: `${API_BASE}/onboarding`
 });
 export const signInWithGitHub = () => auth.signIn.social({
   provider: 'github',
-  callbackURL: `${API_BASE}/api/auth/callback`
+  callbackURL: `${API_BASE}/api/auth/callback`,
+  newUserCallbackURL: `${API_BASE}/onboarding`
 });
 export const signInWithVercel = () => auth.signIn.social({
   provider: 'vercel',
-  callbackURL: `${API_BASE}/api/auth/callback`
+  callbackURL: `${API_BASE}/api/auth/callback`,
+  newUserCallbackURL: `${API_BASE}/onboarding`
 });
 
 export default auth;
