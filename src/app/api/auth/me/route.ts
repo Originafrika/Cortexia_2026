@@ -4,13 +4,17 @@ import { users } from '../../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 
-const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL ||
-  'https://ep-cool-meadow-an2f2vge.neonauth.c-6.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
+const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL;
 
-const JWKS = createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL));
+const JWKS = NEON_AUTH_JWKS_URL ? createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL)) : null;
 
 export async function GET(request: NextRequest) {
   try {
+    if (!JWKS) {
+      console.error('[API Me] Missing NEON_AUTH_JWKS_URL');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
     

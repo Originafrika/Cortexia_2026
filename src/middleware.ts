@@ -6,10 +6,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 
-const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL || 
-  'https://ep-summer-mode-adjqozi1.neonauth.c-2.us-east-1.aws.neon.tech/neondb/auth/.well-known/jwks.json';
+const NEON_AUTH_JWKS_URL = process.env.NEON_AUTH_JWKS_URL;
 
-const JWKS = createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL));
+if (!NEON_AUTH_JWKS_URL) {
+  console.warn('⚠️ [Middleware] NEON_AUTH_JWKS_URL is missing. Token verification will fail.');
+}
+
+const JWKS = NEON_AUTH_JWKS_URL ? createRemoteJWKSet(new URL(NEON_AUTH_JWKS_URL)) : null;
 
 export interface AuthContext {
   userId: string;
@@ -22,6 +25,8 @@ export interface AuthContext {
  * Verify Neon Auth JWT token
  */
 async function verifyToken(token: string): Promise<AuthContext | null> {
+  if (!JWKS) return null;
+
   try {
     const { payload } = await jwtVerify(token, JWKS, {
       algorithms: ['RS256'],

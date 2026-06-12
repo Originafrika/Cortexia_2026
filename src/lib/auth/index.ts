@@ -8,10 +8,13 @@ import { createAuthClient } from '@neondatabase/auth';
 
 const NEON_AUTH_URL =
   import.meta.env.VITE_NEON_AUTH_URL ||
-  import.meta.env.NEXT_PUBLIC_NEON_AUTH_URL ||
-  'https://ep-summer-mode-adjqozi1.neonauth.c-2.us-east-1.aws.neon.tech/neondb/auth';
+  import.meta.env.NEXT_PUBLIC_NEON_AUTH_URL;
 
-export const auth = createAuthClient(NEON_AUTH_URL);
+if (!NEON_AUTH_URL) {
+  console.error('❌ [NeonAuth] Missing VITE_NEON_AUTH_URL or NEXT_PUBLIC_NEON_AUTH_URL environment variable');
+}
+
+export const auth = createAuthClient(NEON_AUTH_URL || '');
 
 console.log('[NeonAuth] Initialized:', NEON_AUTH_URL);
 
