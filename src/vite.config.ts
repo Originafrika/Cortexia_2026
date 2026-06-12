@@ -29,6 +29,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),
+      'motion/react': 'motion',
     },
   },
 
@@ -128,7 +129,7 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       'reactflow',
-      'motion/react',
+      'motion',
       'lucide-react',
     ],
     exclude: [
