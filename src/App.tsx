@@ -374,7 +374,10 @@ function AppContent() {
   
   // ✅ NEW: Handle onboarding redirect when no user/userType
   useEffect(() => {
-    if (!loading && currentScreen === 'onboarding') {
+    // If we're loading, definitely don't redirect yet
+    if (loading) return;
+
+    if (currentScreen === 'onboarding') {
       // Check for user in localStorage (from Neon Auth)
       const storedUser = localStorage.getItem('cortexia_user');
       if (storedUser) {
@@ -400,8 +403,8 @@ function AppContent() {
         return;
       }
       
-      // No user in localStorage AND on onboarding screen → redirect
-      if (!user || !userType) {
+      // No user in localStorage AND on onboarding screen AND NOT authenticated → redirect
+      if (!user && !userType && !isAuthenticated) {
         console.warn('⚠️ Onboarding without user/userType, redirecting to landing');
         setCurrentScreen('landing');
         if (location.pathname !== '/') {
