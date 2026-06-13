@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3A: Import sound
 import { X, Sparkles, Image as ImageIcon, Palette, Zap, DollarSign, CheckCircle2, AlertCircle } from 'lucide-react';
 import { tokens, TRANSITIONS } from '../../lib/design/tokens';

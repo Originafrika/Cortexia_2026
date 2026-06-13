@@ -11,8 +11,8 @@ import { useNotifications, UseNotificationsReturn } from '../../lib/hooks/useNot
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { ToastContainer } from '../ui-premium/Toast';
 import { ConfirmDialog } from '../ui-premium/ConfirmDialog';
-import { AnimatePresence } from 'motion/react';
-import { motion } from 'motion/react';
+import { AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toastVariants } from '../../lib/animations/transitions';
 import { CheckCircle, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 

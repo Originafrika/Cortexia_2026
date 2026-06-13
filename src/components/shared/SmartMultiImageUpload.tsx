@@ -2,7 +2,7 @@
 // Fixes: Ordre non expliqué, pas de drag & drop, pas de preview fusion
 
 import { useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, Reorder } from 'motion/react';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { Upload, X, Images as ImagesIcon, AlertCircle, Info, Crown, ArrowRight, Star, GripVertical, Lightbulb } from 'lucide-react';
 import { multiImageService } from '../../lib/services/multiImageService';
 import { toast } from 'sonner';

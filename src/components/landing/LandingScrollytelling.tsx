@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useSpring } from 'motion/react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useRef } from 'react';
 import { ArrowRight, Sparkles, Check, Building2, Heart, Terminal, Zap, Layers, TrendingUp, Rocket } from 'lucide-react';
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook

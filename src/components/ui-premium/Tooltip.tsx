@@ -4,7 +4,7 @@
  */
 
 import React, { ReactNode, useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 
 interface TooltipProps {

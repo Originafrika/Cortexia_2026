@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3A: Import sound
 import { useHaptic } from '../../lib/hooks/useHaptic'; // 🔊 Import haptic hook
 import { FileType, Type, Palette, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';

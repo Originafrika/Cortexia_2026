@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
 
 // ============================================

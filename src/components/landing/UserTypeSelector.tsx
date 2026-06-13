@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, Heart, Terminal, X, ArrowRight, Sparkles } from 'lucide-react';
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
 

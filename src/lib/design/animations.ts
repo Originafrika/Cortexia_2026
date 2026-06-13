@@ -9,7 +9,7 @@
  * import { animations, variants, easings } from '@/lib/design/animations';
  */
 
-import { Variants, Transition } from 'motion/react';
+import { Variants, Transition } from 'framer-motion';
 
 // ============================================
 // PREMIUM EASING CURVES

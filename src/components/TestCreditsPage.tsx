@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { publicAnonKey } from '../utils/supabase/info';
 
 interface TestResult {

@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useSoundContext } from './SoundProvider';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { useNotify } from './NotificationProvider';

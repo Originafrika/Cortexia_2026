@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { Z_INDEX } from '../../lib/constants/z-index';
 

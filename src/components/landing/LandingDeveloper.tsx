@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { ArrowRight, Check, Code, Zap, BookOpen, Sparkles, Video, User, Book, Bell, Lock, BarChart3, MessageCircle } from 'lucide-react'; // ✅ BDS: Added icons
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
 

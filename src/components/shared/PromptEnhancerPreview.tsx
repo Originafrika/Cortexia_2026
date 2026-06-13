@@ -2,7 +2,7 @@
 // Fixes: Enhancement invisible, pas de preview, valeur cachée
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Wand2, TrendingUp, Zap, Loader2, Check, X } from "lucide-react";
 import { Button } from "../ui/Button";
 

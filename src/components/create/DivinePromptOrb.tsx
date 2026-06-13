@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Sparkles, Settings2 } from 'lucide-react';
 import { CustomSelect } from '../shared/CustomSelect';
 

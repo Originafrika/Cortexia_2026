@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3A: Import sound
 import { X, Sparkles, CheckCircle2, ArrowRight, Zap, Package } from 'lucide-react';
 import { GlassCard } from '../ui/glass-card';

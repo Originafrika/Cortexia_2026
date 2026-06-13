@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, Sparkles, Palette, Zap, Check, Upload, Building2, Code, User, Award, TrendingUp, DollarSign, Star, Copy, Gift, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ NEW: Import useAuth

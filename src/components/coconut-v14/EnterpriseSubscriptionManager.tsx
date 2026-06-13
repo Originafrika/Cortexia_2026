@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNotify } from './NotificationProvider';
 import { useSoundContext } from './SoundProvider';
 import { useAuth } from '../../lib/contexts/AuthContext'; // ✅ FIX: Correct path

@@ -13,7 +13,7 @@
  * - Enhanced animations from Phase 4 Jour 3
  */
 
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { Button } from './Button';

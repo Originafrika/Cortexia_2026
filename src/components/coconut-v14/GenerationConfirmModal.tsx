@@ -19,7 +19,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertTriangle, Zap, Eye, CheckCircle2, Copy, Check } from 'lucide-react';
 import type { CocoBoard } from '../../lib/types/coconut-v14';
 import { useSoundContext } from './SoundProvider';

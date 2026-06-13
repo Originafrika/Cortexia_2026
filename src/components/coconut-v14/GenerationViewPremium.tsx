@@ -18,7 +18,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from './SoundProvider';
 import { Lightbox } from './Lightbox';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';

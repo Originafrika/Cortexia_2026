@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { Sparkles, Zap, Image as ImageIcon, Film, Layers, Upload, X } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';
 

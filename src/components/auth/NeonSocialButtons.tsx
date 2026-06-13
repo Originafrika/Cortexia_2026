@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { signInWithGoogle, signInWithGitHub } from '../../lib/auth';
 import { Ticket } from 'lucide-react';
 

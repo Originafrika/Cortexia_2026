@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Palette, Check, X, Lock, Unlock, RefreshCw, Plus } from 'lucide-react';
 import { Z_INDEX } from '../../lib/constants/z-index';
 

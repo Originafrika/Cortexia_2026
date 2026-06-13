@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ImageWithFallback } from '../figma/ImageWithFallback';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface RemixItem {
   id: string;

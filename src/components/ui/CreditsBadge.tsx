@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import { useCredits } from '../../lib/contexts/CreditsContext';
 import { HOVER_LIFT_SMALL, TAP_SCALE } from '../../lib/constants/animations';

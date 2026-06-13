@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../lib/contexts/AuthContext';
 import { NeonSocialButtons } from './NeonSocialButtons';

@@ -14,3 +14,5 @@ PAPERCLIP_SETUP.md
 credentials.json
 *.pem
 *.key
+dist
+build_output.log

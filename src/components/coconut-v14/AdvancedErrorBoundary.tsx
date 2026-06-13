@@ -8,7 +8,7 @@
  */
 
 import React, { Component, ReactNode } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 
 interface Props {

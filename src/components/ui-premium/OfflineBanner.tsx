@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, Wifi, CheckCircle2 } from 'lucide-react';
 import { useOnlineStatus } from '../../lib/hooks/useOnlineStatus';
 import tokens from '../../lib/styles/tokens'; // Default import

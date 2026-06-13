@@ -16,7 +16,7 @@ import {
   BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Loader2, CheckCircle2, AlertCircle, Clock, Zap, Maximize2 } from 'lucide-react';
 
 import { Step, StepStatus } from '../../lib/coconut/schemas';

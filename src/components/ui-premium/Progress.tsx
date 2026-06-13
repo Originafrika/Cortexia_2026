@@ -9,7 +9,7 @@
  * - Gradient option
  */
 
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 // ============================================
 // TYPES

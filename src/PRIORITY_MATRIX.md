@@ -374,7 +374,7 @@
 ### **1. Import standard pour composant premium:**
 ```tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Icon1, Icon2, Icon3 } from 'lucide-react';
 import { useSoundContext } from './SoundProvider';
 import { useNotify } from './NotificationProvider';

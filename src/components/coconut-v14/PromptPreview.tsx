@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Braces, Copy, Check } from 'lucide-react';
 import { buildTextPromptFromJSON } from '../../lib/utils/promptUtils';
 import { useSoundContext } from './SoundProvider';

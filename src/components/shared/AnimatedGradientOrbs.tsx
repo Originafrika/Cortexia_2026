@@ -3,7 +3,7 @@
  * Animated gradient background orbs for Coconut UI
  */
 
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface AnimatedGradientOrbsProps {
   variant?: 'hero' | 'page' | 'subtle';

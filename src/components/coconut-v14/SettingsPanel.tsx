@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from './SoundProvider';
 import { GlassInput } from '../ui/glass-input';
 import { PremiumSelect, SelectOption } from '../ui-premium/PremiumSelect';

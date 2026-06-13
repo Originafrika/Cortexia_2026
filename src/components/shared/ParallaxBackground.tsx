@@ -4,7 +4,7 @@
  * 7 Arts: Musique (mouvement orchestré), Géométrie (proportions harmonieuses)
  */
 
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 
 interface ParallaxBackgroundProps {

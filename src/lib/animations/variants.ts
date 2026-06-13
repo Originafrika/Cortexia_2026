@@ -6,7 +6,7 @@
  * BDS: Musique (Rythme expérientiel) + Rhétorique (Communication impactante)
  */
 
-import { Variants } from 'motion/react';
+import { Variants } from 'framer-motion';
 import { TIMING, EASING } from './transitions';
 
 // ============================================

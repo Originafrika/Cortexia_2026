@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { Modal, Button, Badge, Input } from '@/components/ui-premium';
 import { Search, ChevronDown, ChevronRight, HelpCircle, Keyboard, Video, MessageCircle, ExternalLink } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================
 // TYPES

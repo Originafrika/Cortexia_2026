@@ -2,7 +2,7 @@
 // Hides technical complexity (providers, model names, rate limits)
 // Shows only: Quality tier + Cost + Free/Pro badge
 
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Sparkles, Zap, Crown, Info } from "lucide-react";
 import { useState } from "react";
 

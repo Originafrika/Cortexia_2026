@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3B: Import sound
 import { Download, FileJson, FileText, Check, Copy, X } from 'lucide-react';
 import { toast } from 'sonner';

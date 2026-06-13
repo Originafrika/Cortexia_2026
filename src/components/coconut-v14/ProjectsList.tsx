@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { 
   Grid, List, Search, Filter, Plus, Sparkles, 
   Clock, Image, Video, Layers, Trash2, Edit2

@@ -16,7 +16,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DataTable, DataTableColumn } from '../ui-premium/DataTable';
 import { useNotify } from '../coconut-v14/NotificationProvider';
 import { useSoundContext } from './SoundProvider';

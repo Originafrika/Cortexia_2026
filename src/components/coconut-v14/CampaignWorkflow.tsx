@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { CampaignBriefing } from './CampaignBriefing';
 import { AnalyzingLoaderPremium } from './AnalyzingLoaderPremium';
 import { CampaignCocoBoardPremium } from './CampaignCocoBoardPremium';

@@ -11,7 +11,7 @@
  */
 
 import { HTMLAttributes } from 'react';
-import { motion, HTMLMotionProps } from 'motion/react';
+import { motion, HTMLMotionProps } from 'framer-motion';
 
 // ============================================
 // TYPES

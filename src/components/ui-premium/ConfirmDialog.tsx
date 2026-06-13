@@ -4,7 +4,7 @@
  */
 
 import React, { ReactNode, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from '../coconut-v14/SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { GlassCard } from '../ui/glass-card';
 import { GlassButton } from '../ui/glass-button';

@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, X, Zap, Info } from 'lucide-react';
 
 // ============================================

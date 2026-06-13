@@ -1,7 +1,7 @@
 // GenerationStatus - Transparent generation progress with fallback visibility
 // Fixes: Fallback invisible, pas de feedback temps réel, pas de confiance
 
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, AlertCircle, CheckCircle, Zap } from "lucide-react";
 
 export type GenerationPhase = 'uploading' | 'enhancing' | 'primary' | 'fallback' | 'success' | 'error';

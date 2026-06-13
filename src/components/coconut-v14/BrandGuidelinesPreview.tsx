@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Building2, Check, X } from 'lucide-react';
 import type { CocoBoard } from '../../lib/stores/cocoboard-store';
 import { useAuth } from '../../lib/contexts/AuthContext';

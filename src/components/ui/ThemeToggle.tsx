@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { Tooltip } from './Tooltip';

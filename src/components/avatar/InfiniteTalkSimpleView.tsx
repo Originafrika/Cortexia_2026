@@ -5,7 +5,7 @@
  */
 
 import { useState, useRef } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Upload, Mic, Sparkles, Loader2, Download, Play, Pause, X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { getInfiniteTalkCost } from '../../lib/constants/pricing';

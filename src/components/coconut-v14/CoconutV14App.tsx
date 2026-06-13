@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, ChevronRight, 
   LayoutDashboard, Sparkles, Zap, Settings, Clock, User, Grid, History

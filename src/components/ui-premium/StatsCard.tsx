@@ -13,7 +13,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { GlassCard } from '../ui/glass-card';
 import { TrendingUp, TrendingDown, Minus, type LucideIcon } from 'lucide-react';
 

@@ -25,7 +25,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
 import { useBreakpoint, useIsMobile } from '../../lib/hooks/useBreakpoint'; // 📱 PHASE 8

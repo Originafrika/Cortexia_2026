@@ -4,7 +4,7 @@
  * BDS (Beauty Design System) compliant with liquid glass design
  */
 
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Sparkles, X, Zap, Download, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCoconutAccess } from '../lib/hooks/useCoconutAccess';

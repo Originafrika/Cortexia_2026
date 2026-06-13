@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { ArrowRight, Check, Sparkles, Clock, Zap, Shield } from 'lucide-react';
 
 interface LandingEnterpriseProps {

@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Search, Clock, DollarSign, Sparkles, ChevronRight, Wand2 } from 'lucide-react';
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';

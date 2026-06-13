@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { GlassCard } from '../ui/glass-card';
 import { GlassButton } from '../ui/glass-button';
 import { DataTable, DataTableColumn } from '../ui-premium/DataTable';

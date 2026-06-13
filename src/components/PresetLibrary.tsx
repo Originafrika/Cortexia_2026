@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Heart, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { presets, categories, type Preset } from '../lib/presets/presets';

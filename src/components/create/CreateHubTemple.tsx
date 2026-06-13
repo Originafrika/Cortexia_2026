@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Sparkles, Zap, Palette, Megaphone, Wand2 } from 'lucide-react';
 import { HeroPromptBar } from './HeroPromptBar';
 import { ToolCategory } from './ToolCategory';

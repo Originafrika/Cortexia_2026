@@ -13,7 +13,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button, Badge } from '@/components/ui-premium';
 import { useAnalytics } from '@/lib/monitoring';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, ArrowLeft, Sparkles, Check } from 'lucide-react';
 
 // ============================================

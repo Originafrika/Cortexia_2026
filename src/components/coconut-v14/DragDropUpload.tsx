@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, FileImage, FileVideo, AlertCircle } from 'lucide-react';
 import { useSoundContext } from './SoundProvider';
 

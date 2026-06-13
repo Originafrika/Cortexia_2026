@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { motion, HTMLMotionProps } from 'motion/react';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import * as presets from '../../lib/animations/presets';
 
 type AnimationPreset = 

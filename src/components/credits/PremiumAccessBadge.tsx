@@ -4,7 +4,7 @@
  */
 
 import { Sparkles, Crown, Zap } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 interface PremiumAccessBadgeProps {
   paidCredits: number;

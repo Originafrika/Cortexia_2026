@@ -2,7 +2,7 @@
 // Fixes: Credits mélangés, pas de reset countdown, pas d'upsell intelligent
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Sparkles, Crown, Clock, AlertTriangle, TrendingUp } from "lucide-react";
 import { Z_INDEX } from "../../lib/constants/design-system";
 import { Button } from "../ui/Button";

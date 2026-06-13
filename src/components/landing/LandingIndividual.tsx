@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Check, Sparkles, Heart, MessageCircle, Award, Palette } from 'lucide-react'; // ✅ BDS: Added community icons
 import { useTranslation } from '../../lib/i18n'; // ✅ NEW: i18n hook
 
