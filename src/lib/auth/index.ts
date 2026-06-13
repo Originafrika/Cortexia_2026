@@ -18,9 +18,7 @@ export const auth = createAuthClient(NEON_AUTH_URL || '');
 
 console.log('[NeonAuth] Initialized:', NEON_AUTH_URL);
 
-const API_BASE = typeof window !== 'undefined'
-  ? window.location.origin
-  : 'http://localhost:5173';
+const API_BASE = '';
 
 /**
  * Synchronize Neon Auth user with local Neon PostgreSQL database
