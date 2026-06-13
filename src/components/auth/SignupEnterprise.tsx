@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { Mail, Lock, User, Building2, Briefcase, Users, Gift, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { NeonSocialButtons } from './NeonSocialButtons';
 import { neonSignUp } from '../../lib/auth';
-import { toast } from 'sonner';
 import { useAuth } from '../../lib/contexts/AuthContext';
 
 interface SignupEnterpriseProps {
@@ -54,116 +53,26 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
     setError('');
 
     try {
-      // Use local signup API
-      const response = await fetch(`/api/auth/signup`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      console.log('🔐 [SignupEnterprise] Signing up via Neon Auth...');
+
+      const result = await neonSignUp(formData.email, formData.password, 'enterprise', {
+        name: formData.name,
+        companyName: formData.companyName,
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned invalid response. Please check server logs.');
+      if (!result.success || !result.user) {
+        throw new Error(result.error || 'Enterprise signup failed');
       }
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
-      }
-
-      console.log('✅ [SignupEnterprise] Backend signup successful:', data.user);
-
-      // ✅ CRITICAL: Create Supabase session FIRST before fetching profile
-      console.log('🔐 [SignupEnterprise] Creating Supabase session...');
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (signInError || !authData.session) {
-        console.error('❌ [SignupEnterprise] Failed to create session:', signInError);
-        throw new Error('Failed to create session. Please try logging in manually.');
-      }
-
-      console.log('✅ [SignupEnterprise] Supabase session created:', authData.user.id);
-      const sessionAccessToken = authData.session.access_token;
-
-      // ✅ NOW fetch complete profile from backend using session token
-      console.log('📥 [SignupEnterprise] Fetching complete profile from backend...');
-      const profileData = await fetchUserProfile(data.userId, sessionAccessToken, {
-        maxRetries: 3,
-        retryDelay: 1000,
-        timeout: 5000,
-      });
-
-      if (profileData) {
-        console.log('✅ [SignupEnterprise] Profile fetched:', {
-          accountType: profileData.accountType,
-          displayName: profileData.displayName,
-          referralCode: profileData.referralCode,
-        });
-
-        // ✅ Store complete profile data in sessionStorage
-        storeProfileData(profileData);
-        console.log('✅ [SignupEnterprise] Stored complete profile data');
-      } else {
-        console.warn('⚠️ [SignupEnterprise] Failed to fetch profile after retries, using fallback');
-        // Fallback: Store basic data from signup response
-        sessionStorage.setItem('cortexia_user_type', 'enterprise');
-      }
-
-// ✅ Store referral code in sessionStorage for display in onboarding
-      if (data.referralCode) {
-        sessionStorage.setItem('cortexia_referral_code', data.referralCode);
-        console.log('✅ Stored referral code:', data.referralCode);
-      }
+      console.log('✅ [SignupEnterprise] Signup successful:', result.user);
       
-      // ✅ CRITICAL: Refresh auth context to detect new user
+      // Update local context
       refreshUser();
       
-      onSuccess(data.userId, sessionAccessToken);
+      onSuccess(result.user.id, 'neon-token');
     } catch (err: any) {
       console.error('❌ [SignupEnterprise] Signup error:', err);
-      
-      // ✅ IMPROVED: Better error handling for offline/demo mode
-      const isNetworkError = err.message?.includes('Failed to fetch') || err.message?.includes('Network');
-      
-      if (isNetworkError) {
-        console.warn('⚠️ [SignupEnterprise] Backend unavailable, using demo mode');
-        
-        // ✅ Create a demo user ID
-        const demoUserId = `demo-${Date.now()}`;
-        const demoToken = `demo-token-${Date.now()}`;
-        
-        // ✅ Store demo profile data
-        sessionStorage.setItem('cortexia_user_type', 'enterprise');
-        sessionStorage.setItem('cortexia_user_id', demoUserId);
-        sessionStorage.setItem('cortexia_session_token', demoToken);
-        sessionStorage.setItem('cortexia_referral_code', 'DEMO-CODE');
-        
-        // ✅ Store Auth0 user format
-        const demoAuth0User = {
-          sub: demoUserId,
-          email: formData.email,
-          name: formData.companyName,
-          email_verified: true
-        };
-        localStorage.setItem('cortexia_auth0_user', JSON.stringify(demoAuth0User));
-        
-        toast.success('Demo mode enabled - Backend unavailable', {
-          description: 'You can explore the app with demo credentials'
-        });
-        
-        onSuccess(demoUserId, demoToken);
-      } else {
-        setError(err.message || 'An error occurred during signup');
-      }
+      setError(err.message || 'An error occurred during enterprise signup');
     } finally {
       setLoading(false);
     }
@@ -171,7 +80,7 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-6 py-12 relative">
-      {/* Back Button - Premium Style */}
+      {/* Back Button */}
       <motion.button
         onClick={onBack}
         className="fixed top-6 left-6 w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center group z-50"
@@ -184,7 +93,7 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
         <ArrowLeft size={20} className="text-white/60 group-hover:text-white transition-colors" />
       </motion.button>
 
-      {/* Background Glow - Gold for Enterprise */}
+      {/* Background Glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#F5EBE0]/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#E3D5CA]/10 rounded-full blur-[120px]" />
@@ -196,7 +105,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl mb-3">
             Join as <span className="bg-gradient-to-r from-[#F5EBE0] to-[#E3D5CA] bg-clip-text text-transparent">Enterprise</span>
@@ -206,10 +114,8 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10">
-            {/* Name */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Your Name</label>
               <div className="relative">
@@ -225,7 +131,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               </div>
             </div>
 
-            {/* Email */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Work Email</label>
               <div className="relative">
@@ -241,7 +146,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               </div>
             </div>
 
-            {/* Password */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Password</label>
               <div className="relative">
@@ -258,7 +162,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               </div>
             </div>
 
-            {/* Company Name */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Company Name</label>
               <div className="relative">
@@ -274,7 +177,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               </div>
             </div>
 
-            {/* Industry */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Industry</label>
               <div className="relative">
@@ -295,7 +197,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               </div>
             </div>
 
-            {/* Company Size */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Company Size</label>
               <div className="relative">
@@ -316,7 +217,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               </div>
             </div>
 
-            {/* Referral Code (Optional) */}
             <div>
               <label className="block text-sm text-white/60 mb-2">
                 Referral Code <span className="text-white/40">(optional)</span>
@@ -332,15 +232,9 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
                   maxLength={10}
                 />
               </div>
-              {formData.referralCode && (
-                <p className="text-xs text-green-400 mt-2">
-                  🎁 Get bonus credits if the code is valid!
-                </p>
-              )}
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
             <motion.div
               className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3"
@@ -352,7 +246,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
             </motion.div>
           )}
 
-          {/* ✅ RGPD: Privacy Policy & ToS Consent */}
           <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
             <input
               type="checkbox"
@@ -383,7 +276,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
             </label>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -402,7 +294,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
             )}
           </button>
 
-          {/* ✅ Neon Auth Social Signup Buttons */}
           <NeonSocialButtons
             userType="enterprise"
             companyData={{
@@ -411,7 +302,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
           />
         </form>
 
-        {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-white/60">
             Already have an account?{' '}
@@ -422,29 +312,6 @@ export function SignupEnterprise({ onSuccess, onSwitchToLogin, onBack }: SignupE
               Log in
             </button>
           </p>
-        </div>
-
-        {/* Features */}
-        <div className="mt-8 p-6 rounded-2xl bg-white/5 border border-white/10">
-          <p className="text-sm text-white/60 mb-3">Enterprise Benefits:</p>
-          <ul className="space-y-2 text-sm text-white/80">
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
-              Full Coconut V14 access
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
-              AI Creative Director
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
-              Campaign orchestration
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#F5EBE0]" />
-              Priority support
-            </li>
-          </ul>
         </div>
       </motion.div>
     </div>

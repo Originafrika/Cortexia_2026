@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Code, Gift, ArrowRight, ArrowLeft, AlertCircle, Loader2, Github } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { NeonSocialButtons } from './NeonSocialButtons';
-import { supabase } from '../../lib/services/auth0-service';
-import { fetchUserProfile, storeProfileData } from '../../lib/utils/profile-fetch';
+import { neonSignUp } from '../../lib/auth';
+import { useAuth } from '../../lib/contexts/AuthContext';
 
 interface SignupDeveloperProps {
   onSuccess: (userId: string, accessToken: string) => void;
@@ -13,6 +12,7 @@ interface SignupDeveloperProps {
 }
 
 export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDeveloperProps) {
+  const { refreshUser } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -42,85 +42,25 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
     setError('');
 
     try {
-      // Use local signup API
-      const response = await fetch(`/api/auth/signup`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      console.log('🔐 [SignupDeveloper] Signing up via Neon Auth...');
+
+      const result = await neonSignUp(formData.email, formData.password, 'developer', {
+        name: formData.name,
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        throw new Error('Server returned invalid response. Please check server logs.');
+      if (!result.success || !result.user) {
+        throw new Error(result.error || 'Developer signup failed');
       }
 
-      const data = await response.json();
+      console.log('✅ [SignupDeveloper] Signup successful:', result.user);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
-      }
+      // Update local context
+      refreshUser();
 
-      console.log('✅ [SignupDeveloper] Backend signup successful:', data.userId);
-
-      // ✅ CRITICAL: Create Supabase session FIRST before fetching profile
-      console.log('🔐 [SignupDeveloper] Creating Supabase session...');
-      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (signInError || !authData.session) {
-        console.error('❌ [SignupDeveloper] Failed to create session:', signInError);
-        throw new Error('Failed to create session. Please try logging in manually.');
-      }
-
-      console.log('✅ [SignupDeveloper] Supabase session created:', authData.user.id);
-      const sessionAccessToken = authData.session.access_token;
-
-      // ✅ NOW fetch complete profile from backend using session token
-      console.log('📥 [SignupDeveloper] Fetching complete profile from backend...');
-      const profileData = await fetchUserProfile(data.userId, sessionAccessToken, {
-        maxRetries: 3,
-        retryDelay: 1000,
-        timeout: 5000,
-      });
-
-      if (profileData) {
-        console.log('✅ [SignupDeveloper] Profile fetched:', {
-          accountType: profileData.accountType,
-          displayName: profileData.displayName,
-          referralCode: profileData.referralCode,
-        });
-
-        // ✅ Store complete profile data in sessionStorage
-        storeProfileData(profileData);
-        console.log('✅ [SignupDeveloper] Stored complete profile data');
-      } else {
-        console.warn('⚠️ [SignupDeveloper] Failed to fetch profile after retries, using fallback');
-        // Fallback: Store basic data from signup response
-        sessionStorage.setItem('cortexia_user_type', 'developer');
-      }
-
-      // ✅ Store referral code in sessionStorage for display in onboarding
-      if (data.referralCode) {
-        sessionStorage.setItem('cortexia_referral_code', data.referralCode);
-        console.log('✅ Stored referral code:', data.referralCode);
-      }
-
-      // Show API key in success message
-      if (data.apiKey) {
-        alert(`✅ Account created! Your API key: ${data.apiKey}\n\nPlease save this key securely. You won't be able to see it again.`);
-      }
-
-      onSuccess(data.userId, sessionAccessToken);
+      onSuccess(result.user.id, 'neon-token');
     } catch (err: any) {
       console.error('❌ [SignupDeveloper] Signup error:', err);
-      setError(err.message || 'An error occurred during signup');
+      setError(err.message || 'An error occurred during developer signup');
     } finally {
       setLoading(false);
     }
@@ -128,7 +68,7 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-6 py-12 relative">
-      {/* Back Button - Premium Style */}
+      {/* Back Button */}
       <motion.button
         onClick={onBack}
         className="fixed top-6 left-6 w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all flex items-center justify-center group z-50"
@@ -153,7 +93,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl mb-3">
             Join as <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Developer</span>
@@ -163,10 +102,8 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10">
-            {/* Name */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Full Name</label>
               <div className="relative">
@@ -182,7 +119,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
               </div>
             </div>
 
-            {/* Email */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Email</label>
               <div className="relative">
@@ -198,7 +134,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
               </div>
             </div>
 
-            {/* Password */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Password</label>
               <div className="relative">
@@ -215,7 +150,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
               </div>
             </div>
 
-            {/* Use Case */}
             <div className="mb-5">
               <label className="block text-sm text-white/60 mb-2">Primary Use Case</label>
               <div className="relative">
@@ -236,29 +170,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
               </div>
             </div>
 
-            {/* GitHub Username (Optional) */}
-            <div className="mb-5">
-              <label className="block text-sm text-white/60 mb-2">
-                GitHub Username <span className="text-white/40">(optional)</span>
-              </label>
-              <div className="relative">
-                <Github className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={20} />
-                <input
-                  type="text"
-                  value={formData.githubUsername}
-                  onChange={(e) => setFormData({ ...formData, githubUsername: e.target.value })}
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 transition-colors"
-                  placeholder="your-username"
-                />
-              </div>
-              {formData.githubUsername && (
-                <p className="text-xs text-blue-400 mt-2">
-                  💡 We might feature your projects!
-                </p>
-              )}
-            </div>
-
-            {/* Referral Code (Optional) */}
             <div>
               <label className="block text-sm text-white/60 mb-2">
                 Referral Code <span className="text-white/40">(optional)</span>
@@ -274,15 +185,9 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
                   maxLength={10}
                 />
               </div>
-              {formData.referralCode && (
-                <p className="text-xs text-green-400 mt-2">
-                  🎁 Get bonus credits if the code is valid!
-                </p>
-              )}
             </div>
           </div>
 
-          {/* Error Message */}
           {error && (
             <motion.div
               className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3"
@@ -294,7 +199,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
             </motion.div>
           )}
 
-          {/* ✅ RGPD: Privacy Policy & ToS Consent */}
           <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
             <input
               type="checkbox"
@@ -325,7 +229,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
             </label>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -344,13 +247,11 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
             )}
           </button>
 
-          {/* ✅ Neon Auth Social Signup Buttons */}
           <NeonSocialButtons
             userType="developer"
           />
         </form>
 
-        {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-white/60">
             Already have an account?{' '}
@@ -361,29 +262,6 @@ export function SignupDeveloper({ onSuccess, onSwitchToLogin, onBack }: SignupDe
               Log in
             </button>
           </p>
-        </div>
-
-        {/* Features */}
-        <div className="mt-8 p-6 rounded-2xl bg-white/5 border border-white/10">
-          <p className="text-sm text-white/60 mb-3">Developer Benefits:</p>
-          <ul className="space-y-2 text-sm text-white/80">
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              Full API access
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              API key management
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              Usage dashboard & analytics
-            </li>
-            <li className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              Developer documentation
-            </li>
-          </ul>
         </div>
       </motion.div>
     </div>
