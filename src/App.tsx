@@ -15,6 +15,7 @@ import { I18nProvider } from './lib/i18n'; // ✅ NEW: i18n Provider
 import { LandingPage } from './components/landing/LandingPage';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { LoginPage } from './components/auth/LoginPage';
+import { AuthCallback } from './components/auth/AuthCallback';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy'; // ✅ RGPD
 import { TermsOfService } from './components/legal/TermsOfService'; // ✅ RGPD
@@ -648,11 +649,7 @@ function AppContent() {
     
     // ✅ Neon Auth Callback Handler
     if (currentScreen === 'auth-callback') {
-      return (
-        <div className="flex items-center justify-center h-screen bg-black">
-          <div className="animate-pulse text-white/40 text-sm">Synchronisation de la session...</div>
-        </div>
-      );
+      return <AuthCallback />;
     }
     
     // ✅ RGPD: Privacy Policy & Terms of Service

@@ -136,9 +136,9 @@ export function useCoconutAccess(userId: string | null) {
       return;
     }
 
-    // ✅ Skip backend fetch for demo-user - grant default access
-    if (userId === 'demo-user') {
-      console.log('🥥 [useCoconutAccess] Demo-user detected, granting default access');
+    // ✅ Skip backend fetch for demo-user or preview mode - grant default access
+    if (userId === 'demo-user' || userId === 'preview-user') {
+      console.log('🥥 [useCoconutAccess] Demo/Preview user detected, granting default access');
       const demoAccess: CoconutAccessData = {
         hasAccess: true,
         isCreator: true,

@@ -191,20 +191,37 @@ export const neonSignOut = async () => {
 /**
  * OAuth Sign-In
  */
-export const signInWithGoogle = () => auth.signIn.social({
-  provider: 'google',
-  callbackURL: `${API_BASE}/api/auth/callback`,
-  newUserCallbackURL: `${API_BASE}/onboarding`
-});
-export const signInWithGitHub = () => auth.signIn.social({
-  provider: 'github',
-  callbackURL: `${API_BASE}/api/auth/callback`,
-  newUserCallbackURL: `${API_BASE}/onboarding`
-});
-export const signInWithVercel = () => auth.signIn.social({
-  provider: 'vercel',
-  callbackURL: `${API_BASE}/api/auth/callback`,
-  newUserCallbackURL: `${API_BASE}/onboarding`
-});
+export const signInWithGoogle = (type: string = 'individual') => {
+  const callbackURL = new URL(`${window.location.origin}/api/auth/callback`);
+  callbackURL.searchParams.set('type', type);
+
+  return auth.signIn.social({
+    provider: 'google',
+    callbackURL: callbackURL.toString(),
+    newUserCallbackURL: `${window.location.origin}/onboarding`
+  });
+};
+
+export const signInWithGitHub = (type: string = 'individual') => {
+  const callbackURL = new URL(`${window.location.origin}/api/auth/callback`);
+  callbackURL.searchParams.set('type', type);
+
+  return auth.signIn.social({
+    provider: 'github',
+    callbackURL: callbackURL.toString(),
+    newUserCallbackURL: `${window.location.origin}/onboarding`
+  });
+};
+
+export const signInWithVercel = (type: string = 'individual') => {
+  const callbackURL = new URL(`${window.location.origin}/api/auth/callback`);
+  callbackURL.searchParams.set('type', type);
+
+  return auth.signIn.social({
+    provider: 'vercel',
+    callbackURL: callbackURL.toString(),
+    newUserCallbackURL: `${window.location.origin}/onboarding`
+  });
+};
 
 export default auth;

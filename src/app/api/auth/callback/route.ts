@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
+    const userType = searchParams.get('type') || 'individual';
     const state = searchParams.get('state');
     const error = searchParams.get('error');
     const provider = searchParams.get('provider') || 'unknown';
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
           id: userId,
           email,
           name: name || email.split('@')[0],
-          type: 'individual',
+          type: userType as any,
           premiumBalance: 0, // ✅ NEW USERS: NO paid credits
           freeBalance: 25,
           freeBalanceResetAt: now,

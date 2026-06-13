@@ -25,7 +25,7 @@ export function NeonSocialButtons({ userType, companyData, developerData }: Neon
       setIsLoading('google');
       console.log('[NeonSocialButtons] Starting Google sign-in with Neon Auth, userType:', userType);
 
-      await signInWithGoogle();
+      await signInWithGoogle(userType);
     } catch (error: any) {
       console.error('[NeonSocialButtons] Google sign-in error:', error);
       setIsLoading(null);
@@ -38,7 +38,7 @@ export function NeonSocialButtons({ userType, companyData, developerData }: Neon
       setIsLoading('github');
       console.log('[NeonSocialButtons] Starting GitHub sign-in with Neon Auth, userType:', userType);
 
-      await signInWithGitHub();
+      await signInWithGitHub(userType);
     } catch (error: any) {
       console.error('[NeonSocialButtons] GitHub sign-in error:', error);
       setIsLoading(null);

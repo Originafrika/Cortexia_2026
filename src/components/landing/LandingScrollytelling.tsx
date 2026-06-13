@@ -74,13 +74,21 @@ function FixedHeader({ onLogin }: { onLogin?: () => void }) {
         </div>
         <div className="flex items-center gap-4">
           {/* ✅ NEW: Coconut V14 Preview Button */}
-          <a
-            href="/coconut-v14"
+          <button
+            onClick={() => {
+              localStorage.setItem('cortexia_user', JSON.stringify({
+                id: 'preview-user',
+                name: 'Guest Explorer',
+                type: 'enterprise',
+                onboardingComplete: true
+              }));
+              window.location.href = '/coconut-v14';
+            }}
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#F5EBE0]/10 to-[#E3D5CA]/10 border border-[#F5EBE0]/20 hover:border-[#F5EBE0]/40 transition-all text-sm text-[#F5EBE0] flex items-center gap-2"
           >
             <Sparkles size={14} />
             <span>Preview Coconut V14</span>
-          </a>
+          </button>
           <LanguageSwitcher variant="compact" />
           {onLogin && (
             <button
