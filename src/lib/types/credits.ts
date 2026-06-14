@@ -48,7 +48,7 @@ export const CREDIT_PRICING = {
   
   // Paid packages
   PACKAGES: [
-    { credits: 10, price: 0.99, bonus: 0 },      // $0.99 for 10 credits ($0.099/credit)
+    { credits: 10, price: 0.99, bonus: 0 },      // $0.99 for 25 credits ($0.099/credit)
     { credits: 50, price: 4.49, bonus: 5 },      // $4.49 for 55 credits ($0.082/credit)
     { credits: 100, price: 7.99, bonus: 15 },    // $7.99 for 115 credits ($0.069/credit)
     { credits: 250, price: 17.99, bonus: 50 },   // $17.99 for 300 credits ($0.060/credit)

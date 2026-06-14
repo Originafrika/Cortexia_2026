@@ -1,135 +1,115 @@
-// Coconut Model Selector — Dynamic LLM selection based on mode, complexity, and input size.
-// Chooses the optimal LLM for CocoBoard blueprint generation to balance quality vs cost.
+// Coconut Model Selector — Dynamic AI selection and orchestration logic.
+// 2026 Edition: Supporting Long-Form Video, Unified Blueprints, and Creator Tiers.
 
 export type CocoboardMode = 'image' | 'video' | 'campaign';
 
 /**
  * AI MODELS DATABASE
- * Centralized knowledge about available models, their capabilities, and prompting styles.
+ * 2026 Production Suite — Orchestrated via Kie AI
  */
 export const AI_MODELS = {
   // --- IMAGE MODELS ---
   'flux-2-pro': {
     id: 'flux-2-pro',
-    name: 'FLUX.2 Pro (Kie)',
+    name: 'FLUX.2 Pro',
     provider: 'kie',
     type: 'image',
-    capabilities: ['text-rendering', 'photorealism', 'multi-reference'],
-    bestFor: 'Final high-fidelity commercial posters and hero images.',
-    promptingStyle: 'Descriptive, technical camera settings, structural details. Responds well to explicit layout instructions.',
-  },
-  'flux-2-flex': {
-    id: 'flux-2-flex',
-    name: 'FLUX.2 Flex',
-    provider: 'kie',
-    type: 'image',
-    capabilities: ['balanced-speed', 'high-fidelity'],
-    bestFor: 'Fast iterations with professional quality.',
-    promptingStyle: 'Natural language prompts, handles artistic styles well.',
+    capabilities: ['text-perfection', 'ultra-realism', 'commercial-ready'],
+    bestFor: 'High-end brand assets and hero imagery.',
+    blueprintRequired: true,
   },
   'nano-banana-pro': {
     id: 'nano-banana-pro',
     name: 'Nano Banana Pro',
     provider: 'kie',
     type: 'image',
-    capabilities: ['character-consistency', 'skin-tones', 'luxury-aesthetic'],
-    bestFor: 'African subjects, high-end fashion, and consistent brand personas.',
-    promptingStyle: 'Atmospheric, focus on textures (skin, fabric), cinematic lighting descriptions.',
-  },
-  'nano-banana-2': {
-    id: 'nano-banana-2',
-    name: 'Nano Banana 2',
-    provider: 'kie',
-    type: 'image',
-    capabilities: ['fast-iteration', 'i2i', 'compositing'],
-    bestFor: 'Rapid prototyping and complex image-to-image editing.',
-    promptingStyle: 'Direct instructions, focus on changes from reference, composition-heavy.',
+    capabilities: ['character-consistency', 'african-aesthetic', 'luxury-skin'],
+    bestFor: 'Fashion and consistent brand personas.',
+    blueprintRequired: true,
   },
 
   // --- VIDEO MODELS ---
+  'seedance-2-magic': {
+    id: 'seedance-2-magic',
+    name: 'Seedance 2 Magic',
+    provider: 'kie',
+    type: 'video',
+    capabilities: ['long-form', 'scene-consistency', 'audio-reactive'],
+    bestFor: 'Full cinematic ads (up to 3 min) via scene-by-scene orchestration.',
+    blueprintRequired: true,
+    maxDuration: 180, // 3 minutes
+  },
   'kling-3.0-pro': {
     id: 'kling-3.0-pro',
     name: 'Kling 3.0 Pro',
     provider: 'kie',
     type: 'video',
-    capabilities: ['physics-accuracy', 'high-fidelity', 'close-ups'],
-    bestFor: 'Product reveals, hero shots, and complex physical interactions.',
-    promptingStyle: 'High detail on material properties, light refractions, and micro-movements.',
+    capabilities: ['physical-simulation', 'human-motion', '1080p'],
+    bestFor: 'Action-heavy sequences and realistic human interactions.',
+    blueprintRequired: true,
+    maxDuration: 10,
   },
   'wan-2.6': {
     id: 'wan-2.6',
-    name: 'Wan 2.6 Pro',
+    name: 'Wan 2.6 Cinematic',
     provider: 'kie',
     type: 'video',
-    capabilities: ['temporal-stability', '1080p'],
-    bestFor: 'Cinematic sequences requiring high stability across frames.',
-    promptingStyle: 'Director-style instructions, specific camera gear mentions.',
-  },
-  'seedance-1.5': {
-    id: 'seedance-1.5',
-    name: 'Seedance 1.5',
-    provider: 'kie',
-    type: 'video',
-    capabilities: ['audio-sync', 'camera-control'],
-    bestFor: 'Ads with integrated sound design and precise camera paths.',
-    promptingStyle: 'Sync-focused, rhythm-based action descriptions.',
+    capabilities: ['temporal-stability', 'motion-control'],
+    bestFor: 'Smooth, cinematic camera moves and high-stability shots.',
+    blueprintRequired: true,
+    maxDuration: 8,
   },
 } as const;
 
 /**
- * Select the optimal LLM preference for CocoBoard generation based on mode, asset count, and intent length.
+ * CREATOR REWARDS SYSTEM
+ * Rules for unlocking premium Coconut tools
  */
-export function selectCoconutLLM(
-  mode: CocoboardMode,
-  assetCount: number,
-  intentLength: number,
-): 'fast' | 'smart' {
-  if (mode === 'campaign') return 'smart';
-  if (mode === 'video' && assetCount > 3) return 'smart';
-  if (mode === 'video' && intentLength > 200) return 'smart';
-  if (mode === 'video') return 'fast';
-  if (mode === 'image' && assetCount <= 1 && intentLength < 100) return 'fast';
-  if (mode === 'image' && assetCount <= 3) return 'fast';
-  return 'smart';
+export const CREATOR_TIERS = {
+  standard: {
+    label: 'Creator',
+    reqPosts: 0,
+    reqLikes: 0,
+    coconutAccess: 'none',
+  },
+  topCreator: {
+    label: 'Top Creator',
+    reqPosts: 10, // Minimum 10 high-quality posts
+    reqLikes: 100, // Total 100 likes across all posts
+    coconutAccess: 'limited', // 3 generations / month
+  },
+  partner: {
+    label: 'Partner',
+    reqPosts: 50,
+    reqLikes: 1000,
+    coconutAccess: 'extended', // 10 generations / month
+  }
+};
+
+/**
+ * Blueprint Logic: Every mode now requires a Storyboard/Plan.
+ * This function generates the 'Thinking' phase before the 'Doing' phase.
+ */
+export function generateBlueprintMetadata(mode: CocoboardMode, intent: string) {
+  return {
+    version: '2026.1',
+    mode,
+    intent,
+    thinkingPhase: true,
+    requiresSceneConsistency: mode === 'video' || mode === 'campaign',
+    steps: mode === 'image' ? 1 : (mode === 'video' ? 4 : 12), // Video gets 4 scenes by default
+  };
 }
 
-/**
- * Kie AI image generation model IDs mapping.
- */
-export const KIE_IMAGE_IDS: Record<string, string> = {
-  'flux-2-pro':       'flux-2/pro',
-  'flux-2-flex':      'flux-2/flex',
-  'flux-2-dev':       'flux-2/dev',
-  'nano-banana-pro':  'nano-banana-pro',
-  'nano-banana-2':    'nano-banana-2',
+export const KIE_MODEL_MAPPING: Record<string, string> = {
+  'flux-2-pro': 'flux-2/pro',
+  'seedance-2-magic': 'bytedance/seedance-2.0-pro',
+  'kling-3.0-pro': 'kling-3.0/video-pro',
+  'wan-2.6': 'wan/2-6-video',
 };
 
-/**
- * Kie AI video generation model IDs mapping.
- */
-export const KIE_VIDEO_IDS: Record<string, string> = {
-  'kling-3.0-pro':    'kling-3.0/video-pro',
-  'kling-3.0-std':    'kling-3.0/video-std',
-  'wan-2.6':          'wan/2-6-video',
-  'seedance-1.5':     'bytedance/seedance-1.5-pro',
-};
-
-/**
- * Image generation credit costs.
- */
-export const IMAGE_CREDIT_COSTS: Record<string, number> = {
-  'flux-2-pro':          5,
-  'flux-2-flex':         3,
-  'nano-banana-pro':     4,
-  'nano-banana-2':       2,
-};
-
-/**
- * Video generation credit costs per second.
- */
-export const VIDEO_CREDIT_COSTS_PER_SECOND: Record<string, number> = {
-  'kling-3.0-pro': 4,
-  'kling-3.0-std': 2,
-  'wan-2.6':       3,
-  'seedance-1.5':  2,
+export const CREDIT_COSTS = {
+  IMAGE_BASE: 5,
+  VIDEO_PER_SCENE: 20,
+  CAMPAIGN_BASE: 100,
 };

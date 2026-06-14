@@ -172,7 +172,7 @@ const handlePurchaseCredits = async (amount: number, customAmount?: number) => {
 const GENERATION_COSTS = [
   { type: 'Image', icon: ImageIcon, cost: '1 credit', duration: null },
   { type: 'Video 5s', icon: Video, cost: '5 credits', duration: '5s' },
-  { type: 'Video 10s', icon: Video, cost: '10 credits', duration: '10s' },
+  { type: 'Video 10s', icon: Video, cost: '25 credits', duration: '10s' },
   { type: 'Video 15s', icon: Video, cost: '15 credits', duration: '15s' },
 ];
 

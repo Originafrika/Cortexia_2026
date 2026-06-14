@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
         name: name || email.split('@')[0],
         type: type || 'individual',
         premiumBalance: 0,
-        freeBalance: 25,
+        freeBalance: 25, // ✅ ALWAYS 25 CREDITS FOR NEW USERS
         freeBalanceResetAt: now,
         createdAt: now,
         updatedAt: now,

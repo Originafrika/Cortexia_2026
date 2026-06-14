@@ -76,7 +76,7 @@ From simple tools to enterprise orchestration.
 - Sous-titre: "Creators & community members"
 - Icon: User
 - Description courte: "Create, share, earn as creator, unlock Coconut"
-- Badge: "10 free credits"
+- Badge: "25 free credits"
 
 #### **Card 3: Developer 💻**
 - Titre: "Developer"
@@ -152,7 +152,7 @@ Generate images, videos, avatars with AI.
 Become a creator, unlock pro tools, earn rewards.
 
 [Join Community] [Explore Feed]
-10 free credits to start • No credit card required
+25 free credits to start • No credit card required
 ```
 
 **Sections:**
@@ -194,9 +194,9 @@ Become a creator, unlock pro tools, earn rewards.
    - Lifetime commissions
 
 5. **Pricing**
-   - 10 free credits
+   - 25 free credits
    - Pay-as-you-go: $0.10/credit
-   - Minimum 10 credits ($1)
+   - Minimum 25 credits ($1)
 
 6. **CTA Section**
    - [Join Free] [Explore Feed]
@@ -630,7 +630,7 @@ function downloadCreation(creationId, userId) {
 4. Landing Individual personnalisée
    - Feed preview
    - Creator system expliqué
-   - Pricing: 10 free credits
+   - Pricing: 25 free credits
    ↓
 5. Click "Join Community"
    ↓
@@ -640,7 +640,7 @@ function downloadCreation(creationId, userId) {
    - Input: "Referral code (optional)"
    ↓
 7. Account créé (type: individual)
-   - 10 free credits ajoutés
+   - 25 free credits ajoutés
    - Referral code généré: CTX-john-a3f9k
    - If opted in Creator: creator_mode = true
    ↓

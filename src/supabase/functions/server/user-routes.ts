@@ -164,7 +164,7 @@ app.post('/create', async (c) => {
       referredAt,
       referralEarnings: 0,
       referralCount: 0,
-      freeCredits: referredBy ? 35 : 25, // 🎁 BONUS: +10 free credits if referred (35 total) - INDIVIDUAL ONLY
+      freeCredits: referredBy ? 35 : 25, // 🎁 BONUS: +25 free credits if referred (35 total) - INDIVIDUAL ONLY
       paidCredits: 0,
       totalCreditsUsed: 0,
       hasCoconutAccess: false,
@@ -308,7 +308,7 @@ app.post('/create-or-update-auth0', async (c) => {
       referredAt,
       referralEarnings: 0,
       referralCount: 0,
-      freeCredits: referredBy ? 35 : 25, // 🎁 BONUS: +10 free credits if referred (35 total)
+      freeCredits: referredBy ? 35 : 25, // 🎁 BONUS: +25 free credits if referred (35 total)
       paidCredits: 0,
       totalCreditsUsed: 0,
       hasCoconutAccess: false,

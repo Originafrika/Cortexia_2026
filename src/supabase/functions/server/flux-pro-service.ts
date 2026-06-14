@@ -120,7 +120,7 @@ export async function generateWithFluxPro(
       width: dimensions.width,
       height: dimensions.height,
       timeTaken,
-      cost: 10, // 10 credits per image
+      cost: 10, // 25 credits per image
     };
     
   } catch (error) {

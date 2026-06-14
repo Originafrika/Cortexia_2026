@@ -1736,7 +1736,7 @@ function parseGeminiOutput(outputText: string, request: GeminiAnalysisRequest): 
       analysis.recommendations = {
         generationApproach: 'single-pass',
         rationale: 'References are professional quality. Flux 2 Pro can generate everything in a single pass with structured JSON prompt.',
-        alternatives: 'Multi-pass available if adjustments needed (+5-10 credits per pass)',
+        alternatives: 'Multi-pass available if adjustments needed (+5-25 credits per pass)',
       };
     }
     

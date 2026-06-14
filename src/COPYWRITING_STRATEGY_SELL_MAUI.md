@@ -14,7 +14,7 @@
 > **"People don't buy flights to Maui. They buy the sunset, the freedom, the transformation."**
 
 **Applied to Cortexia:**
-- ❌ Don't sell: "Flux 2 Pro API integration with 10 credits per generation"
+- ❌ Don't sell: "Flux 2 Pro API integration with 25 credits per generation"
 - ✅ Sell: "Think a campaign into existence. Conduct creativity like a symphony."
 
 ---

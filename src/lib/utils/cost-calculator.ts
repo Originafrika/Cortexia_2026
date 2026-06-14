@@ -36,7 +36,7 @@ const COSTS = {
   
   // ✅ FIX: Flux 2 Pro Generation Base (was 100, now 5 as specified)
   flux1K: 5,               // 5 credits for 1K generation
-  flux2K: 10,              // 10 credits for 2K generation
+  flux2K: 10,              // 25 credits for 2K generation
   
   // Model multipliers (kept for flexibility)
   modelMultipliers: {
@@ -48,7 +48,7 @@ const COSTS = {
   // Resolution multipliers (deprecated - using direct costs now)
   resolutionMultipliers: {
     '1K': 1.0,             // Direct cost: flux1K = 5 credits
-    '2K': 2.0,             // Direct cost: flux2K = 10 credits (2x)
+    '2K': 2.0,             // Direct cost: flux2K = 25 credits (2x)
   },
   
   // Ratio multipliers (minimal impact, kept for edge cases)

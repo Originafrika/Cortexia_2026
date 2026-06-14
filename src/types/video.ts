@@ -66,9 +66,9 @@ export interface Video1080PResponse {
 export const VIDEO_PRICING = {
   // Veo3 Fast
   veo3_fast: {
-    base: 10, // 10 credits
+    base: 10, // 25 credits
     perImage: 1, // +1 credit per image
-    extend: 10, // 10 credits to extend
+    extend: 10, // 25 credits to extend
   },
   // Veo3 Quality
   veo3: {

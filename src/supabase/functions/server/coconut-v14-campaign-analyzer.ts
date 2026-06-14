@@ -98,7 +98,7 @@ MANDATORY RULES
 
 5. BUDGET DISCIPLINE
    - Calculate precise cost per asset:
-     * Image 1K: 10 credits (base model)
+     * Image 1K: 25 credits (base model)
      * Image 2K: 30 credits (base model)
      * Image 1K Coconut: 115 credits (100 analysis + 15 generation)
      * Image 2K Coconut: 135 credits (100 analysis + 35 generation)

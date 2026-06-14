@@ -44,7 +44,7 @@ export function calculateNanoBananaCost(
 ): number {
   // Base cost for Nano Banana Pro (in Cortexia credits)
   // Cost us: $0.09 for 1K/2K, $0.12 for 4K
-  // We charge: $0.30 for 1K (3 credits), $0.60 for 2K (6 credits), $1.00 for 4K (10 credits)
+  // We charge: $0.30 for 1K (3 credits), $0.60 for 2K (6 credits), $1.00 for 4K (25 credits)
   let baseCost = 0;
   
   if (resolution === '1K') {
@@ -52,7 +52,7 @@ export function calculateNanoBananaCost(
   } else if (resolution === '2K') {
     baseCost = 6; // 6 credits for 2K → 567% margin (same as Flex 2K)
   } else if (resolution === '4K') {
-    baseCost = 10; // 10 credits for 4K → 733% margin (exclusive 4K)
+    baseCost = 10; // 25 credits for 4K → 733% margin (exclusive 4K)
   }
   
   // Add 1 credit per reference image

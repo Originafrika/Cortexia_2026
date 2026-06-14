@@ -43,7 +43,7 @@ export function getKieAIImageCost(
   } else if (model === 'flux-2-flex') {
     baseCost = resolution === '1K' ? 3 : 6; // Flex: 3x Pro pricing (ultra-premium)
   } else if (model === 'nano-banana-pro') {
-    baseCost = resolution === '1K' ? 3 : resolution === '2K' ? 6 : 10; // Nano Banana Pro: 3/6/10 credits
+    baseCost = resolution === '1K' ? 3 : resolution === '2K' ? 6 : 10; // Nano Banana Pro: 3/6/25 credits
   } else {
     baseCost = GENERATION_COSTS.image; // Fallback
   }

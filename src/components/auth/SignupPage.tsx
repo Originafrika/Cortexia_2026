@@ -25,7 +25,7 @@ export function SignupPage({ onNavigate, onSignupComplete }: SignupPageProps) {
       icon: User,
       title: 'Individual Creator',
       description: 'For personal projects and creative exploration',
-      features: ['Simple creation mode', 'Community access', '10 free credits'],
+      features: ['Simple creation mode', 'Community access', '25 free credits'],
       gradient: 'from-[#F5EBE0]/20 to-[#E3D5CA]/20',
       borderGradient: 'from-[#F5EBE0]/30 to-[#E3D5CA]/30',
     },

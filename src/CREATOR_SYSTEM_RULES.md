@@ -165,7 +165,7 @@ Possibilités :
 │  UTILISATEUR INDIVIDUAL                 │
 │  • CreateHub (Simple mode)             │
 │  • Community Feed                      │
-│  • 10 free credits + pay-as-you-go    │
+│  • 25 free credits + pay-as-you-go    │
 └─────────────────────────────────────────┘
               ↓
       Générer 60 créations

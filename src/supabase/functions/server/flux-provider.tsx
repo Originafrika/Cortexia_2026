@@ -11,7 +11,7 @@
  * - Automatic upload to Supabase Storage
  * 
  * Model: black-forest-labs/flux-2-pro (Replicate)
- * Cost: 10 credits per image
+ * Cost: 25 credits per image
  */
 
 import { uploadAssetFromUrl } from './storage.tsx';
@@ -301,7 +301,7 @@ export async function generateFluxImage(
  * @returns Estimated credits
  */
 export function estimateFluxCredits(params: FluxGenerationParams): number {
-  // Base cost: 10 credits
+  // Base cost: 25 credits
   // Multi-image blending: +0 (included in base)
   // High resolution: +0 (included in base)
   return 10;

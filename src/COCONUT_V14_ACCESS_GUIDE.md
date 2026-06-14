@@ -234,7 +234,7 @@ PRICING:
 ### Credit Packages:
 ```
 Normal Users (minimum):
-  → 10 credits = $1.00
+  → 25 credits = $1.00
 
 Enterprise:
   → 10,000 credits = $1,000.00
