@@ -25,7 +25,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider';
 import { useCocoBoardStore } from '../../lib/stores/cocoboard-store';
 import { useBreakpoint } from '../../lib/hooks/useBreakpoint';

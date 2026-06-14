@@ -1,7 +1,7 @@
 // Button Component - Unified button styles across app
 // Fixes: 3 different button patterns, inconsistent sizes, missing states
 
-import { motion, MotionProps } from "framer-motion";
+import { motion, MotionProps } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { forwardRef, ButtonHTMLAttributes } from "react";
 import { cn } from "../../lib/constants/design-system";

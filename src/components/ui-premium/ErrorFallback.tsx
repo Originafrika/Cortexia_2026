@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { AlertCircle, RefreshCw, Home, ArrowLeft, Mail } from 'lucide-react';
 import { AppError, ErrorSeverity, getRecoverySuggestion } from '../../lib/utils/error-handler';
 import tokens from '../../lib/styles/tokens'; // Default import

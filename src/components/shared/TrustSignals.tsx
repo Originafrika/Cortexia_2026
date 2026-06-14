@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Users, Image, Sparkles, TrendingUp } from 'lucide-react';
 import { AnimatedCounter } from './AnimatedCounter';
 

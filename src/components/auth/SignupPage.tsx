@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowLeft, Mail, Lock, User, Sparkles, Building2, Code, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
 

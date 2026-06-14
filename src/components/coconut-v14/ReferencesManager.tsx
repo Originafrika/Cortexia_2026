@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { Upload, X, GripVertical, Image as ImageIcon, AlertCircle, Sparkles } from 'lucide-react';
 import { tokens, TRANSITIONS } from '../../lib/design/tokens';

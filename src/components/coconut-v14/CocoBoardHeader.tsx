@@ -11,7 +11,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 2A: Import sound
 import { ArrowLeft, Save, Download, Zap, Sparkles, AlertCircle, CheckCircle, Loader2, Share2, Eye } from 'lucide-react';
 import { GenerationView } from './GenerationView';

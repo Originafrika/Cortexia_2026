@@ -14,7 +14,7 @@ import { TemplatesGallery } from './TemplatesGallery';
 import { TemplateConfigurator } from './TemplateConfigurator';
 import { CoconutPremiumHeader } from './CoconutPremiumHeader';
 import { ParallaxBackground } from '../shared/ParallaxBackground';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../../lib/contexts/ThemeContext';
 import { toast } from 'sonner';
 

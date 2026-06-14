@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Heart, MessageCircle, Share2 } from 'lucide-react';
 
 interface SignupPromptModalProps {

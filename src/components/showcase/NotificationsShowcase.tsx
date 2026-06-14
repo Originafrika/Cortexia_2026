@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useNotify } from '../coconut-v14/NotificationProvider';
 import { GlassCard } from '../ui/glass-card';
 import { GlassButton } from '../ui/glass-button';

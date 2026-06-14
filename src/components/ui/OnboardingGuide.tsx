@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronRight, ChevronLeft, Sparkles, Check } from 'lucide-react';
 import { createPortal } from 'react-dom';
 

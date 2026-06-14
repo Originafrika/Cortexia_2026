@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup } from 'motion/react';
 import { Toaster } from 'sonner';
 
 // Providers

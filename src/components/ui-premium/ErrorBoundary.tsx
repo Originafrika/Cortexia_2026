@@ -10,7 +10,7 @@
  */
 
 import React, { Component, ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { GlassCard } from '../ui/glass-card';
 import { GlassButton } from '../ui/glass-button';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';

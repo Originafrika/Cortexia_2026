@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { GlassCard } from '../ui/glass-card';
 import { useSoundContext } from '../coconut-v14/SoundProvider';
 import { useCredits } from '../../lib/contexts/CreditsContext';

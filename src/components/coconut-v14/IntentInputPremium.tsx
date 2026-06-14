@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider';
 import { 
   ArrowLeft,

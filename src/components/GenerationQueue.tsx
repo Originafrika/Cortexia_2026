@@ -3,7 +3,7 @@
  * Historique complet des générations (images + vidéos)
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { X, Image as ImageIcon, Video as VideoIcon, Clock, CheckCircle2, XCircle, Loader2, Download, Trash2, RefreshCw, User } from 'lucide-react';
 import { useGenerationQueue, type QueueItem } from '../lib/contexts/GenerationQueueContext';
 import { useSound } from '../lib/hooks/useSound';

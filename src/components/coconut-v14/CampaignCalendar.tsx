@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Calendar, Image as ImageIcon, Video, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import type { GeminiCampaignAnalysisResponse } from '../../lib/types/coconut-v14';
 

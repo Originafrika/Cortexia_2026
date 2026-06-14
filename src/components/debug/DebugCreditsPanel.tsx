@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Bug, RefreshCw, CheckCircle, XCircle, Zap } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 

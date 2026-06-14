@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export function CosmicBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);

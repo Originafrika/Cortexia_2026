@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Check, Sparkles, Users, Search, MessageCircle, Star, Globe, UserPlus } from 'lucide-react';
 
 interface AcquisitionSourceStepProps {

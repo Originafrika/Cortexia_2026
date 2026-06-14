@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3A: Import sound
 import { ArrowRight, Sparkles, RefreshCw, Palette, Zap, Info, Keyboard, Check } from 'lucide-react';
 import { tokens, TRANSITIONS } from '@/lib/design/tokens';

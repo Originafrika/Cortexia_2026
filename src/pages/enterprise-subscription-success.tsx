@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router'; // ✅ FIX: Changed from react-router-dom to react-router
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { CheckCircle, Loader, XCircle } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 

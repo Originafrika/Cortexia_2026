@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, Volume2 } from 'lucide-react';
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';

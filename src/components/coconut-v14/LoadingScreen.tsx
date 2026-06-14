@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Loader2, Sparkles } from 'lucide-react';
 
 interface LoadingScreenProps {

@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ChevronRight, Home } from 'lucide-react';
 import { useSoundContext } from './SoundProvider';
 

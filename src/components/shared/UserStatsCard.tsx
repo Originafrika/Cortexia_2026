@@ -1,7 +1,7 @@
 // UserStatsCard - Display user statistics and personalized recommendations
 // Fixes: Pas d'analytics visible, pas de recommendations
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { TrendingUp, Zap, Clock, Star, DollarSign, Images, Lightbulb } from "lucide-react";
 import { UserStats } from "../../lib/services/analyticsService";
 import { Button } from "../ui/Button";

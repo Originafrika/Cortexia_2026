@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { Modal, Button, Badge } from '@/components/ui-premium';
 import { useAnalytics } from '@/lib/monitoring';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Zap, Palette, Video, Image, CheckCircle2, ArrowRight, X } from 'lucide-react';
 
 // ============================================

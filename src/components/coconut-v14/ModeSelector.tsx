@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useSoundContext } from './SoundProvider'; // 🔊 PHASE 3A: Import sound
 import { Sparkles, Zap, Wand2, Settings, Check, Info, Hand, CheckCircle2 } from 'lucide-react';
 import { tokens, TRANSITIONS } from '../../lib/design/tokens';

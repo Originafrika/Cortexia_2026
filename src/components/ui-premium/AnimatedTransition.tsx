@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'motion/react';
 import { 
   fadeVariants,
   slideVariants,

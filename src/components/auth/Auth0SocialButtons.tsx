@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { loginWithAuth0SDK } from '../../lib/services/auth0-sdk';
 import type { UserType } from '../../lib/contexts/AuthContext';
 import { Ticket } from 'lucide-react';

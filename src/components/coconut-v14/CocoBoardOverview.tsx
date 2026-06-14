@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Palette, Layout, Code, Settings, DollarSign, Lightbulb, FileText, Braces, ImageIcon } from 'lucide-react';
 import { tokens, TRANSITIONS, getStaggerDelay } from '../../lib/design/tokens';
 import { EmptyState, EmptyStatePresets } from '../ui-premium/EmptyState';

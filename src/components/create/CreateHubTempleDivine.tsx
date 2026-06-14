@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Sparkles, Crown, Zap, Palette, Megaphone, Wand2, History, Settings, User } from 'lucide-react';
 import { DivinePromptOrb } from './DivinePromptOrb';
 import { ToolCategory } from './ToolCategory';

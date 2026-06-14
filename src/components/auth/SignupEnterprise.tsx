@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Mail, Lock, User, Building2, Briefcase, Users, Gift, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { NeonSocialButtons } from './NeonSocialButtons';
 import { neonSignUp } from '../../lib/auth';

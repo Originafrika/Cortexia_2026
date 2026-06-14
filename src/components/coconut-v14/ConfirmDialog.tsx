@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, X } from 'lucide-react';
 import { useSoundContext } from './SoundProvider';
 

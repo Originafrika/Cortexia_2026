@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Sparkles, FileImage, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useSound } from '../../lib/hooks/useSound';
 import { useHaptic } from '../../lib/hooks/useHaptic';
 import type { CocoTemplate, TemplateVariable } from '../../lib/templates/coconut-templates';

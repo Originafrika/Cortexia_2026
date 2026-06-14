@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useTranslation } from '../lib/i18n/useTranslation';
 import { Globe } from 'lucide-react';
 

@@ -872,7 +872,7 @@ import { StatsCard } from './components/ui-premium/StatsCard';
 import { ProgressIndicator } from './components/ui-premium/ProgressIndicator';
 
 // Animations
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { fadeVariants, slideVariants } from './lib/animations/transitions';
 ```
 

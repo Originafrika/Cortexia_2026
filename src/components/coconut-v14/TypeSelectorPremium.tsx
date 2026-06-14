@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useSoundContext } from './SoundProvider';
 import { useHaptic } from '../../lib/hooks/useHaptic';
 import { 

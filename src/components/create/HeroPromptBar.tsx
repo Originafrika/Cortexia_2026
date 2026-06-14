@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { Send, Settings2, Image as ImageIcon, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { CustomSelect } from '../shared/CustomSelect';
 
 interface Tool {

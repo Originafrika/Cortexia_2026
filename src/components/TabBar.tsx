@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Home, Search, PlusCircle, MessageCircle, User } from 'lucide-react';
 import type { Screen } from '../App';
 import { useTranslation } from '../lib/i18n'; // ✅ NEW: i18n hook

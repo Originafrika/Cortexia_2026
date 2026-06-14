@@ -3,7 +3,7 @@
  * Shows comprehensive details for a Coconut V10 node with all Creative Intelligence metadata
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Image as ImageIcon, Video, Layers, Sparkles, ChevronRight, 
   Palette, Camera, Film, Target, Lightbulb, Globe, Users

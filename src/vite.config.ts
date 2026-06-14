@@ -29,7 +29,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),
-      'framer-motion': 'motion',
+      'motion/react': 'motion',
     },
   },
 
@@ -72,7 +72,7 @@ export default defineConfig({
           'reactflow': ['reactflow'],
           
           // Motion/Framer Motion (animation library)
-          'motion': ['framer-motion'],
+          'motion': ['motion/react'],
           
           // Lucide icons
           'icons': ['lucide-react'],

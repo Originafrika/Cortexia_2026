@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { useSoundContext } from './SoundProvider';
 

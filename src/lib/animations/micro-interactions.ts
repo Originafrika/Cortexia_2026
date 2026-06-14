@@ -6,7 +6,7 @@
  * BDS: Rhétorique du Message (Communication impactante)
  */
 
-import { Variants, TargetAndTransition } from 'framer-motion';
+import { Variants, TargetAndTransition } from 'motion/react';
 import { TIMING, EASING } from './transitions';
 
 // ============================================

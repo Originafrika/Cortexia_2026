@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Image as ImageIcon, Target } from 'lucide-react';
 import { HistoryManager } from './HistoryManager';
 import { CampaignHistoryManager } from './CampaignHistoryManager';

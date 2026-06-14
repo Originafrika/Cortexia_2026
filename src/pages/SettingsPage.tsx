@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, Bell, Shield, ChevronLeft, LogOut,
   Edit2, Check, X, Camera, Palette, Trophy,

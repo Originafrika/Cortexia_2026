@@ -206,12 +206,12 @@ className="bg-warm-cream/40 backdrop-blur-xl border border-warm-terracotta/20 sh
 
 ### 2.5 Animations & Micro-interactions
 
-**Librairie :** `framer-motion` (ex-Framer Motion)
+**Librairie :** `motion/react` (ex-Framer Motion)
 
 **Presets standards :**
 
 ```tsx
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 // Fade In
 const fadeIn = {

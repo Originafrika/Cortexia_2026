@@ -2,11 +2,11 @@
  * COCONUT V14 - PHASE 4 JOUR 3
  * useAnimation Hook
  * 
- * Hook pour contrôler facilement les animations avec framer-motion
+ * Hook pour contrôler facilement les animations avec motion/react
  * BDS: Logique du Système (Cohérence Cognitive)
  */
 
-import { useAnimationControls, useInView, AnimationControls } from 'framer-motion';
+import { useAnimationControls, useInView, AnimationControls } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { prefersReducedMotion } from '../animations/transitions';
 

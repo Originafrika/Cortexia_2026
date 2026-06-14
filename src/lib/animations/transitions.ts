@@ -6,7 +6,7 @@
  * Basé sur le BDS (Beauty Design System) - Art 6: Musique (Rythme Visuel)
  */
 
-import { Transition, Variant } from 'framer-motion';
+import { Transition, Variant } from 'motion/react';
 
 // ============================================
 // TIMING PRESETS (BDS: Arithmétique - Rythme)

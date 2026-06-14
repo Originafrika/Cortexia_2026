@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Hand, Info, Sparkles } from 'lucide-react';
 import { TRANSITIONS } from '../../lib/design/tokens';
 import type { GenerationMode } from './ModeSelector';

@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useSpring } from 'motion/react';
 import { glassCardVariants, glowPulse } from '../../lib/animations/micro-interactions';
 
 export interface GlassCardProps {

@@ -20,7 +20,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Brain, Zap, Palette, Type, Image, CheckCircle2, Clock } from 'lucide-react';
 import { tokens, TRANSITIONS } from '@/lib/design/tokens';
 import { WORKFLOW_LABELS, formatCredits, formatTime } from '@/lib/i18n/translations';

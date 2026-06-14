@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Check, ChevronDown, ChevronUp, X, Search } from 'lucide-react';
 import { Z_INDEX } from '../../lib/constants/z-index';
 

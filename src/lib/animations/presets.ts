@@ -9,7 +9,7 @@
  * ✅ Accessibility-aware (respects prefers-reduced-motion)
  */
 
-import { Variants, Transition } from 'framer-motion';
+import { Variants, Transition } from 'motion/react';
 
 // ========================================
 // TIMING CONSTANTS (BDS Arithmétique)

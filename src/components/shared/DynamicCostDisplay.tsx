@@ -1,7 +1,7 @@
 // DynamicCostDisplay - Real-time cost breakdown with explanations
 // Fixes: Coût statique, pas de breakdown, pas transparent
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Zap, Images, Crown, Info } from "lucide-react";
 
 interface CostBreakdown {

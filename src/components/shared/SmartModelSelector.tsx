@@ -2,7 +2,7 @@
 // Fixes: Auto-selection invisible, pas d'explication, pas de confiance
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, Crown, Info, Zap, Image as ImageIcon, Wand2 } from "lucide-react";
 
 export type ModelId = 'auto' | 'seedream' | 'nanobanana' | 'flux-schnell' | 'kontext' | 'flux-2-pro' | 'imagen-4';
