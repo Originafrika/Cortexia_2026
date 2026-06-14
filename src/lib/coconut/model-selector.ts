@@ -101,6 +101,23 @@ export function generateBlueprintMetadata(mode: CocoboardMode, intent: string) {
   };
 }
 
+/**
+ * Select the optimal LLM preference for CocoBoard generation based on mode, asset count, and intent length.
+ */
+export function selectCoconutLLM(
+  mode: CocoboardMode,
+  assetCount: number,
+  intentLength: number,
+): 'fast' | 'smart' {
+  if (mode === 'campaign') return 'smart';
+  if (mode === 'video' && assetCount > 3) return 'smart';
+  if (mode === 'video' && intentLength > 200) return 'smart';
+  if (mode === 'video') return 'fast';
+  if (mode === 'image' && assetCount <= 1 && intentLength < 100) return 'fast';
+  if (mode === 'image' && assetCount <= 3) return 'fast';
+  return 'smart';
+}
+
 export const KIE_MODEL_MAPPING: Record<string, string> = {
   'flux-2-pro': 'flux-2/pro',
   'seedance-2-magic': 'bytedance/seedance-2.0-pro',
