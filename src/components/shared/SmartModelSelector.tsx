@@ -2,10 +2,10 @@
 // Fixes: Auto-selection invisible, pas d'explication, pas de confiance
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Sparkles, Crown, Info, Zap, Image as ImageIcon, Wand2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, Crown, Info, Zap, Wand2 } from "lucide-react";
 
-export type ModelId = 'auto' | 'seedream' | 'nanobanana' | 'flux-schnell' | 'kontext' | 'flux-2-pro' | 'imagen-4';
+export type ModelId = 'auto' | 'flux-schnell' | 'flux-2-pro' | 'flux-2-flex' | 'nano-banana-pro' | 'kling-3.0-pro' | 'wan-2.6';
 
 export interface ModelInfo {
   id: ModelId;
@@ -35,68 +35,65 @@ const MODEL_INFO: Record<ModelId, Omit<ModelInfo, 'id'>> = {
     icon: '✨',
     bestFor: 'Optimal results every time'
   },
-  seedream: {
-    name: 'Seedream',
-    description: 'Text-to-image generation',
-    cost: 1,
-    creditType: 'free',
-    icon: '🎨',
-    bestFor: 'Creative concepts and scenes',
-    stats: '95% satisfaction rate'
-  },
-  nanobanana: {
-    name: 'Nanobanana Multi-Fusion',
-    description: 'Combines 2-3 images intelligently',
-    cost: 2,
-    creditType: 'free',
-    icon: '🍌',
-    bestFor: 'Style blending and multi-image fusion',
-    stats: '23% better results than single-image'
-  },
   'flux-schnell': {
     name: 'Flux Schnell',
-    description: 'Fast generation (fallback)',
+    description: 'Ultra-fast high-quality generation',
     cost: 1,
     creditType: 'free',
     icon: '⚡',
-    bestFor: 'Quick generations',
-    stats: 'Sub-10s generation time'
+    bestFor: 'Quick concepts and everyday use',
+    stats: 'Sub-5s generation'
   },
-  kontext: {
-    name: 'Kontext',
-    description: 'Single image enhancement',
-    cost: 1,
-    creditType: 'free',
-    icon: '🖼️',
-    bestFor: 'Image transformations and variations',
-    stats: 'Preserves original composition'
+  'flux-2-flex': {
+    name: 'Flux 2 Flex',
+    description: 'Balanced speed and professional quality',
+    cost: 3,
+    creditType: 'paid',
+    icon: '🎨',
+    bestFor: 'Creative iterations and artistic styles',
+    stats: 'High artistic flexibility'
   },
   'flux-2-pro': {
     name: 'Flux 2 Pro',
-    description: 'Professional-grade quality',
-    cost: 3,
+    description: 'Maximum photorealism and detail',
+    cost: 5,
     creditType: 'paid',
     icon: '👑',
-    bestFor: 'Maximum detail and realism',
-    stats: 'Professional photography quality'
+    bestFor: 'Commercial photography and hero assets',
+    stats: 'Top-tier realism'
   },
-  'imagen-4': {
-    name: 'Imagen 4',
-    description: 'Google\'s latest model',
-    cost: 3,
+  'nano-banana-pro': {
+    name: 'Nano Banana Pro',
+    description: 'Luxury aesthetic & skin tones',
+    cost: 4,
+    creditType: 'paid',
+    icon: '🍌',
+    bestFor: 'African subjects and high-end fashion',
+    stats: 'Best for diverse subjects'
+  },
+  'kling-3.0-pro': {
+    name: 'Kling 3.0 Pro',
+    description: 'Next-gen AI Video',
+    cost: 10,
+    creditType: 'paid',
+    icon: '🎬',
+    bestFor: 'Cinematic movement and realism',
+    stats: 'Physics-accurate motion'
+  },
+  'wan-2.6': {
+    name: 'Wan 2.6 Pro',
+    description: 'Stable cinematic sequences',
+    cost: 8,
     creditType: 'paid',
     icon: '🔮',
-    bestFor: 'Cutting-edge AI generation',
-    stats: 'Industry-leading quality'
+    bestFor: 'Longer videos and high stability',
+    stats: '1080p native quality'
   }
 };
 
 function getAutoSelectedModel(imageCount: number, quality: 'standard' | 'premium'): ModelId {
   if (quality === 'premium') return 'flux-2-pro';
-  if (imageCount === 0) return 'seedream';
-  if (imageCount === 1) return 'kontext';
-  if (imageCount >= 2) return 'nanobanana';
-  return 'seedream';
+  return 'flux-schnell';
 }
 
 function getSelectionReason(imageCount: number, quality: 'standard' | 'premium', model: ModelId): string {
@@ -104,19 +101,7 @@ function getSelectionReason(imageCount: number, quality: 'standard' | 'premium',
     return 'Premium quality selected for professional-grade results with maximum detail and realism.';
   }
   
-  if (imageCount === 0) {
-    return 'Perfect for pure text-to-image generation. Creates stunning visuals from your description alone.';
-  }
-  
-  if (imageCount === 1) {
-    return `You uploaded <strong>1 image</strong>. Kontext will transform it while preserving the original composition and style.`;
-  }
-  
-  if (imageCount >= 2) {
-    return `You uploaded <strong>${imageCount} images</strong>. Nanobanana will intelligently combine their styles, compositions, and elements into a cohesive result. <span class="text-[#6366f1]">23% better results</span> than single-image models.`;
-  }
-  
-  return 'Automatically selected for optimal results.';
+  return 'Fast, reliable model selected for optimal performance and quality balance.';
 }
 
 export function SmartModelSelector({
@@ -132,7 +117,7 @@ export function SmartModelSelector({
     ? getAutoSelectedModel(imageCount, quality)
     : selectedModel;
   
-  const modelInfo = MODEL_INFO[effectiveModel];
+  const modelInfo = MODEL_INFO[effectiveModel] || MODEL_INFO['flux-schnell'];
   const selectionReason = getSelectionReason(imageCount, quality, effectiveModel);
   const isPremium = modelInfo.creditType === 'paid';
 
