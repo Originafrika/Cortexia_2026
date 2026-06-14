@@ -484,7 +484,7 @@ export default {
       }
     },
     "footer": {
-      "copyright": "© 2025 Cortexia. Tous droits réservés.",
+      "copyright": "© 2026 Cortexia. Tous droits réservés.",
       "product": "Produit",
       "company": "Entreprise",
       "legal": "Légal",

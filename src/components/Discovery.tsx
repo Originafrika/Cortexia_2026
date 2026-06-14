@@ -381,7 +381,7 @@ const TOP_CREATORS: Creator[] = [
 const MOCK_CAMPAIGNS: Campaign[] = [
   {
     id: 'campaign-1',
-    title: 'Summer Fashion 2025',
+    title: 'Summer Fashion 2026',
     thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400',
     creator: 'Luna Digital',
     creatorId: 'creator-2',
@@ -411,7 +411,7 @@ const MOCK_CAMPAIGNS: Campaign[] = [
   },
   {
     id: 'campaign-4',
-    title: 'Product Launch 2025',
+    title: 'Product Launch 2026',
     thumbnail: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
     creator: 'Pixel Sage',
     creatorId: 'creator-4',

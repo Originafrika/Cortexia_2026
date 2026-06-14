@@ -80,7 +80,7 @@ const totalCredits = (credits.free || 0) + (credits.paid || 0);
 ```json
 // user:profile:{userId}
 {
-  "referralCode": "JOHN2024",      // Code personnel
+  "referralCode": "JOHN2026",      // Code personnel
   "referrerUserId": "xyz789",      // Qui m'a parrainé
   "referralCount": 3,              // Nombre filleuls
   "referralEarnings": 45.50        // Commissions gagnées ($)
@@ -215,7 +215,7 @@ const totalCredits = (credits.free || 0) + (credits.paid || 0);
 ```typescript
 // GET /user/{userId}/referral-details
 {
-  "referralCode": "JOHN2024",
+  "referralCode": "JOHN2026",
   "referralCount": 3,
   "referralEarnings": 45.50,
   "referrals": [

@@ -216,7 +216,7 @@ export const PORTRAIT_TEMPLATES: Template[] = [
   
   // ===== FACE ENHANCEMENT TEMPLATES - OPTIMIZED FOR ULTRA-SHARP DETAILS =====
   // Ultra-realistic face enhancement with maximum sharpness and identity preservation
-  // Optimized: 2024-12-03 - Added extreme sharpness keywords for crisp facial details
+  // Optimized: 2026-12-03 - Added extreme sharpness keywords for crisp facial details
   
   {
     id: "face-enhance-pro",
@@ -249,7 +249,7 @@ export const PORTRAIT_TEMPLATES: Template[] = [
   
   // ===== UNIVERSAL QUALITY ENHANCER =====
   // Ultimate quality enhancement for ANY content type
-  // Optimized: 2024-12-03 - Universal upscaler with auto-content detection
+  // Optimized: 2026-12-03 - Universal upscaler with auto-content detection
   
   {
     id: "universal-quality-enhancer",

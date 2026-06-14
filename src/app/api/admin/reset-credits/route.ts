@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const { adminKey } = body;
 
     // Simple admin key check (in production, use proper auth)
-    if (adminKey !== 'reset-all-credits-2024') {
+    if (adminKey !== 'reset-all-credits-2026') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

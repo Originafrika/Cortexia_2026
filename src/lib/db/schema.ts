@@ -34,7 +34,7 @@ export const users = pgTable("users", {
   // Stats for eligibility (Rule of 3)
   currentMonthGenerations: integer("current_month_generations").default(0).notNull(),
   currentMonthPublications: integer("current_month_publications").default(0).notNull(),
-  statsMonth: text("stats_month"), // '2024-01' format
+  statsMonth: text("stats_month"), // '2026-01' format
   
   // Fedapay Creator
   fedapayCustomerId: text("fedapay_customer_id"),
@@ -253,7 +253,7 @@ export const creatorCommissions = pgTable("creator_commissions", {
   userId: uuid("user_id").notNull(),
   
   // Eligibility period
-  month: text("month").notNull(), // '2024-01'
+  month: text("month").notNull(), // '2026-01'
   
   // Conditions met?
   generationsCount: integer("generations_count").notNull(), // >= 60?
@@ -327,7 +327,7 @@ export const creatorCoconutUsage = pgTable("creator_coconut_usage", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull(),
   
-  monthYear: text("month_year").notNull(), // '2024-01'
+  monthYear: text("month_year").notNull(), // '2026-01'
   
   // Coconut V14 access count
   cocoBoardCount: integer("cocoboard_count").default(0).notNull(),
@@ -505,7 +505,7 @@ export const usageStats = pgTable("usage_stats", {
   ownerId: uuid("owner_id").notNull(),
   
   // Period
-  period: text("period").notNull(), // '2024-01'
+  period: text("period").notNull(), // '2026-01'
   
   // Stats
   cocoboardsCreated: integer("cocoboards_created").default(0).notNull(),

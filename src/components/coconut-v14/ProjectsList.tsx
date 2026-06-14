@@ -53,8 +53,8 @@ export function ProjectsList({
       name: 'Product Launch Video',
       type: 'video',
       thumbnail: '',
-      createdAt: new Date('2025-12-28'),
-      updatedAt: new Date('2025-12-29'),
+      createdAt: new Date('2026-12-28'),
+      updatedAt: new Date('2026-12-29'),
       status: 'draft'
     },
     {
@@ -62,8 +62,8 @@ export function ProjectsList({
       name: 'Social Media Assets',
       type: 'image',
       thumbnail: '',
-      createdAt: new Date('2025-12-25'),
-      updatedAt: new Date('2025-12-27'),
+      createdAt: new Date('2026-12-25'),
+      updatedAt: new Date('2026-12-27'),
       status: 'analyzing'
     }
   ];

@@ -88,7 +88,7 @@ GET /make-server-e55aa214/credits/:userId
   "credits": {
     "free": 24,
     "paid": 150,
-    "lastReset": "2025-12-01T00:00:00.000Z"
+    "lastReset": "2026-12-01T00:00:00.000Z"
   },
   "daysUntilReset": 15
 }
@@ -155,7 +155,7 @@ POST /make-server-e55aa214/credits/add
   "credits": {
     "free": 25,
     "paid": 250,
-    "lastReset": "2025-12-01T00:00:00.000Z"
+    "lastReset": "2026-12-01T00:00:00.000Z"
   }
 }
 ```

@@ -1,5 +1,5 @@
-import { db } from '../src/lib/db';
-import { users } from '../src/lib/db/schema';
+import { db } from '../../src/lib/db';
+import { users } from '../../src/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export default async function handler(req: any, res: any) {
@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
         accountType: user[0].type || 'individual',
         coconutGenerationsRemaining: 1500,
         coconutGenerationsUsed: 0,
-        expiresAt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()
+        expiresAt: new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()).toISOString()
       });
     } catch (error) {
       console.error('[CoconutAccess] Error:', error);

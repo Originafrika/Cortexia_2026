@@ -704,7 +704,7 @@ Input utilisateur :
 - Assets disponibles : Logos, chartes graphiques, photos produits, etc.
 
 Exemple :
-"Campagne de lancement Q1 2025 pour notre gamme de cosmétiques naturels 'Pure Essence'. 
+"Campagne de lancement Q1 2026 pour notre gamme de cosmétiques naturels 'Pure Essence'.
 Cible : Femmes 25-45 ans, sensibles à l'écologie. Canaux : Instagram, Facebook, 
 Google Ads, magazines beauté. Durée : 6 semaines. Budget : 5000 crédits.
 Objectif : 10k conversions site web. Assets fournis : logos, photos produits, 
@@ -746,7 +746,7 @@ Rendu structuré par semaines :
 🚀 CocoBoard Campagne - Pure Essence Launch
 
 📊 VUE D'ENSEMBLE
-Période : 6 semaines (6 jan - 16 fév 2025)
+Période : 6 semaines (6 jan - 16 fév 2026)
 Objectif : 10 000 conversions site web
 Contenus totaux : 24 assets (16 images + 8 vidéos)
 Budget : 4 850 crédits (dans limite des 5000)
@@ -999,7 +999,7 @@ Brief détaillé :
   symbolisant programme "1 achat = 1 arbre planté"
   Shot 4 (15-20s) : Infographie animée élégante apparaissant sur fond
   nature : "76% ingrédients bio | 100% packaging recyclable | 
-  Certifié B-Corp | 1000 arbres plantés en janvier 2025"
+  Certifié B-Corp | 1000 arbres plantés en janvier 2026"
 Audio : Musique inspirante crescendo, sons de nature (oiseaux, vent doux)
   Voix-off posée et convaincante : "Pure Essence, c'est un engagement.
   Pour votre peau et pour notre planète. Ensemble, cultivons le futur."
@@ -1227,7 +1227,7 @@ Workflow de production automatisé et orchestré :
 
 1. **Initialisation** (Jour J)
    - Création du projet campagne dans Coconut Dashboard
-   - Attribution d'un ID unique : `campaign_pure_essence_q1_2025`
+   - Attribution d'un ID unique : `campaign_pure_essence_q1_2026`
    - Lock du budget : 4 975 crédits réservés
    - Génération du planning de production optimisé
 

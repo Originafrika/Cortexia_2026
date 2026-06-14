@@ -194,5 +194,5 @@ const defaultParams = {
 
 ---
 
-**Last Updated:** December 2024  
+**Last Updated:** December 2026
 **Stack:** Frontend → Backend → Pollinations Enterprise API

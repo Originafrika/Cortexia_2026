@@ -46,7 +46,7 @@
   "totalPublications": 15,        // Posts publiés
   
   // ✅ PARRAINAGE (KV Store)
-  "referralCode": "JOHN2024",     // Code personnel
+  "referralCode": "JOHN2026",     // Code personnel
   "referrerUserId": "xyz789",     // Qui m'a parrainé
   "referralCount": 3,             // Nombre filleuls
   "referralEarnings": 45.50       // Commissions gagnées ($)

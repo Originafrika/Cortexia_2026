@@ -108,7 +108,7 @@ const PROVIDER_MAP = {
 {
   'credits:user123:free': 25,      // Free credits (reset monthly)
   'credits:user123:paid': 150,     // Paid credits (purchased)
-  'credits:user123:lastReset': '2025-12-01'
+  'credits:user123:lastReset': '2026-12-01'
 }
 ```
 

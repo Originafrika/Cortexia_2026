@@ -28,7 +28,7 @@
 ```json
 {
   "success": true,
-  "referralCode": "JOHN2024",
+  "referralCode": "JOHN2026",
   "referralCount": 3,
   "referralEarnings": 45.50,
   "referrals": [
@@ -447,7 +447,7 @@ curl -X GET \
 # Expected response
 {
   "success": true,
-  "referralCode": "JOHN2024",
+  "referralCode": "JOHN2026",
   "referralCount": 3,
   "referralEarnings": 45.50,
   "referrals": [

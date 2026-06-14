@@ -28,7 +28,7 @@
 ```json
 {
   "success": true,
-  "referralCode": "JOHN2024",
+  "referralCode": "JOHN2026",
   "referralCount": 3,
   "referralEarnings": 45.50,
   "referrals": [{
@@ -295,7 +295,7 @@ setActiveTab('origins');
 
 // Vérifications:
 ✅ Section "Parrainage" visible après "Origins Info"
-✅ Code de parrainage affiché (format: JOHN2024)
+✅ Code de parrainage affiché (format: JOHN2026)
 ✅ Bouton "Copier" présent
 ✅ Badge "10%" commission
 ✅ Count filleuls correct
@@ -369,7 +369,7 @@ curl -X GET \
 # Expected response:
 {
   "success": true,
-  "referralCode": "TEST2024",
+  "referralCode": "TEST2026",
   "referralCount": 2,
   "referralEarnings": 25.30,
   "referrals": [

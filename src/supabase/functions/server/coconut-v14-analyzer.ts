@@ -3,7 +3,7 @@
  * Supabase Edge Function for Gemini creative analysis
  * 
  * ✅ FIXED: Removed dead code (lines 1627-1644) that prevented deployment
- * 🔄 REBUILT: 2025-12-29 - Clean rebuild without corrupted code
+ * 🔄 REBUILT: 2026-12-29 - Clean rebuild without corrupted code
  */
 
 import type { Context } from 'npm:hono';

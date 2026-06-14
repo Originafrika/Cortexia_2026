@@ -73,7 +73,7 @@ export function FormattedDate({
  * 
  * // Basic date
  * <FormattedDate date={project.createdAt} />
- * // → "30 déc. 2024"
+ * // → "30 déc. 2026"
  * 
  * // Relative time
  * <FormattedDate date={project.updatedAt} format="relative" />
@@ -89,12 +89,12 @@ export function FormattedDate({
  *   locale="en-US" 
  *   style="long"
  * />
- * // → "December 30, 2024"
+ * // → "December 30, 2026"
  * 
  * // With time included
  * <FormattedDate 
  *   date={project.createdAt} 
  *   includeTime={true}
  * />
- * // → "30 déc. 2024 à 14:30"
+ * // → "30 déc. 2026 à 14:30"
  */

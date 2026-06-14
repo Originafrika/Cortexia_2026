@@ -237,10 +237,10 @@ export const BRAND_DESIGN_DNA = {
 };
 
 // ============================================================================
-// DESIGN TRENDS 2024-2025
+// DESIGN TRENDS 2026-2026
 // ============================================================================
 
-export const DESIGN_TRENDS_2025 = {
+export const DESIGN_TRENDS_2026 = {
   
   maximal_chaos_controlled: {
     name: "Controlled Chaos / Maximalism",
@@ -595,23 +595,23 @@ export function getBrandReference(businessType: string, style: string): any {
 export function getTrendRecommendation(targetAudience: string, goal: string): any {
   
   if (targetAudience.includes('Gen Z') || targetAudience.includes('youth')) {
-    return DESIGN_TRENDS_2025.y2k_revival;
+    return DESIGN_TRENDS_2026.y2k_revival;
   }
   
   if (targetAudience.includes('eco') || targetAudience.includes('sustainable')) {
-    return DESIGN_TRENDS_2025.sustainable_earthy;
+    return DESIGN_TRENDS_2026.sustainable_earthy;
   }
   
   if (goal === 'brand_awareness' || goal === 'attention') {
-    return DESIGN_TRENDS_2025.maximal_chaos_controlled;
+    return DESIGN_TRENDS_2026.maximal_chaos_controlled;
   }
   
   if (goal === 'luxury' || goal === 'premium') {
-    return DESIGN_TRENDS_2025.holographic_iridescent;
+    return DESIGN_TRENDS_2026.holographic_iridescent;
   }
   
   // Default: organic blob shapes (safe modern choice)
-  return DESIGN_TRENDS_2025.organic_blob_shapes;
+  return DESIGN_TRENDS_2026.organic_blob_shapes;
 }
 
 /**

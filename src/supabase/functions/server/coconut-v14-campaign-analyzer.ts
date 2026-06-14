@@ -179,14 +179,14 @@ Return this EXACT structure:
   },
   "timeline": {
     "totalWeeks": 6,
-    "startDate": "2025-01-13",
-    "endDate": "2025-02-23"
+    "startDate": "2026-01-13",
+    "endDate": "2026-02-23"
   },
   "weeks": [
     {
       "weekNumber": 1,
-      "startDate": "2025-01-13",
-      "endDate": "2025-01-19",
+      "startDate": "2026-01-13",
+      "endDate": "2026-01-19",
       "objective": "Week strategic objective",
       "theme": "Week creative theme",
       "channels": ["instagram", "facebook"],
@@ -219,7 +219,7 @@ Return this EXACT structure:
       "targetAudience": "Urban professionals 25-35, early adopters, value design and function",
       "channels": ["instagram", "facebook"],
       "placementRecommendations": "Instagram Feed (1:1), Facebook Ad carousel lead position",
-      "scheduledDate": "2025-01-13",
+      "scheduledDate": "2026-01-13",
       "scheduledTime": "18:00",
       "creativeBrief": "Create hero launch image showcasing product in authentic urban lifestyle context. Target audience is design-conscious urban professionals who value products that blend seamlessly into their fast-paced lives. Visual should feel aspirational yet authentic, warm yet modern. Product should be the hero but naturally integrated into scene. Use warm golden hour lighting and city environment to create emotional connection. This is the campaign anchor image that sets visual tone for entire launch.",
       "estimatedCost": 135,

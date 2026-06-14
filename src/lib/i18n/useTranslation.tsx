@@ -45,7 +45,7 @@ function getNestedValue(obj: any, path: string): any {
 
 /**
  * Replace parameters in translation string
- * Example: "Expires: {date}" with {date: "2024-01-22"} -> "Expires: 2024-01-22"
+ * Example: "Expires: {date}" with {date: "2026-01-22"} -> "Expires: 2026-01-22"
  */
 function interpolate(text: string, params?: TranslationParams): string {
   if (!params) return text;

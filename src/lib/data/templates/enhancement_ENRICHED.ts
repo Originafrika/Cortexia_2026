@@ -256,7 +256,7 @@ export const ENHANCEMENT_TEMPLATES_ENRICHED: Template[] = [
       subText: {
         enabled: true,
         label: "Campaign Theme",
-        placeholder: "e.g., Summer Collection 2025"
+        placeholder: "e.g., Summer Collection 2026"
       },
       style: {
         enabled: true,

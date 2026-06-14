@@ -415,7 +415,7 @@ export const YOUTUBE_THUMBNAIL_TEMPLATE: CocoTemplate = {
       label: 'Video Topic',
       type: 'text',
       required: true,
-      placeholder: 'e.g., 10 Best AI Tools for 2024'
+      placeholder: 'e.g., 10 Best AI Tools for 2026'
     },
     {
       key: 'emotion',

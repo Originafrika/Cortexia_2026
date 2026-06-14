@@ -428,7 +428,7 @@ Structure clé-valeur flexible pour stocker :
     userType: "individual",
     credits: 25,
     referralCode: "ALICE2026",
-    referredBy: "BOB2025",
+    referredBy: "BOB2026",
     creatorStats: {
       month: "2026-01",
       creationsCount: 37,
@@ -669,7 +669,7 @@ const COCONUT_COSTS = {
 
 ```typescript
 // Format: FIRSTNAME + YEAR (unique)
-// Examples: ALICE2026, BOB2025, CHARLIE2026B
+// Examples: ALICE2026, BOB2026, CHARLIE2026B
 function generateReferralCode(firstName: string): string {
   const year = new Date().getFullYear();
   const base = `${firstName.toUpperCase()}${year}`;

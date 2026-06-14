@@ -236,14 +236,14 @@ export function getMonthName(
  * 
  * // Basic formatting
  * formatDate(new Date(), { locale: 'fr-FR', style: 'medium' })
- * // → "30 déc. 2024"
+ * // → "30 déc. 2026"
  * 
  * formatDate(new Date(), { locale: 'en-US', style: 'long' })
- * // → "December 30, 2024"
+ * // → "December 30, 2026"
  * 
  * // With time
  * formatDate(new Date(), { locale: 'fr-FR', style: 'medium', includeTime: true })
- * // → "30 déc. 2024 à 14:30"
+ * // → "30 déc. 2026 à 14:30"
  * 
  * // Relative time
  * formatRelativeTime(new Date(Date.now() - 2 * 60 * 60 * 1000), { locale: 'fr-FR' })
@@ -260,8 +260,8 @@ export function getMonthName(
  * // → "2:30 PM"
  * 
  * // Date range
- * formatDateRange(new Date('2024-12-01'), new Date('2024-12-31'), { locale: 'fr-FR' })
- * // → "1 déc. - 31 déc. 2024"
+ * formatDateRange(new Date('2026-12-01'), new Date('2026-12-31'), { locale: 'fr-FR' })
+ * // → "1 déc. - 31 déc. 2026"
  * 
  * // Day/Month names
  * getDayName(new Date(), { locale: 'fr-FR', format: 'long' })

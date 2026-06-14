@@ -1,7 +1,7 @@
 /**
  * POLLINATIONS AI SERVICE - Free Tier
  * 
- * Based on official Pollinations pricing (April 2025):
+ * Based on official Pollinations pricing (April 2026):
  * - Seed tier: 0.15 pollen/hour = 3.6$/day of free generations
  * - Tier grants used first, then purchased pollen
  * - PAID models require purchased pollen only

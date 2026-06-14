@@ -43,7 +43,7 @@ export const DESIGN_TEMPLATES: Template[] = [
     tags: ["vintage", "retro", "80s", "poster"],
     customizationConfig: {
       mainText: { enabled: true, label: "Poster Title", placeholder: "SYNTHWAVE NIGHT" },
-      subText: { enabled: true, label: "Subtitle", placeholder: "Live Concert 2025" },
+      subText: { enabled: true, label: "Subtitle", placeholder: "Live Concert 2026" },
       customPrompt: { enabled: true, label: "Theme & Style", placeholder: "e.g., 80s neon, vaporwave sunset, retro arcade..." },
       style: { enabled: true }
     }
