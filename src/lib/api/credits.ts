@@ -42,7 +42,7 @@ export async function getUserCredits(
     return {
       success: true,
       credits: {
-        free: 10,
+        free: 25,
         paid: 0,
         lastReset: new Date().toISOString()
       },
