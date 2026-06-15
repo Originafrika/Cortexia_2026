@@ -1,5 +1,5 @@
-import { db } from '../src/lib/db';
-import { users } from '../src/lib/db/schema';
+import { db } from '../../src/lib/db';
+import { users } from '../../src/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 export default async function handler(req: any, res: any) {
@@ -14,9 +14,9 @@ export default async function handler(req: any, res: any) {
         success: true,
         message: 'Generation tracked successfully'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[CoconutTrack] Error:', error);
-      return res.status(500).json({ error: 'Failed to track generation' });
+      return res.status(500).json({ error: 'Failed to track generation', details: error.message });
     }
   } else {
     res.setHeader('Allow', ['POST']);

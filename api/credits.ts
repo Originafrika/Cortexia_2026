@@ -17,9 +17,9 @@ export default async function handler(req: any, res: any) {
           total: (user[0].premiumBalance || 0) + (user[0].freeBalance || 0)
         }
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('[Credits API] Error:', e);
-      return res.status(500).json({ error: 'Database connection failed' });
+      return res.status(500).json({ error: 'Database connection failed', details: e.message });
     }
   } else if (req.method === 'POST') {
     const { userId, amount, type } = req.body;
@@ -35,9 +35,9 @@ export default async function handler(req: any, res: any) {
 
       await db.update(users).set({ [creditColumn]: newVal }).where(eq(users.id, userId));
       return res.status(200).json({ success: true, newBalance: newVal });
-    } catch (e) {
+    } catch (e: any) {
       console.error('[Credits API] Update Error:', e);
-      return res.status(500).json({ error: 'Failed to update credits' });
+      return res.status(500).json({ error: 'Failed to update credits', details: e.message });
     }
   } else {
     res.setHeader('Allow', ['GET', 'POST']);

@@ -51,10 +51,12 @@ export default async function handler(req: any, res: any) {
 
         // Return to frontend callback component
         return res.redirect(`${baseUrl}/auth-callback?token=${token}&userId=${userId}`);
-      } catch (e) {
+      } catch (e: any) {
+        console.error('[AuthCallback] Sync Error:', e);
         return res.redirect(`${baseUrl}/login?error=sync_failed`);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[AuthCallback] Global Error:', error);
       return res.redirect(`/login?error=callback_failed`);
     }
   } else {

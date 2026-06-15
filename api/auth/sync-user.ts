@@ -35,7 +35,7 @@ export default async function handler(req: any, res: any) {
         id: userId,
         email,
         name: name || email.split('@')[0],
-        type: type || 'individual',
+        type: (type || 'individual') as any,
         premiumBalance: 0,
         freeBalance: 25,
         createdAt: now,
@@ -43,9 +43,9 @@ export default async function handler(req: any, res: any) {
       }).returning();
 
       return res.status(200).json({ success: true, user: newUser[0] });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[SyncUser] Critical Error:', error);
-      return res.status(500).json({ error: 'Failed to sync user to database', details: error.message });
+      return res.status(500).json({ error: 'Failed to sync user to database', details: error?.message || 'Unknown error' });
     }
   } else {
     res.setHeader('Allow', ['POST']);

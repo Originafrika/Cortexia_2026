@@ -20,8 +20,8 @@ export default async function handler(req: any, res: any) {
       if (user.length === 0) return res.status(404).json({ error: 'User not found' });
 
       return res.status(200).json({ user: user[0] });
-    } catch (error) {
-      console.error('[API Me] Error:', error);
+    } catch (error: any) {
+      console.error('[Me API] Error:', error);
       return res.status(401).json({ error: 'Authentication failed' });
     }
   } else {
