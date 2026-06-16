@@ -21,7 +21,7 @@ export default async function handler(req: any, res: any) {
 
       return res.status(200).json({ user: user[0] });
     } catch (error: any) {
-      console.error('[Me API] Error:', error);
+      console.error('[API Me] Error:', error);
       return res.status(401).json({ error: 'Authentication failed' });
     }
   } else {

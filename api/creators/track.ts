@@ -14,9 +14,9 @@ export default async function handler(req: any, res: any) {
         success: true,
         message: 'Generation tracked successfully'
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('[CoconutTrack] Error:', error);
-      return res.status(500).json({ error: 'Failed to track generation', details: error.message });
+      return res.status(500).json({ error: 'Failed to track generation' });
     }
   } else {
     res.setHeader('Allow', ['POST']);

@@ -90,21 +90,19 @@ export default async function handler(req: any, res: any) {
             model: model,
             creditsUsed: 5
           });
-        } catch (error: any) {
+        } catch (error) {
           console.error('[Generation] Kie AI error:', error);
           return res.status(500).json({
             success: false,
-            error: 'Paid generation failed',
-            details: error.message
+            error: 'Paid generation failed'
           });
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('[Generation] Error:', error);
       return res.status(500).json({
         success: false,
-        error: 'Generation failed',
-        details: error.message
+        error: 'Generation failed'
       });
     }
   } else if (req.method === 'GET') {

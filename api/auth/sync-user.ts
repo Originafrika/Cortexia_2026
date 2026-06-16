@@ -45,7 +45,7 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, user: newUser[0] });
     } catch (error: any) {
       console.error('[SyncUser] Critical Error:', error);
-      return res.status(500).json({ error: 'Failed to sync user to database', details: error?.message || 'Unknown error' });
+      return res.status(500).json({ error: 'Failed to sync user to database', details: error.message });
     }
   } else {
     res.setHeader('Allow', ['POST']);
