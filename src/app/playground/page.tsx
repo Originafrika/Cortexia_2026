@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { MODEL_CATALOG } from "@/lib/kie-ai";
 
 interface Message {
   role: "user" | "assistant";
@@ -62,10 +63,10 @@ export default function PlaygroundPage() {
           </p>
           <div className="flex flex-wrap gap-2">
             <span className="text-xs text-zinc-500 self-center mr-1">Mode avancé :</span>
-            <Link href="/playground/text" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">✍️ Texte</Link>
-            <Link href="/playground/image" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎨 Image</Link>
-            <Link href="/playground/audio" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎵 Audio</Link>
-            <Link href="/playground/video" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎬 Vidéo</Link>
+            <Link href="/playground/text" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">✍️ Texte ({MODEL_CATALOG.text.length})</Link>
+            <Link href="/playground/image" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎨 Image ({MODEL_CATALOG.image.length})</Link>
+            <Link href="/playground/audio" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎵 Audio ({MODEL_CATALOG.audio.length})</Link>
+            <Link href="/playground/video" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎬 Vidéo ({MODEL_CATALOG.video.length})</Link>
             <Link href="/playground/models" className="px-3 py-1.5 rounded-md text-xs font-medium bg-[#7850ff]/10 border border-[#7850ff]/20 text-[#a78bfa] hover:bg-[#7850ff]/20 transition-colors">Voir tous les modèles →</Link>
           </div>
         </div>

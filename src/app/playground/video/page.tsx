@@ -1,8 +1,10 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ModelPlayground } from "@/components/model-playground";
+import { MODEL_CATALOG } from "@/lib/kie-ai";
 
 export default function VideoPage() {
+  const models = MODEL_CATALOG.video;
   return (
     <>
       <Header />
@@ -11,15 +13,13 @@ export default function VideoPage() {
         icon="🎬"
         title="Vidéo"
         params={[
-          { key: "model", label: "Modèle", type: "select", default: "runway", options: [
-            { value: "runway", label: "Runway Gen-3" },
-            { value: "kling", label: "Kling 1.5" },
-            { value: "pika", label: "Pika 2.0" },
-          ]},
+          { key: "model", label: "Modèle", type: "select", default: models[0].id, options: models.map((m) => ({ value: m.id, label: `${m.provider} — ${m.name}` })) },
           { key: "duration", label: "Durée", type: "select", default: "5", options: [
             { value: "5", label: "5 secondes" },
             { value: "10", label: "10 secondes" },
             { value: "15", label: "15 secondes" },
+            { value: "30", label: "30 secondes" },
+            { value: "60", label: "60 secondes" },
           ]},
           { key: "resolution", label: "Résolution", type: "select", default: "1080p", options: [
             { value: "720p", label: "720p" },
@@ -32,7 +32,7 @@ export default function VideoPage() {
             { value: "anime", label: "Anime" },
             { value: "realistic", label: "Réaliste" },
           ]},
-          { key: "seed", label: "Seed", type: "number", min: 0, max: 999999, default: 42 },
+          { key: "seed", label: "Seed", type: "number", min: 0, max: 999999, default: 0 },
         ]}
       />
       <Footer />

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generate, getModels } from "@/lib/kie-ai";
+import { MODEL_CATALOG, estimateCost } from "@/lib/kie-ai";
 
 export async function POST(req: Request) {
   try {
@@ -10,9 +10,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "prompt and type are required" }, { status: 400 });
     }
 
-    const result = await generate({ prompt, model, type, params });
+    const cost = model ? estimateCost(model) : 0;
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      id: crypto.randomUUID(),
+      output: `[${type}] Généré : "${prompt}"`,
+      model: model ?? "unknown",
+      type,
+      cost,
+    });
   } catch (err) {
     console.error("Generate error:", err);
     return NextResponse.json(
@@ -23,14 +29,5 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  try {
-    const models = await getModels();
-    return NextResponse.json(models);
-  } catch (err) {
-    console.error("Models error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to fetch models" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(MODEL_CATALOG);
 }

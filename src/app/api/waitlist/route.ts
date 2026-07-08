@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { waitlist } from "@/lib/schema";
 
 export async function POST(req: Request) {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email and country are required" }, { status: 400 });
     }
 
-    const entry = await db
+    const entry = await getDb()
       .insert(waitlist)
       .values({ email, country })
       .onConflictDoNothing()

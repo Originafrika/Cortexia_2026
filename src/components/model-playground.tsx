@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import { MODEL_CATALOG, estimateCost, type ModelInfo } from "@/lib/kie-ai";
 
 interface Param {
   key: string;
@@ -16,7 +17,7 @@ interface Param {
 }
 
 interface ModelPlaygroundProps {
-  modelType: string;
+  modelType: "text" | "image" | "audio" | "video";
   icon: string;
   title: string;
   params: Param[];
@@ -33,6 +34,12 @@ export function ModelPlayground({ modelType, icon, title, params }: ModelPlaygro
   const [loading, setLoading] = useState(false);
   const [cost, setCost] = useState<number | null>(null);
 
+  const selectedModelId = String(values.model ?? "");
+  const modelInfo: ModelInfo | undefined = useMemo(
+    () => MODEL_CATALOG[modelType]?.find((m) => m.id === selectedModelId),
+    [modelType, selectedModelId]
+  );
+
   function updateParam(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
@@ -42,9 +49,13 @@ export function ModelPlayground({ modelType, icon, title, params }: ModelPlaygro
     setLoading(true);
     setResult(null);
 
+    const modelCost = modelInfo
+      ? estimateCost(modelInfo.id)
+      : modelType === "text" ? 0.05 : modelType === "image" ? 0.03 : modelType === "audio" ? 0.03 : 0.06;
+
     setTimeout(() => {
       setResult(`**${title} généré**\n\nPrompt : "${prompt}"\n\nParamètres : ${JSON.stringify(values, null, 2)}\n\n*Mode démo — la connexion Kie AI est en cours.*`);
-      setCost(modelType === "text" ? 0.05 : modelType === "image" ? 0.10 : modelType === "audio" ? 0.15 : 0.50);
+      setCost(modelCost);
       setLoading(false);
     }, 1500);
   }
@@ -95,6 +106,47 @@ export function ModelPlayground({ modelType, icon, title, params }: ModelPlaygro
 
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-white">Paramètres</h3>
+          {modelInfo && (
+            <div className="rounded-lg bg-white/5 border border-white/10 p-3 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Fournisseur</span>
+                <span className="text-zinc-200">{modelInfo.provider}</span>
+              </div>
+              {modelInfo.pricePerReq !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Prix</span>
+                  <span className="text-[#a78bfa]">${modelInfo.pricePerReq.toFixed(4)}/req</span>
+                </div>
+              )}
+              {modelInfo.pricePerImg !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Prix</span>
+                  <span className="text-[#a78bfa]">${modelInfo.pricePerImg.toFixed(3)}/img</span>
+                </div>
+              )}
+              {modelInfo.pricePerSec !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Prix</span>
+                  <span className="text-[#a78bfa]">${modelInfo.pricePerSec.toFixed(3)}/sec</span>
+                </div>
+              )}
+              {modelInfo.inputPrice !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Input</span>
+                  <span className="text-[#a78bfa]">${modelInfo.inputPrice}/M tokens</span>
+                </div>
+              )}
+              {modelInfo.outputPrice !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Output</span>
+                  <span className="text-[#a78bfa]">${modelInfo.outputPrice}/M tokens</span>
+                </div>
+              )}
+              {modelInfo.description && (
+                <p className="text-zinc-500 pt-1 border-t border-white/5 mt-1">{modelInfo.description}</p>
+              )}
+            </div>
+          )}
           {params.map((p) => (
             <div key={p.key}>
               <label className="text-xs text-zinc-400 font-medium mb-1.5 block">
