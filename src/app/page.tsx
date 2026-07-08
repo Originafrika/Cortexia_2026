@@ -19,9 +19,9 @@ export default function Home() {
               Un seul <span className="gradient-text">playground</span>.
             </h1>
             <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-              Texte, image, audio, vidéo — génère ce que tu veux avec les meilleurs modèles.
-              Paie uniquement ce que tu génères, même par Mobile Money.
-              Pas d&apos;abonnement, pas de carte bancaire nécessaire.
+              Tous les modèles d&apos;IA — texte, image, audio, vidéo — dans un seul playground.
+              Aucun abonnement : paie uniquement ce que tu génères, par Mobile Money,
+              carte bancaire ou crypto. Aucune plateforme ne faisait ça avant.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Link
@@ -47,16 +47,17 @@ export default function Home() {
               Pourquoi Cortexia existe
             </h2>
             <p className="text-zinc-400 max-w-xl mx-auto">
-              Les créateurs des marchés émergents n&apos;ont aucun moyen d&apos;utiliser l&apos;IA de pointe
-              sans carte bancaire internationale et sans abonnement. Cortexia change ça.
+              Aujourd&apos;hui, utiliser les meilleurs modèles d&apos;IA sans abonnement
+              et sans jongler entre 5 plateformes est impossible. Cortexia est le premier
+              playground qui réunit tout — sans abonnement, sans compromis.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: "💳", title: "Pas de CB ? Pas de problème", desc: "Paiement par Mobile Money (Wave, Orange Money, MTN). Pas besoin de carte Visa." },
-              { icon: "📦", title: "Pas d'abonnement", desc: "Tu paies ce que tu génères. Pas de forfait, pas de crédits qui expirent." },
-              { icon: "🎨", title: "Toutes les modalités", desc: "Texte, image, audio, vidéo — tous les modèles dans une seule interface." },
-              { icon: "🌍", title: "Conçu pour les créateurs du monde entier", desc: "Afrique, Asie, Amérique Latine — partout où l'abonnement à la carte exclut." },
+              { icon: "🎨", title: "Tous les modèles, un seul endroit", desc: "Texte, image, audio, vidéo — plus besoin de 5 comptes. Une interface, tous les providers." },
+              { icon: "📦", title: "Paie à l'usage, pas d'abonnement", desc: "Tu génères, tu paies. Pas de forfait mensuel, pas de crédits qui expirent dans 90 jours." },
+              { icon: "💳", title: "Mobile Money, carte ou crypto", desc: "Wave, Orange Money, MTN, Visa, USDC — paie comme tu veux, pas comme on t'impose." },
+              { icon: "🔌", title: "API incluse", desc: "Le playground pour créer, l'API pour automatiser. Même compte, même wallet, même tarif." },
             ].map((card) => (
               <div key={card.title} className="rounded-xl border border-white/5 bg-white/3 p-6 hover:border-[#7850ff]/20 hover:bg-white/5 transition-all">
                 <div className="text-2xl mb-3">{card.icon}</div>
