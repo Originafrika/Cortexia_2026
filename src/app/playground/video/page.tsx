@@ -6,7 +6,9 @@ export default function VideoPage() {
   return (
     <>
       <Header />
-      <ModelPlayground modelType="video" icon="🎬" title="Vidéo" />
+      <div className="animate-fade-in flex-1 flex flex-col">
+        <ModelPlayground modelType="video" icon="🎬" title="Vidéo" />
+      </div>
       <Footer />
     </>
   );

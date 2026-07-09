@@ -5,7 +5,9 @@ import Link from "next/link";
 import { MODEL_CATALOG, estimateCost, type ModelInfo } from "@/lib/kie-ai";
 import { getModelParams, type Param } from "@/lib/model-params";
 import { Select } from "@/components/select";
-import { detectCurrency, formatLocalPrice, formatPriceShort, type CurrencyInfo } from "@/lib/currency";
+import { detectCurrency, formatLocalPrice, type CurrencyInfo } from "@/lib/currency";
+import { ParamSkeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
 interface ModelPlaygroundProps {
   modelType: "text" | "image" | "audio" | "video";
@@ -41,6 +43,32 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
     [selectedModelId, models]
   );
 
+  const dynamicCost = useMemo(() => {
+    if (!modelInfo) return null;
+
+    if (modelInfo.pricePerReq !== undefined) return modelInfo.pricePerReq;
+
+    if (modelInfo.pricePerImg !== undefined) {
+      const n = Number(values.n) || 1;
+      return modelInfo.pricePerImg * n;
+    }
+
+    if (modelInfo.pricePerSec !== undefined) {
+      const duration = Number(values.duration) || 5;
+      return modelInfo.pricePerSec * duration;
+    }
+
+    if (modelInfo.inputPrice !== undefined) {
+      const inTokens = 1000;
+      const outTokens = 500;
+      const inCost = (inTokens / 1_000_000) * modelInfo.inputPrice;
+      const outCost = (outTokens / 1_000_000) * (modelInfo.outputPrice ?? modelInfo.inputPrice);
+      return inCost + outCost;
+    }
+
+    return 0;
+  }, [modelInfo, values]);
+
   function updateParam(key: string, value: string) {
     if (key === "model") {
       setSelectedModelId(value);
@@ -57,7 +85,7 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
     if (!prompt.trim() || loading) return;
     setLoading(true);
     setResult(null);
-    const modelCost = modelInfo ? estimateCost(modelInfo.id) : 0.05;
+    const modelCost = dynamicCost ?? 0.05;
     setTimeout(() => {
       setResult(`**${title} généré**\n\nPrompt : "${prompt}"\n\nParamètres : ${JSON.stringify(values, null, 2)}\n\n*Mode démo — la connexion Kie AI est en cours.*`);
       setCost(modelCost);
@@ -77,35 +105,30 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
         );
       }
       return (
-        <div className="relative">
-          <select value={String(val)} onChange={(e) => updateParam(p.key, e.target.value)}
-            className="w-full appearance-none px-3 py-2 pr-8 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors cursor-pointer">
-            {opts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
+        <Select value={String(val)} onChange={(v) => updateParam(p.key, v)} options={opts} />
       );
     }
     if (p.type === "number") {
       return (
         <input type="number" value={Number(val)} onChange={(e) => updateParam(p.key, e.target.value)}
           min={p.min} max={p.max} step={p.step}
-          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors" />
+          className="input-base" />
       );
     }
     return (
       <div className="flex items-center gap-3">
         <input type="range" value={Number(val)} onChange={(e) => updateParam(p.key, e.target.value)}
-          min={p.min ?? 0} max={p.max ?? 100} step={p.step ?? 1} className="flex-1 accent-[#7850ff]" />
-        <span className="text-xs text-zinc-400 w-8 text-right font-mono">{val}</span>
+          min={p.min ?? 0} max={p.max ?? 100} step={p.step ?? 1}
+          className="flex-1 accent-[#7850ff] h-1.5 cursor-pointer" />
+        <span className="text-xs text-zinc-400 w-8 text-right font-mono tabular-nums">{val}</span>
       </div>
     );
   }
 
   return (
     <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-6 py-8">
-      <div className="mb-6">
-        <Link href="/playground/models" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors mb-2 inline-block">← Tous les modèles</Link>
+      <div className="mb-6 animate-fade-in">
+        <Link href="/playground/models" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors mb-2 inline-block focus-ring rounded px-1">← Tous les modèles</Link>
         <div className="flex items-center gap-3">
           <span className="text-2xl">{icon}</span>
           <div>
@@ -119,18 +142,35 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
         <div className="md:col-span-2 space-y-4">
           <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
             placeholder="Décris ce que tu veux générer..." rows={4}
-            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors resize-none placeholder:text-zinc-600" />
+            className="input-base resize-none min-h-[100px]" />
+
           <button onClick={handleGenerate} disabled={!prompt.trim() || loading}
-            className="w-full py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-[#7850ff] to-[#6366f1] text-white disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-[#7850ff]/20">
-            {loading ? "Génération..." : "Générer"}
+            className="btn-primary w-full py-3">
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+                </svg>
+                Génération...
+              </span>
+            ) : "Générer"}
           </button>
 
+          {loading && !result && (
+            <div className="space-y-3 animate-fade-in p-4">
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-3 w-full" />
+              <div className="skeleton h-3 w-5/6" />
+            </div>
+          )}
+
           {result && (
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+            <div className="card-base p-4 animate-scale-in">
               <div className="text-sm text-zinc-300 whitespace-pre-wrap mb-2">{result}</div>
               {cost !== null && (
-                <div className="text-[10px] text-zinc-600 border-t border-white/5 pt-2">
-                  Coût estimé : {formatLocalPrice(cost, currency)}
+                <div className="text-[10px] text-zinc-600 border-t border-white/5 pt-2 mt-2 flex items-center justify-between">
+                  <span>Coût estimé</span>
+                  <span className="text-[#a78bfa] font-medium">{formatLocalPrice(cost, currency)}</span>
                 </div>
               )}
             </div>
@@ -140,36 +180,39 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white">Paramètres</h3>
-            <span className="text-[10px] text-zinc-600">{currency.code}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-zinc-500 font-mono">{currency.code}</span>
           </div>
 
-          {modelInfo && (
-            <div className="rounded-lg bg-white/5 border border-white/10 p-3 text-xs space-y-1">
+          {modelInfo ? (
+            <Card className="p-3 text-xs space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Fournisseur</span>
                 <span className="text-zinc-200">{modelInfo.provider}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Prix</span>
-                <span className="text-[#a78bfa]">
-                  {modelInfo.pricePerReq !== undefined && formatPriceShort(modelInfo.pricePerReq, currency)}
-                  {modelInfo.pricePerImg !== undefined && formatPriceShort(modelInfo.pricePerImg, currency)}
-                  {modelInfo.pricePerSec !== undefined && `${formatPriceShort(modelInfo.pricePerSec, currency)}/sec`}
-                  {modelInfo.inputPrice !== undefined && `${formatPriceShort(modelInfo.inputPrice, currency)}/M in`}
-                </span>
+                <span className="text-zinc-400">Prix estimé</span>
+                <span className="text-[#a78bfa]">{dynamicCost !== null ? formatLocalPrice(dynamicCost, currency) : "—"}</span>
               </div>
+              {modelInfo.inputPrice !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Input</span>
+                  <span className="text-zinc-300">{formatLocalPrice(modelInfo.inputPrice, currency)}/M tokens</span>
+                </div>
+              )}
               {modelInfo.outputPrice !== undefined && (
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-400">Output</span>
-                  <span className="text-[#a78bfa]">{formatPriceShort(modelInfo.outputPrice, currency)}/M</span>
+                  <span className="text-zinc-300">{formatLocalPrice(modelInfo.outputPrice, currency)}/M tokens</span>
                 </div>
               )}
-              {modelInfo.description && <p className="text-zinc-500 pt-1 border-t border-white/5 mt-1">{modelInfo.description}</p>}
-            </div>
+              {modelInfo.description && <p className="text-zinc-500 pt-1.5 border-t border-white/5 mt-1.5">{modelInfo.description}</p>}
+            </Card>
+          ) : (
+            <ParamSkeleton />
           )}
 
-          {activeParams.map((p) => (
-            <div key={p.key}>
+          {activeParams.map((p, i) => (
+            <div key={p.key} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
               {p.key !== "model" && <label className="text-xs text-zinc-400 font-medium mb-1.5 block">{p.label} {p.unit && <span className="text-zinc-600 font-normal">({p.unit})</span>}</label>}
               {renderParamInput(p)}
             </div>

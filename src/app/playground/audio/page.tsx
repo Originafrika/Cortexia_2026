@@ -6,7 +6,9 @@ export default function AudioPage() {
   return (
     <>
       <Header />
-      <ModelPlayground modelType="audio" icon="🎵" title="Audio" />
+      <div className="animate-fade-in flex-1 flex flex-col">
+        <ModelPlayground modelType="audio" icon="🎵" title="Audio" />
+      </div>
       <Footer />
     </>
   );

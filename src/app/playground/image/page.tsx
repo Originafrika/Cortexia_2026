@@ -6,7 +6,9 @@ export default function ImagePage() {
   return (
     <>
       <Header />
-      <ModelPlayground modelType="image" icon="🎨" title="Image" />
+      <div className="animate-fade-in flex-1 flex flex-col">
+        <ModelPlayground modelType="image" icon="🎨" title="Image" />
+      </div>
       <Footer />
     </>
   );

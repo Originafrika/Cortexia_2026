@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { Select } from "@/components/select";
 
 const COUNTRIES = [
   { value: "BF", label: "Burkina Faso" }, { value: "BI", label: "Burundi" },
@@ -32,6 +33,7 @@ const COUNTRIES = [
 export function WaitlistForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [country, setCountry] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,30 +82,25 @@ export function WaitlistForm() {
           type="email"
           required
           placeholder="toto@exemple.com"
-          className="w-full px-3.5 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors placeholder:text-zinc-600"
+          className="input-base"
         />
       </div>
       <div className="text-left">
-        <label htmlFor="country" className="text-sm text-zinc-400 font-medium mb-1.5 block">
+        <label className="text-sm text-zinc-400 font-medium mb-1.5 block">
           Pays
         </label>
-        <select
-          id="country"
-          name="country"
-          required
-          defaultValue=""
-          className="w-full px-3.5 py-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors"
-        >
-          <option value="" disabled>Sélectionne ton pays</option>
-          {COUNTRIES.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <Select
+          value={country}
+          onChange={(v) => setCountry(v)}
+          options={[{ value: "", label: "Sélectionne ton pays" }, ...COUNTRIES]}
+          className="w-full"
+        />
+        <input type="hidden" name="country" value={country} />
       </div>
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-3 rounded-lg font-semibold text-sm bg-gradient-to-r from-[#7850ff] to-[#6366f1] text-white hover:shadow-lg hover:shadow-[#7850ff]/20 transition-all disabled:opacity-60"
+        className="btn-primary w-full py-3"
       >
         {loading ? "Inscription..." : "Rejoindre la waitlist"}
       </button>

@@ -3,6 +3,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { WaitlistForm } from "@/components/waitlist-form";
 import { CreditSimulator } from "@/components/simulator/credit-simulator";
+import { Card } from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -12,30 +13,24 @@ export default function Home() {
         <section className="relative overflow-hidden">
           <div className="gradient-hero absolute inset-0 pointer-events-none" />
           <div className="relative max-w-4xl mx-auto px-6 pt-24 pb-16 text-center">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#7850ff]/10 border border-[#7850ff]/30 text-[#a78bfa] mb-6">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-[#7850ff]/10 border border-[#7850ff]/30 text-[#a78bfa] mb-6 animate-fade-in">
               Bientôt disponible
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] text-white mb-5 tracking-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] text-white mb-5 tracking-tight animate-fade-in-up">
               Tous les modèles d&apos;IA.<br />
               Un seul <span className="gradient-text">playground</span>.
             </h1>
-            <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-8 leading-relaxed animate-fade-in-up stagger-1">
               Tous les modèles d&apos;IA — texte, image, audio, vidéo — dans un seul playground.
               Aucun abonnement : paie uniquement ce que tu génères, par Mobile Money,
-              carte bancaire ou crypto. Aucune plateforme ne faisait ça avant.
+              carte bancaire ou crypto.
             </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Link
-                href="/#waitlist"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg font-semibold text-sm bg-gradient-to-r from-[#7850ff] to-[#6366f1] text-white hover:shadow-lg hover:shadow-[#7850ff]/30 transition-all"
-              >
+            <div className="flex flex-wrap gap-3 justify-center animate-fade-in-up stagger-2">
+              <Link href="/#waitlist" className="btn-primary px-8 py-3.5 text-base">
                 Rejoindre la waitlist
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
               </Link>
-              <Link
-                href="/playground"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg font-semibold text-sm bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-all"
-              >
+              <Link href="/playground" className="btn-secondary px-8 py-3.5 text-base">
                 Voir le playground
               </Link>
             </div>
@@ -59,12 +54,12 @@ export default function Home() {
               { icon: "📦", title: "Paie à l'usage, pas d'abonnement", desc: "Tu génères, tu paies. Pas de forfait mensuel, pas de crédits qui expirent dans 90 jours." },
               { icon: "💳", title: "Mobile Money, carte ou crypto", desc: "Wave, Orange Money, MTN, Visa, USDC — paie comme tu veux, pas comme on t'impose." },
               { icon: "🔌", title: "API incluse", desc: "Le playground pour créer, l'API pour automatiser. Même compte, même wallet, même tarif." },
-            ].map((card) => (
-              <div key={card.title} className="rounded-xl border border-white/5 bg-white/3 p-6 hover:border-[#7850ff]/20 hover:bg-white/5 transition-all">
+            ].map((card, i) => (
+              <Card key={card.title} className="p-6 animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
                 <div className="text-2xl mb-3">{card.icon}</div>
                 <h3 className="text-white font-semibold text-sm mb-2">{card.title}</h3>
                 <p className="text-zinc-500 text-sm leading-relaxed">{card.desc}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </section>
@@ -78,9 +73,9 @@ export default function Home() {
               { num: "1", title: "Ajoute du crédit", desc: "Par Mobile Money, carte bancaire ou crypto. Aucun abonnement." },
               { num: "2", title: "Génère ce que tu veux", desc: "Décris en langage naturel ou utilise les paramètres avancés." },
               { num: "3", title: "Paie par génération", desc: "Quelques centimes par génération. Tu vois le prix avant d'exécuter." },
-            ].map((step) => (
-              <div key={step.num}>
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#7850ff]/20 to-[#00c8ff]/10 border border-[#7850ff]/20 flex items-center justify-center mx-auto mb-4 font-bold text-[#a78bfa]">
+            ].map((step, i) => (
+              <div key={step.num} className="animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#7850ff]/20 to-[#00c8ff]/10 border border-[#7850ff]/20 flex items-center justify-center font-bold text-[#a78bfa] transition-transform hover:scale-110">
                   {step.num}
                 </div>
                 <h3 className="text-white font-semibold mb-2">{step.title}</h3>
@@ -115,29 +110,29 @@ export default function Home() {
               { name: "Airtel Money", region: "KE, TZ, UG, MW", type: "Mobile Money" },
               { name: "Visa / MC", region: "Monde", type: "Carte" },
               { name: "USDC", region: "Blockchain", type: "Crypto" },
-            ].map((p) => (
-              <div key={p.name} className="rounded-xl border border-white/5 bg-white/3 p-4 text-left min-w-[160px] hover:border-[#7850ff]/20 transition-all">
+            ].map((p, i) => (
+              <Card key={p.name} className="p-4 text-left min-w-[160px] animate-fade-in-up" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className={`text-[10px] font-semibold mb-1.5 ${
                   p.type === "Mobile Money" ? "text-[#22d3ee]" :
                   p.type === "Carte" ? "text-amber-400" : "text-emerald-400"
                 }`}>{p.type}</div>
                 <h4 className="text-white font-semibold text-sm">{p.name}</h4>
                 <p className="text-zinc-600 text-[10px] mt-1">{p.region}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </section>
 
         <section id="waitlist" className="max-w-lg mx-auto px-6 py-20">
-          <div className="rounded-2xl border border-white/10 bg-white/3 p-8 sm:p-12">
-            <h2 className="text-xl sm:text-2xl font-bold text-white text-center mb-2">
+          <Card elevated className="p-8 sm:p-12 text-center">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
               Sois parmi les premiers
             </h2>
-            <p className="text-zinc-400 text-sm text-center mb-8">
+            <p className="text-zinc-400 text-sm mb-8">
               Laisse ton email et ton pays — on te prévient dès le lancement.
             </p>
             <WaitlistForm />
-          </div>
+          </Card>
         </section>
       </main>
       <Footer />

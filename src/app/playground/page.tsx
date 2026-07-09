@@ -57,7 +57,7 @@ export default function PlaygroundPage() {
   return (
     <>
       <Header />
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-6 animate-fade-in">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-1">Playground</h1>
           <p className="text-sm text-zinc-500 mb-4">
@@ -65,27 +65,28 @@ export default function PlaygroundPage() {
           </p>
           <div className="flex flex-wrap gap-2">
             <span className="text-xs text-zinc-500 self-center mr-1">Mode avancé :</span>
-            <Link href="/playground/text" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">✍️ Texte ({MODEL_CATALOG.text.length})</Link>
-            <Link href="/playground/image" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎨 Image ({MODEL_CATALOG.image.length})</Link>
-            <Link href="/playground/audio" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎵 Audio ({MODEL_CATALOG.audio.length})</Link>
-            <Link href="/playground/video" className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors">🎬 Vidéo ({MODEL_CATALOG.video.length})</Link>
-            <Link href="/playground/models" className="px-3 py-1.5 rounded-md text-xs font-medium bg-[#7850ff]/10 border border-[#7850ff]/20 text-[#a78bfa] hover:bg-[#7850ff]/20 transition-colors">Voir tous les modèles →</Link>
+            <Link href="/playground/text" className="focus-ring bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-md text-xs font-medium">✍️ Texte ({MODEL_CATALOG.text.length})</Link>
+            <Link href="/playground/image" className="focus-ring bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-md text-xs font-medium">🎨 Image ({MODEL_CATALOG.image.length})</Link>
+            <Link href="/playground/audio" className="focus-ring bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-md text-xs font-medium">🎵 Audio ({MODEL_CATALOG.audio.length})</Link>
+            <Link href="/playground/video" className="focus-ring bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors px-3 py-1.5 rounded-md text-xs font-medium">🎬 Vidéo ({MODEL_CATALOG.video.length})</Link>
+            <Link href="/playground/models" className="focus-ring px-3 py-1.5 rounded-md text-xs font-medium bg-[#7850ff]/10 border border-[#7850ff]/20 text-[#a78bfa] hover:bg-[#7850ff]/20 transition-colors">Voir tous les modèles →</Link>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[400px] max-h-[500px] pr-2">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[400px] max-h-[500px] pr-2 custom-scrollbar">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-16">
+            <div className="flex flex-col items-center justify-center h-full text-center py-16 animate-fade-in">
               <div className="text-4xl mb-4">✨</div>
               <p className="text-zinc-500 text-sm max-w-xs">
                 Commence par décrire ce que tu veux créer. Tu peux aussi essayer une suggestion rapide.
               </p>
               <div className="flex flex-wrap gap-2 mt-6 justify-center">
-                {quickActions.map((action) => (
+                {quickActions.map((action, i) => (
                   <button
                     key={action.label}
                     onClick={() => handleSend(action.prompt)}
-                    className="px-4 py-2 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-colors"
+                    className="focus-ring px-4 py-2 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-zinc-300 hover:bg-white/10 transition-all animate-fade-in-up"
+                    style={{ animationDelay: `${i * 60}ms` }}
                   >
                     {action.label}
                   </button>
@@ -95,18 +96,19 @@ export default function PlaygroundPage() {
           )}
 
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-slide-down`}>
               <div
                 className={`max-w-[80%] rounded-xl px-4 py-3 text-sm ${
                   msg.role === "user"
                     ? "bg-[#7850ff] text-white rounded-br-sm"
-                    : "bg-white/5 border border-white/10 text-zinc-300 rounded-bl-sm"
+                    : "card-base rounded-bl-sm"
                 }`}
               >
                 <div className="whitespace-pre-wrap">{msg.content}</div>
                 {msg.cost !== undefined && msg.role === "assistant" && (
-                  <div className="text-[10px] text-zinc-600 mt-2 border-t border-white/5 pt-2">
-                    Coût : {formatLocalPrice(msg.cost, currencyRef.current)}
+                  <div className="text-[10px] text-zinc-600 mt-2 border-t border-white/5 pt-2 flex items-center justify-between">
+                    <span>Coût</span>
+                    <span className="text-[#a78bfa] font-medium">{formatLocalPrice(msg.cost, currencyRef.current)}</span>
                   </div>
                 )}
               </div>
@@ -114,12 +116,12 @@ export default function PlaygroundPage() {
           ))}
 
           {loading && (
-            <div className="flex justify-start">
-              <div className="bg-white/5 border border-white/10 rounded-xl rounded-bl-sm px-4 py-3 text-sm text-zinc-500">
+            <div className="flex justify-start animate-fade-in">
+              <div className="card-base rounded-bl-sm px-4 py-3 text-sm">
                 <span className="inline-flex gap-1">
                   <span className="animate-pulse">●</span>
-                  <span className="animate-pulse delay-75">●</span>
-                  <span className="animate-pulse delay-150">●</span>
+                  <span className="animate-pulse" style={{ animationDelay: '75ms' }}>●</span>
+                  <span className="animate-pulse" style={{ animationDelay: '150ms' }}>●</span>
                 </span>
               </div>
             </div>
@@ -134,12 +136,12 @@ export default function PlaygroundPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
             placeholder="Décris ce que tu veux générer..."
-            className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors placeholder:text-zinc-600"
+            className="input-base flex-1"
           />
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || loading}
-            className="px-5 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-[#7850ff] to-[#6366f1] text-white disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-[#7850ff]/20"
+            className="btn-primary px-5 py-3"
           >
             Envoyer
           </button>
