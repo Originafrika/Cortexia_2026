@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { MODEL_CATALOG, type ModelInfo, estimateCost } from "@/lib/kie-ai";
-import { detectCurrency, formatLocalPrice, formatPriceShort } from "@/lib/currency";
+import { detectCurrency, formatLocalPrice } from "@/lib/currency";
 
 const PRESETS = [5, 10, 25, 50, 100];
 const MARGIN = 0.25;
@@ -70,7 +70,7 @@ export function CreditSimulator() {
           <input type="number" min={1} value={customBudget}
             onChange={(e) => handleCustom(e.target.value)}
             placeholder="Montant"
-            className="w-24 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-[#7850ff] transition-colors placeholder:text-zinc-600"
+            className="input-base w-24 inline-block"
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-500">{currency.code}</span>
         </div>
@@ -96,7 +96,7 @@ export function CreditSimulator() {
                     <div className="text-[10px] text-zinc-600">{m.provider}</div>
                   </td>
                   <td className="text-right py-3 px-4 text-zinc-300 whitespace-nowrap">
-                    {formatPriceShort(cost, currency)}
+                    {formatLocalPrice(cost, currency)}
                   </td>
                   <td className="text-right py-3 pl-4 text-[#a78bfa] font-medium whitespace-nowrap">
                     {usage.label}
