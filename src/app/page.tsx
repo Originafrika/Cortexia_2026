@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { WaitlistForm } from "@/components/waitlist-form";
+import { CreditSimulator } from "@/components/simulator/credit-simulator";
 
 export default function Home() {
   return (
@@ -89,32 +90,39 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="max-w-3xl mx-auto px-6 py-20">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">
+            Simule tes coûts
+          </h2>
+          <p className="text-zinc-400 text-center mb-10 max-w-md mx-auto">
+            Combien de générations avec ton budget ? Les prix s&apos;affichent dans ta devise locale.
+          </p>
+          <CreditSimulator />
+        </section>
+
         <section className="max-w-3xl mx-auto px-6 py-20 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-            Une tarification transparente
+            Paiements adaptés à toi
           </h2>
           <p className="text-zinc-400 mb-10 max-w-md mx-auto">
-            Tu ne paies que ce que tu utilises. Voici un aperçu des prix par génération.
+            Mobile Money, carte bancaire, crypto — paie avec ce qui existe dans ton pays.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
+          <div className="flex flex-wrap justify-center gap-3">
             {[
-              { name: "Texte", price: "0,05 €", unit: "/ 1000 tokens", tags: ["Mobile Money", "Carte"] },
-              { name: "Image", price: "0,10 €", unit: "/ génération", tags: ["Mobile Money", "Carte"], featured: true },
-              { name: "Audio", price: "0,15 €", unit: "/ minute", tags: ["Mobile Money", "Crypto"] },
-              { name: "Vidéo", price: "0,50 €", unit: "/ génération", tags: ["Carte", "Crypto"], featured: true },
+              { name: "Wave", region: "Sénégal, CI, ML, BF", type: "Mobile Money" },
+              { name: "Orange Money", region: "Afrique francophone", type: "Mobile Money" },
+              { name: "MTN MoMo", region: "GH, CI, CM, UG", type: "Mobile Money" },
+              { name: "Airtel Money", region: "KE, TZ, UG, MW", type: "Mobile Money" },
+              { name: "Visa / MC", region: "Monde", type: "Carte" },
+              { name: "USDC", region: "Blockchain", type: "Crypto" },
             ].map((p) => (
-              <div key={p.name} className={`rounded-xl border p-5 text-left ${p.featured ? "border-[#7850ff]/30 bg-[#7850ff]/5" : "border-white/5 bg-white/3"}`}>
-                <h4 className="text-xs text-zinc-500 font-medium mb-1.5">{p.name}</h4>
-                <div className="text-white font-bold text-lg mb-1">{p.price} <span className="text-xs font-normal text-zinc-500">{p.unit}</span></div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {p.tags.map((t) => (
-                    <span key={t} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                      t === "Mobile Money" ? "bg-[#00c8ff]/10 text-[#22d3ee]" :
-                      t === "Carte" ? "bg-amber-500/10 text-amber-400" :
-                      "bg-emerald-500/10 text-emerald-400"
-                    }`}>{t}</span>
-                  ))}
-                </div>
+              <div key={p.name} className="rounded-xl border border-white/5 bg-white/3 p-4 text-left min-w-[160px] hover:border-[#7850ff]/20 transition-all">
+                <div className={`text-[10px] font-semibold mb-1.5 ${
+                  p.type === "Mobile Money" ? "text-[#22d3ee]" :
+                  p.type === "Carte" ? "text-amber-400" : "text-emerald-400"
+                }`}>{p.type}</div>
+                <h4 className="text-white font-semibold text-sm">{p.name}</h4>
+                <p className="text-zinc-600 text-[10px] mt-1">{p.region}</p>
               </div>
             ))}
           </div>
