@@ -23,8 +23,7 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
   useEffect(() => { setCurrency(detectCurrency()); }, []);
 
   const models = MODEL_CATALOG[modelType];
-  const firstModelId = models[0]?.id ?? "";
-  const [selectedModelId, setSelectedModelId] = useState(firstModelId);
+  const [selectedModelId, setSelectedModelId] = useState(models[0]?.id ?? "");
 
   const activeParams = useMemo(() => {
     return getModelParams(modelType, selectedModelId, models);
@@ -43,15 +42,15 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
   );
 
   function updateParam(key: string, value: string) {
-    setValues((prev) => {
-      const next = { ...prev, [key]: value };
-      if (key === "model") {
-        const newModelId = value;
-        const newParams = getModelParams(modelType, newModelId, models);
-        newParams.forEach((p) => { if (!(p.key in next) || p.key === "model") next[p.key] = p.default; });
-      }
-      return next;
-    });
+    if (key === "model") {
+      setSelectedModelId(value);
+      const newParams = getModelParams(modelType, value, models);
+      const v: Record<string, string | number> = {};
+      newParams.forEach((p) => { v[p.key] = p.default; });
+      setValues(v);
+      return;
+    }
+    setValues((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleGenerate() {

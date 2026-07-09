@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { MODEL_CATALOG } from "@/lib/kie-ai";
+import { detectCurrency, formatLocalPrice } from "@/lib/currency";
 
 interface Message {
   role: "user" | "assistant";
@@ -23,6 +24,7 @@ export default function PlaygroundPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const currencyRef = useRef(detectCurrency());
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function PlaygroundPage() {
                 <div className="whitespace-pre-wrap">{msg.content}</div>
                 {msg.cost !== undefined && msg.role === "assistant" && (
                   <div className="text-[10px] text-zinc-600 mt-2 border-t border-white/5 pt-2">
-                    Coût : {msg.cost.toFixed(2)} €
+                    Coût : {formatLocalPrice(msg.cost, currencyRef.current)}
                   </div>
                 )}
               </div>

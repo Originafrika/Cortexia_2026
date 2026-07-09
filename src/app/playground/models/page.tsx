@@ -4,10 +4,10 @@ import { Footer } from "@/components/footer";
 import { MODEL_CATALOG } from "@/lib/kie-ai";
 
 const modelSummary: Record<string, { name: string; icon: string; desc: string; params: string[] }> = {
-  text: { name: "Texte", icon: "✍️", desc: "Claude, GPT, Gemini — raisonnement, code, analyse.", params: ["Température", "Max tokens", "Top P"] },
-  image: { name: "Image", icon: "🎨", desc: "Flux, Ideogram, Imagen, Grok — génération et édition.", params: ["Résolution", "Style", "Seed", "Steps"] },
-  audio: { name: "Audio", icon: "🎵", desc: "ElevenLabs, Suno — TTS, musique, effets sonores.", params: ["Durée", "Style", "Format", "Créativité"] },
-  video: { name: "Vidéo", icon: "🎬", desc: "Veo, Runway, Kling, Seedance — text-to-video & image-to-video.", params: ["Durée", "Résolution", "Style", "Seed"] },
+  text: { name: "Texte", icon: "✍️", desc: "Claude, GPT, Gemini, Grok — raisonnement, code, analyse.", params: ["Température", "Max tokens", "Top P"] },
+  image: { name: "Image", icon: "🎨", desc: "Flux, Seedream, Imagen, Ideogram, Qwen, Grok — génération et édition.", params: ["Résolution", "Style", "Seed", "Steps"] },
+  audio: { name: "Audio", icon: "🎵", desc: "ElevenLabs, Suno — TTS, musique, isolation vocale.", params: ["Durée", "Style", "Format", "Créativité"] },
+  video: { name: "Vidéo", icon: "🎬", desc: "Veo, Kling, Wan, Hailuo, Seedance, Runway — text-to-video & image-to-video.", params: ["Durée", "Résolution", "Style", "Seed"] },
 };
 
 export default function ModelsPage() {
