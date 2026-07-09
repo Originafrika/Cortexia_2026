@@ -15,6 +15,12 @@ export interface ModelInfo {
   capabilities?: string[];
 }
 
+export const VEO_3_1_PRICES: Record<string, Record<string, number>> = {
+  lite: { "720p": 0.15, "1080p": 0.175, "4k": 0.75 },
+  fast: { "720p": 0.30, "1080p": 0.325, "4k": 0.90 },
+  quality: { "720p": 1.25, "1080p": 1.275, "4k": 1.85 },
+};
+
 export const MODEL_CATALOG: Record<ModelType, ModelInfo[]> = {
   text: [
     { id: "claude-opus-4-8", name: "Claude Opus 4.8", provider: "Anthropic", type: "text", inputPrice: 1.50, outputPrice: 7.50, description: "Dernier Opus, performances améliorées" },
@@ -84,8 +90,7 @@ export const MODEL_CATALOG: Record<ModelType, ModelInfo[]> = {
     { id: "eleven-dialogue-v3", name: "Text to Dialogue V3", provider: "ElevenLabs", type: "audio", pricePerReq: 0.025, description: "Génération de dialogues" },
   ],
   video: [
-    { id: "veo-3-1-1080p", name: "Veo 3.1 (1080p)", provider: "Google", type: "video", pricePerReq: 1.28, description: "Qualité cinématique 1080p" },
-    { id: "veo-3-1-4k", name: "Veo 3.1 (4K)", provider: "Google", type: "video", pricePerReq: 1.85, description: "Qualité cinématique 4K" },
+    { id: "veo-3-1", name: "Veo 3.1", provider: "Google", type: "video", pricePerReq: 0.15, description: "Lite/Fast/Quality selon résolution. Audio natif, contrôle Start & End Frame." },
     { id: "kling-3-0", name: "Kling 3.0", provider: "Kuaishou", type: "video", pricePerReq: 0.50, description: "Multi-shot, référencement d'éléments" },
     { id: "kling-v3-turbo", name: "Kling V3 Turbo", provider: "Kuaishou", type: "video", pricePerReq: 0.30, description: "Kling rapide, économique" },
     { id: "kling-v2-1-pro", name: "Kling V2.1 Pro", provider: "Kuaishou", type: "video", pricePerReq: 0.25, description: "Kling Pro génération précédente" },

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { MODEL_CATALOG, estimateCost, type ModelInfo } from "@/lib/kie-ai";
+import { MODEL_CATALOG, VEO_3_1_PRICES, estimateCost, type ModelInfo } from "@/lib/kie-ai";
 import { getModelParams, type Param } from "@/lib/model-params";
 import { Select } from "@/components/select";
 import { detectCurrency, formatLocalPrice, type CurrencyInfo } from "@/lib/currency";
@@ -45,6 +45,12 @@ export function ModelPlayground({ modelType, icon, title }: ModelPlaygroundProps
 
   const dynamicCost = useMemo(() => {
     if (!modelInfo) return null;
+
+    if (modelInfo.id === "veo-3-1") {
+      const mode = String(values.mode || "fast");
+      const res = String(values.resolution || "1080p");
+      return VEO_3_1_PRICES[mode]?.[res] ?? modelInfo.pricePerReq ?? 0.15;
+    }
 
     if (modelInfo.pricePerReq !== undefined) return modelInfo.pricePerReq;
 

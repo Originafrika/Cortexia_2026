@@ -115,7 +115,17 @@ const MODEL_SPECIFIC_PARAMS: ModelParamsMap = {
         { value: "4k", label: "4K" },
       ]},
     ],
-    "veo-3-1-1080p": [
+    "veo-3-1": [
+      { key: "mode", label: "Mode", type: "select", default: "fast", options: [
+        { value: "lite", label: "Lite — économique" },
+        { value: "fast", label: "Fast — rapide" },
+        { value: "quality", label: "Quality — meilleur" },
+      ]},
+      { key: "resolution", label: "Résolution", type: "select", default: "1080p", options: [
+        { value: "720p", label: "720p" },
+        { value: "1080p", label: "1080p" },
+        { value: "4k", label: "4K" },
+      ]},
       { key: "promptType", label: "Type d'entrée", type: "select", default: "text", options: [
         { value: "text", label: "Texte → Vidéo" },
         { value: "image", label: "Image → Vidéo" },
@@ -125,25 +135,6 @@ const MODEL_SPECIFIC_PARAMS: ModelParamsMap = {
         { value: "8", label: "8 secondes" },
         { value: "10", label: "10 secondes" },
         { value: "15", label: "15 secondes" },
-      ]},
-      { key: "quality", label: "Qualité", type: "select", default: "quality", options: [
-        { value: "fast", label: "Fast (rapide)" },
-        { value: "quality", label: "Quality (meilleur)" },
-      ]},
-    ],
-    "veo-3-1-4k": [
-      { key: "promptType", label: "Type d'entrée", type: "select", default: "text", options: [
-        { value: "text", label: "Texte → Vidéo" },
-        { value: "image", label: "Image → Vidéo" },
-      ]},
-      { key: "duration", label: "Durée", type: "select", default: "8", options: [
-        { value: "5", label: "5 secondes" },
-        { value: "8", label: "8 secondes" },
-        { value: "10", label: "10 secondes" },
-      ]},
-      { key: "quality", label: "Qualité", type: "select", default: "quality", options: [
-        { value: "fast", label: "Fast (rapide)" },
-        { value: "quality", label: "Quality (4K)" },
       ]},
     ],
     "kling-3-0": [
